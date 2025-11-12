@@ -28,6 +28,10 @@ Thumbs.db
 *.tar.gz
 *.rar
 
+# Large database files
+*.mmdb
+product/app/includes/GeoLite2-*.mmdb
+
 # Log files
 *.log
 
