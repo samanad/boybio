@@ -1,0 +1,44 @@
+# Vendor dependencies
+product/vendor/
+
+# Uploads and user files
+product/uploads/
+
+# Cache files
+*.cache
+product/uploads/cache/
+
+# Configuration files with sensitive data
+product/app/config/config.php
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Install files (if not needed in repo)
+product/install/installed
+
+# Environment files
+.env
+.env.local
+
