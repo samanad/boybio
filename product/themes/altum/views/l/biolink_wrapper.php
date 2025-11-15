@@ -140,22 +140,5 @@
         <?= $this->link->settings->custom_js ?>
     <?php endif ?>
 
-    <?php
-    /* Show edit link in footer if IP matches and link is biolink type */
-    if($this->link->type == 'biolink' && !$this->is_preview) {
-        $allowed_ip = isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip) ? settings()->security->biolink_edit_allowed_ip : '';
-        $current_ip = get_ip();
-        
-        if(!empty($allowed_ip) && $current_ip && $current_ip === $allowed_ip) {
-    ?>
-        <footer class="biolink-edit-footer" style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.8); padding: 10px; text-align: center; z-index: 9999;">
-            <a href="<?= url('link/' . $this->link->link_id) ?>" style="color: #fff; text-decoration: none; font-weight: bold;">
-                <i class="fas fa-fw fa-edit"></i> Edit
-            </a>
-        </footer>
-    <?php
-        }
-    }
-    ?>
 
 </html>

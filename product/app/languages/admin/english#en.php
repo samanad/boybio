@@ -1368,6 +1368,8 @@ return [
     'admin_settings.links.branding' => 'Biolink page branding',
     'admin_settings.links.branding_help' => 'This branding is used by default in the biolink pages footer. HTML can be used in this field.',
     'admin_settings.links.branding_help2' => 'You can use the following dynamic variables: <code>{{WEBSITE_TITLE}}</code>, <code>{{URL}}</code>, <code>{{AFFILIATE_URL_TAG}}</code>.',
+    'admin_settings.links.branding_edit_link_is_enabled' => 'Enable edit link in branding',
+    'admin_settings.links.branding_edit_link_is_enabled_help' => 'When enabled, all links in the branding HTML will point to the biolink edit page. Regular users will see the login page when clicking, while admins will see the edit page directly.',
     'admin_settings.links.shortener_is_enabled' => 'Enable the link shortener system',
     'admin_settings.links.shortener_is_enabled_help' => 'Enabling this will give your users the ability to shorten links.',
     'admin_settings.links.biolinks_is_enabled' => 'Enable the biolinks system',

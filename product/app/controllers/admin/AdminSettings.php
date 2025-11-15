@@ -1953,6 +1953,7 @@ class AdminSettings extends Controller {
             $_POST['random_url_length'] = isset($_POST['random_url_length']) && $_POST['random_url_length'] < 4 ? 4 : (int) $_POST['random_url_length'];
             $_POST['shortener_is_enabled'] = (int) isset($_POST['shortener_is_enabled']);
             $_POST['branding'] = trim($_POST['branding']);
+            $_POST['branding_edit_link_is_enabled'] = (int) isset($_POST['branding_edit_link_is_enabled']);
             $_POST['biolinks_is_enabled'] = (int) isset($_POST['biolinks_is_enabled']);
             $_POST['biolinks_report_is_enabled'] = (int) isset($_POST['biolinks_report_is_enabled']);
             $_POST['biolinks_templates_is_enabled'] = (int) isset($_POST['biolinks_templates_is_enabled']);
@@ -2036,6 +2037,7 @@ class AdminSettings extends Controller {
                 'example_url' => $_POST['example_url'] ?? '',
                 'random_url_length' => $_POST['random_url_length'],
                 'branding' => $_POST['branding'],
+                'branding_edit_link_is_enabled' => $_POST['branding_edit_link_is_enabled'],
                 'shortener_is_enabled' => $_POST['shortener_is_enabled'],
                 'biolinks_is_enabled' => $_POST['biolinks_is_enabled'],
                 'biolinks_report_is_enabled' => $_POST['biolinks_report_is_enabled'],
