@@ -2237,7 +2237,7 @@ class BiolinkBlockAjax extends Controller {
 
     private function create_biolink_custom_html() {
         $_POST['link_id'] = (int) $_POST['link_id'];
-        $_POST['html'] = mb_substr(trim($_POST['html']), 0, $this->biolink_blocks['custom_html']['max_length']);
+        $_POST['html'] = trim($_POST['html']);
 
         if(!$link = db()->where('link_id', $_POST['link_id'])->where('user_id', $this->user->user_id)->getOne('links')) {
             Response::json(l('global.error_message.basic'), 'error');
@@ -2278,7 +2278,7 @@ class BiolinkBlockAjax extends Controller {
 
     private function update_biolink_custom_html() {
         $_POST['biolink_block_id'] = (int) $_POST['biolink_block_id'];
-        $_POST['html'] = mb_substr(trim($_POST['html']), 0, $this->biolink_blocks['custom_html']['max_length']);
+        $_POST['html'] = trim($_POST['html']);
 
         /* Display settings */
         $this->process_display_settings();
