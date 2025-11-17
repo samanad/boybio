@@ -4,15 +4,28 @@ This guide will help you pull the latest changes from git on your ISPmanager Deb
 
 ## Quick Start - Connect to Repository
 
+**Important:** The git repository should be in the `boybio.net` directory (root), and the `product` folder should be inside it.
+
+**Structure:**
+```
+boybio.net/
+  .git/              (git repository root)
+  product/           (application files)
+    app/
+    themes/
+    ...
+```
+
 If this is your first time connecting to the repository, run these commands:
 
 ```bash
 # 1. SSH into your server
 ssh username@your-server-ip
 
-# 2. Navigate to your project directory
-cd /var/www/username/data/www/boybio.net/product
+# 2. Navigate to your domain root directory (NOT the product folder)
+cd /var/www/username/data/www/boybio.net
 # (adjust path - find it in ISPmanager: WWW → WWW-domains → Path column)
+# Make sure you're in boybio.net, NOT boybio.net/product
 
 # 3. Check if git is installed
 git --version
@@ -53,20 +66,38 @@ ssh username@your-domain.com
 
 ## Step 2: Navigate to Your Project Directory
 
+**Important:** Navigate to the domain root (`boybio.net`), NOT the `product` folder. The git repository should be at the domain root level.
+
 In ISPmanager, your project is typically located in one of these directories:
-- `/var/www/username/data/www/your-domain.com/`
-- `/home/username/example.com/`
-- `/var/www/username/example.com/`
+- `/var/www/username/data/www/boybio.net/` ← **This is where git should be**
+- `/home/username/boybio.net/`
+- `/var/www/username/boybio.net/`
 
 **To find your exact path:**
 1. Log into ISPmanager web interface
 2. Go to **WWW** → **WWW-domains**
 3. Find your domain and check the **Path** column
+4. Use that path directly (don't add `/product` to it)
 
 **Example:**
 ```bash
-cd /var/www/username/data/www/boybio.net/product
-# or wherever your project root is
+# Correct - git repository root
+cd /var/www/username/data/www/boybio.net
+
+# Wrong - don't go into product folder
+# cd /var/www/username/data/www/boybio.net/product
+```
+
+**Directory Structure:**
+```
+boybio.net/                    ← Git repository root (initialize git here)
+├── .git/                      ← Git folder
+├── product/                   ← Application files (pulled from git)
+│   ├── app/
+│   ├── themes/
+│   └── ...
+├── README.md
+└── ...
 ```
 
 ---
@@ -98,9 +129,10 @@ git --version
 sudo apt-get update
 sudo apt-get install git -y
 
-# Navigate to your project directory (if not already there)
-cd /var/www/username/data/www/boybio.net/product
+# Navigate to your domain root directory (NOT the product folder)
+cd /var/www/username/data/www/boybio.net
 # (adjust path based on your ISPmanager setup)
+# Important: This should be the domain root, not the product subfolder
 
 # Initialize git repository (if not already initialized)
 git init
@@ -263,10 +295,10 @@ git checkout origin/backup -- path/to/file.php
 
 ## Quick One-Liner Command
 
-If you're already in the project directory and on the backup branch:
+If you're already in the domain root directory (`boybio.net`) and on the backup branch:
 
 ```bash
-git pull origin backup && echo "Pull completed successfully!"
+cd /var/www/username/data/www/boybio.net && git pull origin backup && echo "Pull completed successfully!"
 ```
 
 ---
@@ -283,7 +315,7 @@ nano ~/pull-updates.sh
 Add this content:
 ```bash
 #!/bin/bash
-cd /var/www/username/data/www/boybio.net/product
+cd /var/www/username/data/www/boybio.net
 git pull origin backup
 echo "Updates pulled successfully!"
 ```
@@ -328,6 +360,27 @@ The latest pull includes these changes:
   ```bash
   php /var/www/username/data/www/boybio.net/product/clear_cache.php
   ```
+
+---
+
+## Important: Directory Structure
+
+**Correct Structure:**
+```
+/var/www/username/data/www/boybio.net/     ← Git repository root (.git folder here)
+├── .git/
+├── product/                               ← Application files
+│   ├── app/
+│   ├── themes/
+│   └── ...
+├── README.md
+└── ...
+```
+
+**When pulling updates:**
+- Always run `git pull` from `boybio.net/` (domain root)
+- The `product/` folder will be updated automatically
+- Your web server should point to `boybio.net/product/` as the document root
 
 ---
 
