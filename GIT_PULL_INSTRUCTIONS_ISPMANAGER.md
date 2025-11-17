@@ -32,6 +32,11 @@ git --version
 
 # 4. If not a git repo, initialize and connect:
 git init
+
+# If you get "dubious ownership" error, fix it first:
+git config --global --add safe.directory /var/www/www-root/data/www/boybio.net
+
+# Add remote repository
 git remote add origin https://github.com/samanad/boybio.git
 git fetch origin
 git checkout -b backup origin/backup
@@ -136,6 +141,9 @@ cd /var/www/username/data/www/boybio.net
 
 # Initialize git repository (if not already initialized)
 git init
+
+# Fix "dubious ownership" error if it occurs (replace path with your actual path)
+git config --global --add safe.directory /var/www/www-root/data/www/boybio.net
 
 # Add the remote repository
 git remote add origin https://github.com/samanad/boybio.git
@@ -246,6 +254,22 @@ chmod +x /var/www/username/data/www/boybio.net/product/clear_cache.php
 
 ## Troubleshooting
 
+### Issue: "dubious ownership" error
+
+**Error message:**
+```
+fatal: detected dubious ownership in repository at '/var/www/www-root/data/www/boybio.net'
+```
+
+**Solution:**
+```bash
+# Add the directory to git's safe.directory list
+git config --global --add safe.directory /var/www/www-root/data/www/boybio.net
+
+# Or if you want to allow all directories (less secure):
+git config --global --add safe.directory '*'
+```
+
 ### Issue: "Permission denied" errors
 
 **Solution:**
@@ -269,6 +293,72 @@ git init
 git remote add origin https://github.com/samanad/boybio.git
 git fetch origin
 git checkout -b backup origin/backup
+```
+
+### Issue: "Untracked working tree files would be overwritten by merge"
+
+**Error message:**
+```
+error: The following untracked working tree files would be overwritten by merge:
+        product/app/controllers/BiolinkBlockAjax.php
+        ...
+Please move or remove them before you merge.
+```
+
+**Solution (Option 1 - Backup and Remove):**
+```bash
+# Create a backup directory
+mkdir -p ~/backup_$(date +%Y%m%d)
+
+# Backup the files
+cp -r product/app/controllers/BiolinkBlockAjax.php ~/backup_$(date +%Y%m%d)/ 2>/dev/null || true
+cp -r product/app/controllers/admin/AdminSettings.php ~/backup_$(date +%Y%m%d)/ 2>/dev/null || true
+# (or backup all at once)
+find product -name "*.php" -type f > ~/backup_$(date +%Y%m%d)/file_list.txt
+
+# Remove the untracked files that conflict
+rm -f product/app/controllers/BiolinkBlockAjax.php
+rm -f product/app/controllers/admin/AdminSettings.php
+rm -f product/app/core/Response.php
+rm -f product/app/helpers/others.php
+rm -f product/app/includes/admin_socials.php
+rm -f product/app/languages/admin/english#en.php
+rm -f product/themes/altum/views/admin/settings/partials/links.php
+rm -f product/themes/altum/views/admin/settings/partials/security.php
+rm -f product/themes/altum/views/admin/settings/partials/socials.php
+rm -f product/themes/altum/views/admin/user-update/index.php
+rm -f product/themes/altum/views/l/biolink_wrapper.php
+rm -f product/themes/altum/views/l/partials/biolink.php
+rm -f product/themes/altum/views/link/settings/biolink_blocks/custom_html/custom_html_create_modal.php
+rm -f product/themes/altum/views/link/settings/biolink_blocks/custom_html/custom_html_update_form.php
+rm -f product/themes/altum/views/partials/app_sidebar.php
+
+# Now try pulling again
+git pull origin backup
+```
+
+**Solution (Option 2 - Remove All Untracked Files):**
+```bash
+# Remove all untracked files (be careful!)
+git clean -fd
+
+# Then pull
+git pull origin backup
+```
+
+**Solution (Option 3 - Stash and Pull):**
+```bash
+# Add all files to staging (including untracked)
+git add -A
+
+# Stash everything
+git stash
+
+# Pull
+git pull origin backup
+
+# If you had important local changes, restore them
+git stash pop
 ```
 
 ### Issue: Merge conflicts
