@@ -2,6 +2,37 @@
 
 This guide will help you pull the latest changes from git on your ISPmanager Debian server.
 
+## Quick Start - Connect to Repository
+
+If this is your first time connecting to the repository, run these commands:
+
+```bash
+# 1. SSH into your server
+ssh username@your-server-ip
+
+# 2. Navigate to your project directory
+cd /var/www/username/data/www/boybio.net/product
+# (adjust path - find it in ISPmanager: WWW → WWW-domains → Path column)
+
+# 3. Check if git is installed
+git --version
+
+# 4. If not a git repo, initialize and connect:
+git init
+git remote add origin https://github.com/samanad/boybio.git
+git fetch origin
+git checkout -b backup origin/backup
+
+# 5. If already a git repo, just check remote:
+git remote -v
+# Should show: https://github.com/samanad/boybio.git
+
+# 6. Pull latest changes
+git pull origin backup
+```
+
+---
+
 ## Prerequisites
 
 - SSH access to your server
@@ -40,7 +71,9 @@ cd /var/www/username/data/www/boybio.net/product
 
 ---
 
-## Step 3: Check Current Git Status
+## Step 3: Connect to Git Repository
+
+### Option A: If Git Repository Already Exists
 
 ```bash
 # Check if you're in a git repository
@@ -51,6 +84,61 @@ git branch
 
 # Check remote repository
 git remote -v
+```
+
+If you see the remote URL `https://github.com/samanad/boybio.git`, you're already connected! Skip to Step 4.
+
+### Option B: If Git Repository Doesn't Exist (First Time Setup)
+
+```bash
+# Check if git is installed
+git --version
+
+# If not installed, install it:
+sudo apt-get update
+sudo apt-get install git -y
+
+# Navigate to your project directory (if not already there)
+cd /var/www/username/data/www/boybio.net/product
+# (adjust path based on your ISPmanager setup)
+
+# Initialize git repository (if not already initialized)
+git init
+
+# Add the remote repository
+git remote add origin https://github.com/samanad/boybio.git
+
+# Verify remote was added
+git remote -v
+
+# Fetch from remote
+git fetch origin
+
+# Checkout the backup branch
+git checkout -b backup origin/backup
+
+# Or if branch already exists locally:
+git checkout backup
+git branch --set-upstream-to=origin/backup backup
+```
+
+### Option C: If Remote is Wrong or Missing
+
+```bash
+# Remove existing remote (if any)
+git remote remove origin
+
+# Add correct remote
+git remote add origin https://github.com/samanad/boybio.git
+
+# Verify
+git remote -v
+
+# Fetch branches
+git fetch origin
+
+# Switch to backup branch
+git checkout backup
 ```
 
 ---
