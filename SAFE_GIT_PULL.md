@@ -5,6 +5,7 @@
 **NEVER run `git clean -fd` on a production server!** This command deletes ALL untracked files and directories, including:
 - `product/config.php` (database credentials)
 - `product/uploads/` (user uploads, logos, files)
+- `product/plugins/` (plugin files and configurations)
 - Custom language translations
 - Any other local files not in git
 
@@ -116,6 +117,7 @@ These files are protected by `.gitignore` and should NEVER be deleted:
 - `product/config.php` - Database credentials
 - `product/uploads/` - All user uploads, logos, files
 - `product/uploads/cache/` - Cache files (can be cleared, but directory should exist)
+- `product/plugins/` - Plugin files and configurations (may contain local customizations)
 - Custom language files in `product/app/languages/` (if you have custom translations)
 
 ## 📋 Quick Reference: Safe Pull Commands

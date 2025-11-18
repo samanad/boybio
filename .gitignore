@@ -12,6 +12,9 @@ product/uploads/cache/
 product/config.php
 product/app/config/config.php
 
+# Plugins folder (may contain local customizations and configs)
+product/plugins/
+
 # IDE files
 .idea/
 .vscode/

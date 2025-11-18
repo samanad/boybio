@@ -21,6 +21,11 @@ if [ ! -d "product/uploads" ]; then
     exit 1
 fi
 
+if [ ! -d "product/plugins" ]; then
+    echo "ERROR: plugins directory is missing! Aborting."
+    exit 1
+fi
+
 echo "✓ Safety checks passed"
 echo ""
 
@@ -108,6 +113,12 @@ fi
 
 if [ ! -d "product/uploads" ]; then
     echo "ERROR: uploads directory was deleted during pull! This should never happen."
+    echo "Please restore from backup immediately."
+    exit 1
+fi
+
+if [ ! -d "product/plugins" ]; then
+    echo "ERROR: plugins directory was deleted during pull! This should never happen."
     echo "Please restore from backup immediately."
     exit 1
 fi
