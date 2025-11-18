@@ -8,7 +8,7 @@
     </div>
 
     <div class="form-group">
-        <label for="biolink_edit_allowed_ip"><i class="fas fa-fw fa-sm fa-edit text-muted mr-1"></i> <?= l('admin_settings.security.biolink_edit_allowed_ip') ?></label>
+        <label for="biolink_edit_allowed_ip"><i class="fas fa-fw fa-sm fa-shield-alt text-muted mr-1"></i> <?= l('admin_settings.security.biolink_edit_allowed_ip') ?></label>
         <input type="text" id="biolink_edit_allowed_ip" name="biolink_edit_allowed_ip" class="form-control" value="<?= isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip) ? settings()->security->biolink_edit_allowed_ip : '' ?>" placeholder="165.22.58.120" />
         <small class="form-text text-muted"><?= l('admin_settings.security.biolink_edit_allowed_ip_help') ?></small>
     </div>
