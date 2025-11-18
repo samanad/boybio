@@ -9,6 +9,7 @@ product/uploads/
 product/uploads/cache/
 
 # Configuration files with sensitive data
+product/config.php
 product/app/config/config.php
 
 # IDE files
