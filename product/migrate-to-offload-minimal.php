@@ -91,7 +91,7 @@ if(!$offload_settings || !isset($offload_settings->uploads_url) || empty($offloa
     die("ERROR: Offload is not configured. Please configure offload settings in Admin Panel first.\n");
 }
 
-/* Check if offload plugin is active (optional check - if offload settings exist, we can proceed) */
+/* Check if offload plugin is active */
 $plugins_query = "SELECT `value` FROM `settings` WHERE `key` = 'plugins'";
 $plugins_result = $database->query($plugins_query);
 $plugins_enabled = false;
@@ -99,16 +99,13 @@ $plugins_enabled = false;
 if($plugins_result && $plugins_result->num_rows > 0) {
     $plugins_row = $plugins_result->fetch_assoc();
     $plugins_data = json_decode($plugins_row['value']);
-    if(isset($plugins_data->offload) && ($plugins_data->offload == 1 || $plugins_data->offload === 'active')) {
+    if(isset($plugins_data->offload) && $plugins_data->offload == 1) {
         $plugins_enabled = true;
     }
 }
 
-/* If plugin is not marked as active but offload settings are configured, warn but continue */
 if(!$plugins_enabled) {
-    echo "⚠️  WARNING: Offload plugin may not be marked as active in database.\n";
-    echo "   However, offload settings are configured, so proceeding with migration...\n";
-    echo "   (You may want to enable the plugin in Admin Panel after migration)\n\n";
+    die("ERROR: Offload plugin is not active. Please enable it in Admin Panel first.\n");
 }
 
 echo "=== Migration to Offload Storage ===\n\n";
