@@ -32,6 +32,13 @@ if(!file_exists(ROOT_PATH . 'config.php')) {
 
 require_once ROOT_PATH . 'config.php';
 
+/* Load vendor autoloader for AWS SDK */
+if(file_exists(ROOT_PATH . 'vendor/autoload.php')) {
+    require_once ROOT_PATH . 'vendor/autoload.php';
+} else {
+    die("ERROR: vendor/autoload.php not found. Please run: composer install\n");
+}
+
 /* Check if AWS SDK is available */
 if(!class_exists('Aws\S3\S3Client')) {
     die("ERROR: AWS SDK not found. Please install via Composer: composer require aws/aws-sdk-php\n");
