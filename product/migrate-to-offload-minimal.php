@@ -57,17 +57,24 @@ if(!class_exists('Aws\S3\S3Client')) {
     die("ERROR: AWS SDK not found. Please install via Composer: composer require aws/aws-sdk-php\n");
 }
 
-/* Load minimal Database class */
-require_once APP_PATH . 'core/Database.php';
-require_once APP_PATH . 'helpers/MysqliDb.php';
-
-/* Initialize database */
-try {
-    \Altum\Database::initialize();
-    $database = \Altum\Database::$database;
-} catch (\Exception $e) {
-    die("ERROR: Database connection failed: " . $e->getMessage() . "\n");
+/* Connect to database directly using mysqli */
+if(!function_exists('mysqli_connect')) {
+    die("ERROR: mysqli extension is not available. Please enable it in PHP CLI configuration.\n");
 }
+
+mysqli_report(MYSQLI_REPORT_OFF);
+$database = @new mysqli(
+    DATABASE_SERVER,
+    DATABASE_USERNAME,
+    DATABASE_PASSWORD,
+    DATABASE_NAME
+);
+
+if($database->connect_error) {
+    die("ERROR: Database connection failed: " . $database->connect_error . "\n");
+}
+
+$database->set_charset('utf8mb4');
 
 /* Get offload settings from database */
 $settings_query = "SELECT `value` FROM `settings` WHERE `key` = 'offload'";
