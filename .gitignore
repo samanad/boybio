@@ -13,7 +13,11 @@ product/config.php
 product/app/config/config.php
 
 # Plugins folder (may contain local customizations and configs)
-product/plugins/
+# Ignore all plugin files by default, but allow config files to be tracked
+product/plugins/*
+!product/plugins/*/config.php
+!product/plugins/*/config.json
+!product/plugins/*/settings.json
 
 # IDE files
 .idea/
