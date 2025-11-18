@@ -16,6 +16,15 @@
  */
 
 define('ALTUMCODE', 66);
+
+/* Define constants needed before init.php */
+if(!defined('DEBUG')) {
+    define('DEBUG', false);
+}
+if(!defined('LOGGING')) {
+    define('LOGGING', false);
+}
+
 require_once __DIR__ . '/app/init.php';
 
 /* Check if offload is configured */
