@@ -19,11 +19,11 @@ define('ROOT_PATH', realpath(__DIR__ . '/..') . '/');
 const APP_PATH = ROOT_PATH . 'app/';
 const PLUGINS_PATH = ROOT_PATH . 'plugins/';
 const THEME_PATH = ROOT_PATH . 'themes/altum/';
-const THEME_URL_PATH = 'themes/altum/';
+const THEME_URL_PATH = '/themes/altum/';
 const ASSETS_PATH = THEME_PATH . 'assets/';
 const ASSETS_URL_PATH = THEME_URL_PATH . 'assets/';
 const UPLOADS_PATH = ROOT_PATH . 'uploads/';
-const UPLOADS_URL_PATH = 'uploads/';
+const UPLOADS_URL_PATH = '/uploads/';
 const CACHE_DEFAULT_SECONDS = 2592000;
 
 /* Starting to include the required files */
