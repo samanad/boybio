@@ -2,22 +2,48 @@
 product/vendor/
 
 # Uploads and user files
-product/uploads/
+# Ignore most uploads, but allow static assets (logos, favicons) that existed before offload storage
+product/uploads/*
+# Allow static assets in main/ folder (logos, favicons, etc.)
+!product/uploads/main/
+# Allow PWA assets
+!product/uploads/pwa/
+# Allow favicons folder
+!product/uploads/favicons/
+# But ignore cache
+product/uploads/cache/
+# Ignore user-generated content
+product/uploads/users/
+product/uploads/files/
+product/uploads/avatars/
+product/uploads/block_images/
+product/uploads/block_thumbnail_images/
+product/uploads/backgrounds/
+product/uploads/products_files/
+product/uploads/vcards_avatars/
+product/uploads/splash_pages/
+product/uploads/blog/
+product/uploads/offline_payment_proofs/
+product/uploads/chats_assistants/
+product/uploads/chats_images/
+product/uploads/images/
+product/uploads/qr_code/
+product/uploads/qr_code_logo/
+product/uploads/qr_code_default_image/
+product/uploads/service_workers/
+product/uploads/dynamic_og_images/
+product/uploads/transcriptions/
 
 # Cache files
 *.cache
-product/uploads/cache/
 
 # Configuration files with sensitive data
 product/config.php
 product/app/config/config.php
 
-# Plugins folder (may contain local customizations and configs)
-# Ignore all plugin files by default, but allow config files to be tracked
-product/plugins/*
-!product/plugins/*/config.php
-!product/plugins/*/config.json
-!product/plugins/*/settings.json
+# Plugins folder - allow entire folder to be tracked
+# (Remove this line if you want to track plugins)
+# product/plugins/
 
 # IDE files
 .idea/
