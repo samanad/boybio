@@ -15,6 +15,11 @@
  * 3. After successful upload, you can optionally delete local files
  */
 
+/* Only allow CLI execution */
+if(php_sapi_name() !== 'cli') {
+    die("This script can only be run from command line.\n");
+}
+
 define('ALTUMCODE', 66);
 
 /* Define constants needed before init.php */
@@ -25,7 +30,16 @@ if(!defined('LOGGING')) {
     define('LOGGING', false);
 }
 
-require_once __DIR__ . '/app/init.php';
+/* Suppress web output and enable error reporting for CLI */
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+/* Try to load init.php with error handling */
+try {
+    require_once __DIR__ . '/app/init.php';
+} catch (\Throwable $e) {
+    die("ERROR: Failed to load application: " . $e->getMessage() . "\n" . $e->getTraceAsString() . "\n");
+}
 
 /* Check if offload is configured */
 if(!\Altum\Plugin::is_active('offload') || !settings()->offload->uploads_url) {
