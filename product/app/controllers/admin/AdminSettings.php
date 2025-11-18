@@ -303,12 +303,12 @@ class AdminSettings extends Controller {
             }
 
             if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
-                $value = json_encode([
-                    'csrf_strict_validation_is_enabled' => isset($_POST['csrf_strict_validation_is_enabled']),
+            $value = json_encode([
+                'csrf_strict_validation_is_enabled' => isset($_POST['csrf_strict_validation_is_enabled']),
                     'biolink_edit_allowed_ip' => $_POST['biolink_edit_allowed_ip'],
-                ]);
+            ]);
 
-                $this->update_settings('security', $value);
+            $this->update_settings('security', $value);
             }
         }
     }
