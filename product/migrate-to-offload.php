@@ -23,8 +23,9 @@ if(php_sapi_name() !== 'cli') {
 define('ALTUMCODE', 66);
 
 /* Define constants needed before init.php */
+/* Set DEBUG=true for CLI to prevent HTML error pages */
 if(!defined('DEBUG')) {
-    define('DEBUG', false);
+    define('DEBUG', true);
 }
 if(!defined('LOGGING')) {
     define('LOGGING', false);
