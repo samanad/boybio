@@ -44,31 +44,26 @@ if(!class_exists('Aws\S3\S3Client')) {
     die("ERROR: AWS SDK not found. Please install via Composer: composer require aws/aws-sdk-php\n");
 }
 
-/* Connect to database */
+/* Connect to database using PDO (more universally available) */
 try {
-    $mysqli = new mysqli(
-        DATABASE_SERVER,
-        DATABASE_USERNAME,
-        DATABASE_PASSWORD,
-        DATABASE_NAME
-    );
-    
-    if($mysqli->connect_error) {
-        die("ERROR: Database connection failed: " . $mysqli->connect_error . "\n");
-    }
-} catch (\Exception $e) {
+    $dsn = "mysql:host=" . DATABASE_SERVER . ";dbname=" . DATABASE_NAME . ";charset=utf8mb4";
+    $pdo = new PDO($dsn, DATABASE_USERNAME, DATABASE_PASSWORD, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ]);
+} catch (PDOException $e) {
     die("ERROR: Database connection failed: " . $e->getMessage() . "\n");
 }
 
 /* Get offload settings from database */
 $settings_query = "SELECT `value` FROM `settings` WHERE `key` = 'offload'";
-$result = $mysqli->query($settings_query);
+$stmt = $pdo->query($settings_query);
+$row = $stmt->fetch();
 
-if(!$result || $result->num_rows == 0) {
+if(!$row) {
     die("ERROR: Offload settings not found in database. Please configure offload in Admin Panel first.\n");
 }
 
-$row = $result->fetch_assoc();
 $offload_settings = json_decode($row['value']);
 
 if(!$offload_settings || !isset($offload_settings->uploads_url) || empty($offload_settings->uploads_url)) {
@@ -77,11 +72,11 @@ if(!$offload_settings || !isset($offload_settings->uploads_url) || empty($offloa
 
 /* Check if offload plugin is active */
 $plugins_query = "SELECT `value` FROM `settings` WHERE `key` = 'plugins'";
-$plugins_result = $mysqli->query($plugins_query);
+$plugins_stmt = $pdo->query($plugins_query);
+$plugins_row = $plugins_stmt->fetch();
 $plugins_enabled = false;
 
-if($plugins_result && $plugins_result->num_rows > 0) {
-    $plugins_row = $plugins_result->fetch_assoc();
+if($plugins_row) {
     $plugins_data = json_decode($plugins_row['value']);
     if(isset($plugins_data->offload) && $plugins_data->offload == 1) {
         $plugins_enabled = true;
@@ -319,6 +314,4 @@ if(isset($argv[1]) && $argv[1] === '--delete-local') {
     echo "\n✓ Deleted $deleted directories\n";
     echo "\n⚠️  IMPORTANT: Make sure your system is configured to load from offload storage!\n";
 }
-
-$mysqli->close();
 
