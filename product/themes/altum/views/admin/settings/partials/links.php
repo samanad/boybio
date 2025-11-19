@@ -320,14 +320,17 @@
                 <option value="everyone" <?= settings()->links->directory_access == 'everyone' ? 'selected="selected"' : null ?>><?= l('admin_settings.links.directory_access_everyone') ?></option>
                 <option value="users" <?= settings()->links->directory_access == 'users' ? 'selected="selected"' : null ?>><?= l('admin_settings.links.directory_access_users') ?></option>
             </select>
+            <small class="form-text text-muted"><?= l('admin_settings.links.directory_access_help') ?></small>
         </div>
 
         <div class="form-group">
             <label for="directory_display"><?= l('admin_settings.links.directory_display') ?></label>
             <select id="directory_display" name="directory_display" class="custom-select">
-                <option value="all" <?= settings()->links->directory_display == 'all' ? 'selected="selected"' : null ?>><?= l('global.all') ?></option>
+                <option value="all" <?= settings()->links->directory_display == 'all' ? 'selected="selected"' : null ?>><?= l('admin_settings.links.directory_display_all') ?></option>
                 <option value="verified" <?= settings()->links->directory_display == 'verified' ? 'selected="selected"' : null ?>><?= l('admin_settings.links.directory_display_verified') ?></option>
+                <option value="explore_things" <?= settings()->links->directory_display == 'explore_things' ? 'selected="selected"' : null ?>><?= l('admin_settings.links.directory_display_explore_things') ?></option>
             </select>
+            <small class="form-text text-muted"><?= l('admin_settings.links.directory_display_help') ?></small>
         </div>
     </div>
 

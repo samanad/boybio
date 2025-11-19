@@ -1993,7 +1993,7 @@ class AdminSettings extends Controller {
             $_POST['splash_page_auto_redirect'] = (int) isset($_POST['splash_page_auto_redirect']);
             $_POST['splash_page_link_unlock_seconds'] = (int) ($_POST['splash_page_link_unlock_seconds'] ?? 0);
             $_POST['directory_is_enabled'] = (int) isset($_POST['directory_is_enabled']);
-            $_POST['directory_display'] = in_array($_POST['directory_display'], ['all', 'verified']) ? $_POST['directory_display'] : 'all';
+            $_POST['directory_display'] = in_array($_POST['directory_display'], ['all', 'verified', 'explore_things']) ? $_POST['directory_display'] : 'all';
             $_POST['directory_access'] = in_array($_POST['directory_access'], ['everyone', 'users']) ? $_POST['directory_access'] : 'everyone';
             $_POST['domains_is_enabled'] = (int) isset($_POST['domains_is_enabled']);
             $_POST['projects_is_enabled'] = (int) isset($_POST['projects_is_enabled']);

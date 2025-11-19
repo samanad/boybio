@@ -41,14 +41,25 @@ class Directory extends Controller {
         $is_user = is_logged_in() && $user && $user->type != 1;
         
         if($is_admin) {
-            /* Admin sees only verified badge links */
+            /* Admin always sees only verified badge links (requested by users) */
             $directory_display_where = 'AND `is_verified` = 1';
         } elseif($is_user) {
-            /* Users see explore things links */
+            /* Users always see explore things links (set by admin) */
             $directory_display_where = 'AND `is_explore_things` = 1';
         } else {
             /* Guests see links based on directory_display setting */
-            $directory_display_where = settings()->links->directory_display == 'all' ? null : 'AND `is_verified` = 1';
+            switch(settings()->links->directory_display) {
+                case 'verified':
+                    $directory_display_where = 'AND `is_verified` = 1';
+                    break;
+                case 'explore_things':
+                    $directory_display_where = 'AND `is_explore_things` = 1';
+                    break;
+                case 'all':
+                default:
+                    $directory_display_where = null;
+                    break;
+            }
         }
 
         /* Prepare the paginator */
