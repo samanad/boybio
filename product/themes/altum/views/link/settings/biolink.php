@@ -336,6 +336,33 @@
                                 </div>
                             </div>
 
+                            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#explore_things_container" aria-expanded="false" aria-controls="explore_things_container">
+                                <i class="fas fa-fw fa-star fa-sm mr-1"></i> <?= l('link.settings.explore_things_header') ?>
+                            </button>
+
+                            <div class="collapse" id="explore_things_container" data-parent="#settings">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-fw fa-info-circle mr-1"></i>
+                                    <?= l('link.settings.explore_things_help') ?>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="custom-control custom-switch">
+                                        <input 
+                                            type="checkbox" 
+                                            class="custom-control-input" 
+                                            id="explore_things_status"
+                                            disabled
+                                            <?= ($data->link->is_explore_things ?? 0) ? 'checked="checked"' : null ?>
+                                        />
+                                        <label class="custom-control-label" for="explore_things_status">
+                                            <?= l('link.settings.explore_things_status') ?>
+                                        </label>
+                                    </div>
+                                    <small class="form-text text-muted"><?= l('link.settings.explore_things_status_help') ?></small>
+                                </div>
+                            </div>
+
                             <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#branding_container" aria-expanded="false" aria-controls="branding_container">
                                 <i class="fas fa-fw fa-random fa-sm mr-1"></i> <?= l('link.settings.branding_header') ?>
                             </button>

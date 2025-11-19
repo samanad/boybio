@@ -25,7 +25,7 @@ class AdminLinks extends Controller {
     public function index() {
 
         /* Prepare the filtering system */
-        $filters = (new \Altum\Filters(['is_enabled', 'link_id', 'user_id', 'project_id', 'domain_id', 'type', 'is_verified', 'biolink_theme_id'], ['url', 'location_url'], ['link_id', 'last_datetime', 'datetime', 'url', 'location_url', 'clicks']));
+        $filters = (new \Altum\Filters(['is_enabled', 'link_id', 'user_id', 'project_id', 'domain_id', 'type', 'is_verified', 'is_explore_things', 'biolink_theme_id'], ['url', 'location_url'], ['link_id', 'last_datetime', 'datetime', 'url', 'location_url', 'clicks']));
         $preferences = isset($this->user->preferences) ? $this->user->preferences : null;
         $filters->set_default_order_by(($preferences && isset($preferences->links_default_order_by)) ? $preferences->links_default_order_by : 'link_id', ($preferences && isset($preferences->default_order_type)) ? $preferences->default_order_type : settings()->main->default_order_type);
         $filters->set_default_results_per_page(($preferences && isset($preferences->default_results_per_page)) ? $preferences->default_results_per_page : settings()->main->default_results_per_page);
@@ -220,6 +220,43 @@ class AdminLinks extends Controller {
 
             db()->where('link_id', $link->link_id)->update('links', [
                 'is_verified' => (int) !$link->is_verified,
+            ]);
+
+            /* Clear the cache */
+            cache()->deleteItem('link?link_id=' . $link->link_id);
+            cache()->deleteItem('biolink_blocks?link_id=' . $link->link_id);
+            cache()->deleteItemsByTag('link_id=' . $link->link_id);
+
+            /* Set a nice success message */
+            Alerts::add_success(l('global.success_message.update2'));
+
+        }
+
+        redirect('admin/links');
+    }
+
+    public function is_explore_things() {
+
+        $link_id = isset($this->params[0]) ? (int) $this->params[0] : null;
+
+        //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
+
+        if(!\Altum\Csrf::check()) {
+            Alerts::add_error(l('global.error_message.invalid_csrf_token'));
+        }
+
+        if(!$link = db()->where('link_id', $link_id)->getOne('links', ['link_id', 'type', 'is_explore_things'])) {
+            redirect('admin/links');
+        }
+
+        if($link->type != 'biolink') {
+            redirect('admin/links');
+        }
+
+        if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
+
+            db()->where('link_id', $link->link_id)->update('links', [
+                'is_explore_things' => (int) !$link->is_explore_things,
             ]);
 
             /* Clear the cache */

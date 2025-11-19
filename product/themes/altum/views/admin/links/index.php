@@ -93,6 +93,15 @@
                         </div>
 
                         <div class="form-group px-4">
+                            <label for="filters_is_explore_things" class="small"><?= l('admin_links.filters.is_explore_things') ?></label>
+                            <select name="is_explore_things" id="filters_is_explore_things" class="custom-select custom-select-sm">
+                                <option value=""><?= l('global.all') ?></option>
+                                <option value="1" <?= isset($data->filters->filters['is_explore_things']) && $data->filters->filters['is_explore_things'] == '1' ? 'selected="selected"' : null ?>><?= l('global.yes') ?></option>
+                                <option value="0" <?= isset($data->filters->filters['is_explore_things']) && $data->filters->filters['is_explore_things'] == '0' ? 'selected="selected"' : null ?>><?= l('global.no') ?></option>
+                            </select>
+                        </div>
+
+                        <div class="form-group px-4">
                             <label for="filters_order_by" class="small"><?= l('global.filters.order_by') ?></label>
                             <select name="order_by" id="filters_order_by" class="custom-select custom-select-sm">
                                 <option value="link_id" <?= $data->filters->order_by == 'link_id' ? 'selected="selected"' : null ?>><?= l('global.id') ?></option>
@@ -270,7 +279,7 @@
 
                 <td>
                     <div class="d-flex justify-content-end">
-                        <?= include_view(THEME_PATH . 'views/admin/links/admin_link_dropdown_button.php', ['id' => $row->link_id, 'is_verified' => $row->is_verified, 'type' => $row->type, 'resource_name' => $row->url]) ?>
+                        <?= include_view(THEME_PATH . 'views/admin/links/admin_link_dropdown_button.php', ['id' => $row->link_id, 'is_verified' => $row->is_verified, 'is_explore_things' => $row->is_explore_things ?? 0, 'type' => $row->type, 'resource_name' => $row->url]) ?>
                     </div>
                 </td>
             </tr>

@@ -31,11 +31,25 @@ class Directory extends Controller {
 
         /* Prepare the filtering system */
         $filters = (new \Altum\Filters(['is_verified'], ['url'], ['clicks', 'url']));
-        $filters->set_default_order_by('clicks', $this->user->preferences->default_order_type ?? settings()->main->default_order_type);
-        $filters->set_default_results_per_page($this->user->preferences->default_results_per_page ?? settings()->main->default_results_per_page);
+        $user = \Altum\Authentication::$user ?? null;
+        $user_preferences = $user->preferences ?? null;
+        $filters->set_default_order_by('clicks', $user_preferences->default_order_type ?? settings()->main->default_order_type);
+        $filters->set_default_results_per_page($user_preferences->default_results_per_page ?? settings()->main->default_results_per_page);
 
-        /* Which bio link pages to display? */
-        $directory_display_where = settings()->links->directory_display == 'all' ? null : 'AND `is_verified` = 1';
+        /* Which bio link pages to display based on user role? */
+        $is_admin = is_logged_in() && $user && $user->type == 1;
+        $is_user = is_logged_in() && $user && $user->type != 1;
+        
+        if($is_admin) {
+            /* Admin sees only verified badge links */
+            $directory_display_where = 'AND `is_verified` = 1';
+        } elseif($is_user) {
+            /* Users see explore things links */
+            $directory_display_where = 'AND `is_explore_things` = 1';
+        } else {
+            /* Guests see links based on directory_display setting */
+            $directory_display_where = settings()->links->directory_display == 'all' ? null : 'AND `is_verified` = 1';
+        }
 
         /* Prepare the paginator */
         $total_rows = database()->query("SELECT COUNT(*) AS `total` FROM `links` WHERE `type` = 'biolink' AND `is_enabled` = 1 AND `links`.`directory_is_enabled` = 1 {$directory_display_where} {$filters->get_sql_where()}")->fetch_object()->total ?? 0;

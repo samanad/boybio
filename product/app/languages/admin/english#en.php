@@ -1883,7 +1883,10 @@ return [
     'admin_links.table.clicks' => 'Pageviews',
     'admin_links.add_verify' => 'Add verified status',
     'admin_links.remove_verify' => 'Remove verified status',
+    'admin_links.add_explore_things' => 'Add to Explore Things',
+    'admin_links.remove_explore_things' => 'Remove from Explore Things',
     'admin_links.filters.is_verified' => 'Verified biolink',
+    'admin_links.filters.is_explore_things' => 'Explore Things',
     'admin_links.link_id' => 'Link ID',
 
     'admin_biolinks_blocks.breadcrumb' => 'Biolinks blocks',

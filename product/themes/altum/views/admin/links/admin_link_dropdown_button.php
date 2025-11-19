@@ -12,6 +12,14 @@
             <?php else: ?>
                 <a href="<?= url('admin/links/is_verified/' . $data->id . '?' . \Altum\Csrf::get_url_query() . '&original_request=' . base64_encode(\Altum\Router::$original_request) . '&original_request_query=' . base64_encode(\Altum\Router::$original_request_query)) ?>" class="dropdown-item"><i class="fas fa-fw fa-sm fa-check mr-2"></i> <?= l('admin_links.add_verify') ?></a>
             <?php endif ?>
+            
+            <div class="dropdown-divider"></div>
+            
+            <?php if($data->is_explore_things ?? false): ?>
+                <a href="<?= url('admin/links/is_explore_things/' . $data->id . '?' . \Altum\Csrf::get_url_query() . '&original_request=' . base64_encode(\Altum\Router::$original_request) . '&original_request_query=' . base64_encode(\Altum\Router::$original_request_query)) ?>" class="dropdown-item"><i class="fas fa-fw fa-sm fa-times mr-2"></i> <?= l('admin_links.remove_explore_things') ?></a>
+            <?php else: ?>
+                <a href="<?= url('admin/links/is_explore_things/' . $data->id . '?' . \Altum\Csrf::get_url_query() . '&original_request=' . base64_encode(\Altum\Router::$original_request) . '&original_request_query=' . base64_encode(\Altum\Router::$original_request_query)) ?>" class="dropdown-item"><i class="fas fa-fw fa-sm fa-star mr-2"></i> <?= l('admin_links.add_explore_things') ?></a>
+            <?php endif ?>
         <?php endif ?>
 
         <a href="#" data-toggle="modal" data-target="#link_transfer_modal" data-link-id="<?= $data->id ?>" data-resource-name="<?= $data->resource_name ?>" class="dropdown-item"><i class="fas fa-fw fa-sm fa-shuffle mr-2"></i> <?= l('global.transfer') ?></a>
