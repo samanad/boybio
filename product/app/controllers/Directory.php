@@ -25,10 +25,6 @@ class Directory extends Controller {
             redirect('not-found');
         }
 
-        if(settings()->links->directory_access == 'users') {
-            \Altum\Authentication::guard();
-        }
-
         /* Prepare the filtering system */
         $filters = (new \Altum\Filters(['is_verified'], ['url'], ['clicks', 'url']));
         $user = \Altum\Authentication::$user ?? null;

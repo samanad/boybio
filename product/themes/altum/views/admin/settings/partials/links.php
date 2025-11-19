@@ -315,12 +315,11 @@
         </div>
 
         <div class="form-group">
-            <label for="directory_access"><?= l('admin_settings.links.directory_access') ?></label>
-            <select id="directory_access" name="directory_access" class="custom-select">
-                <option value="everyone" <?= settings()->links->directory_access == 'everyone' ? 'selected="selected"' : null ?>><?= l('admin_settings.links.directory_access_everyone') ?></option>
-                <option value="users" <?= settings()->links->directory_access == 'users' ? 'selected="selected"' : null ?>><?= l('admin_settings.links.directory_access_users') ?></option>
-            </select>
-            <small class="form-text text-muted"><?= l('admin_settings.links.directory_access_help') ?></small>
+            <label><?= l('admin_settings.links.directory_access') ?></label>
+            <div class="alert alert-info mb-0">
+                <i class="fas fa-fw fa-info-circle mr-1"></i>
+                <?= l('admin_settings.links.directory_access_help') ?>
+            </div>
         </div>
 
         <div class="form-group">
