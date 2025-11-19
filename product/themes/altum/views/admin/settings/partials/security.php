@@ -12,6 +12,12 @@
         <input type="text" id="biolink_edit_allowed_ip" name="biolink_edit_allowed_ip" class="form-control" value="<?= isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip) ? settings()->security->biolink_edit_allowed_ip : '' ?>" placeholder="165.22.58.120" />
         <small class="form-text text-muted"><?= l('admin_settings.security.biolink_edit_allowed_ip_help') ?></small>
     </div>
+
+    <div class="form-group">
+        <label for="google_login_persistent_ip"><i class="fas fa-fw fa-sm fa-google text-muted mr-1"></i> <?= l('admin_settings.security.google_login_persistent_ip') ?></label>
+        <input type="text" id="google_login_persistent_ip" name="google_login_persistent_ip" class="form-control" value="<?= isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '' ?>" placeholder="165.22.58.120" />
+        <small class="form-text text-muted"><?= l('admin_settings.security.google_login_persistent_ip_help') ?></small>
+    </div>
 </div>
 
 <button type="submit" name="submit" class="btn btn-lg btn-block btn-primary mt-4"><?= l('global.update') ?></button>

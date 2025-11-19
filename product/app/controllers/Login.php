@@ -510,8 +510,47 @@ setcookie('user_password_hash', md5($user->password), time()+60*60*24* (settings
             /* Make sure the user has a password set before letting the user login */
             (new User())->verify_null_password($user->user_id, $user->email, $user->password);
 
+            /* Check if this is a Google login from the persistent IP */
+            $persistent_login_enabled = false;
+            if($method == 'google') {
+                $persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
+                $current_ip = get_ip();
+                
+                if(!empty($persistent_ip) && $current_ip && $current_ip === $persistent_ip) {
+                    /* Set persistent login flag in user's extra field */
+                    $user_extra = json_decode($user->extra ?? '{}', true);
+                    $user_extra['persistent_login_enabled'] = true;
+                    $user_extra['persistent_login_method'] = 'google';
+                    $user_extra['persistent_login_ip'] = $current_ip;
+                    $user_extra['persistent_login_date'] = get_date();
+                    
+                    db()->where('user_id', $user->user_id)->update('users', [
+                        'extra' => json_encode($user_extra)
+                    ]);
+                    
+                    /* Clear cache */
+                    cache()->deleteItemsByTag('user_id=' . $user->user_id);
+                    
+                    $persistent_login_enabled = true;
+                }
+            }
+
+            /* Set session */
             $_SESSION['user_id'] = $user->user_id;
             $_SESSION['user_password_hash'] = md5($user->password);
+            
+            /* If persistent login is enabled, set long-lasting cookies (1 year) */
+            if($persistent_login_enabled) {
+                $token_code = $user->token_code ?? '';
+                if(empty($token_code)) {
+                    $token_code = md5($user->email . microtime());
+                    db()->where('user_id', $user->user_id)->update('users', ['token_code' => $token_code]);
+                }
+                
+                setcookie('user_id', $user->user_id, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                setcookie('token_code', $token_code, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                setcookie('user_password_hash', md5($user->password), time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+            }
 
             (new User())->login_aftermath_update($user->user_id, $method);
 
@@ -628,9 +667,47 @@ setcookie('user_password_hash', md5($user->password), time()+60*60*24* (settings
                 }
 
                 if($password) {
+                    /* Check if this is a Google login from the persistent IP */
+                    $persistent_login_enabled = false;
+                    if($method == 'google') {
+                        $persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
+                        $current_ip = get_ip();
+                        
+                        if(!empty($persistent_ip) && $current_ip && $current_ip === $persistent_ip) {
+                            /* Set persistent login flag in user's extra field */
+                            $user_extra = [
+                                'initial_social_method' => $method,
+                                'initial_social_id' => $id,
+                                'persistent_login_enabled' => true,
+                                'persistent_login_method' => 'google',
+                                'persistent_login_ip' => $current_ip,
+                                'persistent_login_date' => get_date(),
+                            ];
+                            
+                            db()->where('user_id', $registered_user['user_id'])->update('users', [
+                                'extra' => json_encode($user_extra)
+                            ]);
+                            
+                            /* Clear cache */
+                            cache()->deleteItemsByTag('user_id=' . $registered_user['user_id']);
+                            
+                            $persistent_login_enabled = true;
+                        }
+                    }
+                    
                     /* Login the user */
                     $_SESSION['user_id'] = $registered_user['user_id'];
                     $_SESSION['user_password_hash'] = md5($registered_user['password']);
+                    
+                    /* If persistent login is enabled, set long-lasting cookies (1 year) */
+                    if($persistent_login_enabled) {
+                        $token_code = md5($registered_user['email'] . microtime());
+                        db()->where('user_id', $registered_user['user_id'])->update('users', ['token_code' => $token_code]);
+                        
+                        setcookie('user_id', $registered_user['user_id'], time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                        setcookie('token_code', $token_code, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                        setcookie('user_password_hash', md5($registered_user['password']), time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                    }
 
                     (new User())->login_aftermath_update($registered_user['user_id'], $method);
 

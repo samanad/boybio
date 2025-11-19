@@ -296,16 +296,22 @@ class AdminSettings extends Controller {
             //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
 
             $_POST['biolink_edit_allowed_ip'] = input_clean($_POST['biolink_edit_allowed_ip'] ?? '');
+            $_POST['google_login_persistent_ip'] = input_clean($_POST['google_login_persistent_ip'] ?? '');
 
             /* Validate IP if provided */
             if(!empty($_POST['biolink_edit_allowed_ip']) && !filter_var($_POST['biolink_edit_allowed_ip'], FILTER_VALIDATE_IP)) {
                 Alerts::add_field_error('biolink_edit_allowed_ip', l('admin_settings.security.biolink_edit_allowed_ip_error'));
             }
 
+            if(!empty($_POST['google_login_persistent_ip']) && !filter_var($_POST['google_login_persistent_ip'], FILTER_VALIDATE_IP)) {
+                Alerts::add_field_error('google_login_persistent_ip', l('admin_settings.security.google_login_persistent_ip_error'));
+            }
+
             if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
             $value = json_encode([
                 'csrf_strict_validation_is_enabled' => isset($_POST['csrf_strict_validation_is_enabled']),
                     'biolink_edit_allowed_ip' => $_POST['biolink_edit_allowed_ip'],
+                    'google_login_persistent_ip' => $_POST['google_login_persistent_ip'],
             ]);
 
             $this->update_settings('security', $value);
