@@ -131,7 +131,7 @@
                                                 return;
                                             }
                                             
-                                            /* Store the original register URL before we potentially change the href */
+                                            /* Store the original register URL */
                                             let claim_button_default_href = <?= json_encode(url('register')) ?>;
                                             
                                             /* Create modal for claim URL status */
@@ -158,12 +158,26 @@
                                             
                                             /* Intercept claim button click */
                                             claim_button.addEventListener('click', function(e) {
-                                                e.preventDefault(); /* Always prevent default first */
+                                                e.preventDefault();
+                                                e.stopPropagation();
                                                 
                                                 let url_input = document.querySelector('#claim_url');
                                                 if(!url_input) {
                                                     /* If no input field, redirect to register */
                                                     window.location.href = claim_button_default_href;
+                                                    return;
+                                                }
+                                                
+                                                /* Check if get_slug function exists */
+                                                if(typeof get_slug !== 'function') {
+                                                    console.error('get_slug function not found');
+                                                    /* Fallback: redirect to register with raw input */
+                                                    let raw_url = url_input.value.trim();
+                                                    if(raw_url) {
+                                                        window.location.href = claim_button_default_href + '?claim-url=' + encodeURIComponent(raw_url);
+                                                    } else {
+                                                        window.location.href = claim_button_default_href;
+                                                    }
                                                     return;
                                                 }
                                                 
@@ -221,7 +235,8 @@
                                                             }
                                                         }
                                                     },
-                                                    error: () => {
+                                                    error: (xhr, status, error) => {
+                                                        console.error('AJAX error:', status, error);
                                                         /* On error, fall back to default behavior */
                                                         let query_params = new URLSearchParams();
                                                         query_params.set('claim-url', url);
@@ -248,7 +263,7 @@
                                 <?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>
                             <?php endif ?>
 
-                            <a id="claim_button" href="<?= settings()->links->claim_url_is_enabled ? '#' : url('register') ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
+                            <a id="claim_button" href="<?= settings()->links->claim_url_is_enabled ? 'javascript:void(0)' : url('register') ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
                                 <?= l(settings()->links->claim_url_is_enabled ? 'index.claim' : 'index.sign_up') ?> <i class="fas fa-fw fa-sm fa-arrow-right"></i>
                             </a>
                         <?php endif ?>
