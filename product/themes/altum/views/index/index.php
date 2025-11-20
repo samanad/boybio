@@ -151,15 +151,20 @@
                                             let domain_id = domain_id_element ? domain_id_element.value : null;
 
                                             if(url && url.length > 0) {
-                                                let full_url = claim_button_default_href + '/' + url;
+                                                let full_url = '';
                                                 
                                                 if(domain_id && domain_id.trim()) {
                                                     let selected_option = domain_id_element.options[domain_id_element.selectedIndex];
                                                     if(selected_option && selected_option.dataset.fullUrl) {
                                                         full_url = selected_option.dataset.fullUrl.replace(/\/$/, '') + '/' + url;
+                                                    } else {
+                                                        full_url = claim_button_default_href + '/' + url;
                                                     }
+                                                } else {
+                                                    full_url = claim_button_default_href + '/' + url;
                                                 }
                                                 
+                                                console.log('Setting claim button href to:', full_url);
                                                 document.querySelector('#claim_button').href = full_url;
                                             } else {
                                                 document.querySelector('#claim_button').href = claim_button_default_href;
