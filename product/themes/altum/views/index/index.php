@@ -124,46 +124,56 @@
                                     <script>
     'use strict';
 
-                                        $(document).ready(function() {
+                                        function initClaimButton() {
                                             let claim_button = document.querySelector('#claim_button');
                                             if(!claim_button) {
                                                 console.error('Claim button not found');
-                                                return;
+                                                return false;
                                             }
+                                            
+                                            console.log('Claim button found, attaching event listener');
                                             
                                             /* Store the original register URL */
                                             let claim_button_default_href = <?= json_encode(url('register')) ?>;
                                             
-                                            /* Create modal for claim URL status */
-                                            let claim_status_modal = `
-                                                <div class="modal fade" id="claim_url_status_modal" tabindex="-1" role="dialog">
-                                                    <div class="modal-dialog modal-dialog-centered" role="document">
-                                                        <div class="modal-content">
-                                                            <div class="modal-header">
-                                                                <h5 class="modal-title" id="claim_url_status_title"></h5>
-                                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                                    <span aria-hidden="true">&times;</span>
-                                                                </button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                <p id="claim_url_status_message"></p>
-                                                            </div>
-                                                            <div class="modal-footer" id="claim_url_status_footer">
+                                            /* Create modal for claim URL status if it doesn't exist */
+                                            if(!document.querySelector('#claim_url_status_modal')) {
+                                                let claim_status_modal = `
+                                                    <div class="modal fade" id="claim_url_status_modal" tabindex="-1" role="dialog">
+                                                        <div class="modal-dialog modal-dialog-centered" role="document">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title" id="claim_url_status_title"></h5>
+                                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                        <span aria-hidden="true">&times;</span>
+                                                                    </button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <p id="claim_url_status_message"></p>
+                                                                </div>
+                                                                <div class="modal-footer" id="claim_url_status_footer">
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            `;
-                                            document.body.insertAdjacentHTML('beforeend', claim_status_modal);
+                                                `;
+                                                document.body.insertAdjacentHTML('beforeend', claim_status_modal);
+                                            }
+                                            
+                                            /* Remove any existing event listeners by cloning the button */
+                                            let new_button = claim_button.cloneNode(true);
+                                            claim_button.parentNode.replaceChild(new_button, claim_button);
+                                            claim_button = new_button;
                                             
                                             /* Intercept claim button click */
                                             claim_button.addEventListener('click', function(e) {
+                                                console.log('Claim button clicked');
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 
                                                 let url_input = document.querySelector('#claim_url');
                                                 if(!url_input) {
-                                                    /* If no input field, redirect to register */
+                                                    console.log('No URL input found, redirecting to register');
                                                     window.location.href = claim_button_default_href;
                                                     return;
                                                 }
@@ -186,10 +196,12 @@
                                                 let domain_id = domain_id_element ? domain_id_element.value : null;
 
                                                 if(!url || url.length < 1) {
-                                                    /* If no URL entered, redirect to register */
+                                                    console.log('No URL entered, redirecting to register');
                                                     window.location.href = claim_button_default_href;
                                                     return;
                                                 }
+
+                                                console.log('Checking URL availability:', url);
 
                                                 /* Check URL availability */
                                                 $.ajax({
@@ -201,6 +213,7 @@
                                                         token: <?= json_encode(\Altum\Csrf::get('global_token')) ?>
                                                     },
                                                     success: (response) => {
+                                                        console.log('AJAX success:', response);
                                                         if(response.status === 'success' && response.details) {
                                                             let modal = $('#claim_url_status_modal');
                                                             let title = $('#claim_url_status_title');
@@ -236,7 +249,7 @@
                                                         }
                                                     },
                                                     error: (xhr, status, error) => {
-                                                        console.error('AJAX error:', status, error);
+                                                        console.error('AJAX error:', status, error, xhr);
                                                         /* On error, fall back to default behavior */
                                                         let query_params = new URLSearchParams();
                                                         query_params.set('claim-url', url);
@@ -258,7 +271,26 @@
                                                     });
                                                 });
                                             }
-                                        });
+                                            
+                                            return true;
+                                        }
+                                        
+                                        /* Try to initialize immediately if DOM is ready, otherwise wait */
+                                        if(document.readyState === 'loading') {
+                                            document.addEventListener('DOMContentLoaded', function() {
+                                                if(typeof $ !== 'undefined') {
+                                                    $(document).ready(initClaimButton);
+                                                } else {
+                                                    setTimeout(initClaimButton, 100);
+                                                }
+                                            });
+                                        } else {
+                                            if(typeof $ !== 'undefined') {
+                                                $(document).ready(initClaimButton);
+                                            } else {
+                                                setTimeout(initClaimButton, 100);
+                                            }
+                                        }
                                     </script>
                                 <?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>
                             <?php endif ?>
