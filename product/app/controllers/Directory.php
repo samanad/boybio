@@ -53,8 +53,6 @@ class Directory extends Controller {
                 /* Build WHERE clause to match links in the allowed list */
                 $allowed_conditions = [];
                 
-                $mysqli = database()->mysqli();
-                
                 foreach($directory_guest_links as $domain_host => $links) {
                     if(empty($links)) continue;
                     
@@ -64,7 +62,7 @@ class Directory extends Controller {
                         foreach($links as $link_url) {
                             $link_url = trim($link_url);
                             if(empty($link_url)) continue;
-                            $link_urls[] = "'" . $mysqli->real_escape_string($link_url) . "'";
+                            $link_urls[] = "'" . database()->escape($link_url) . "'";
                         }
                         if(!empty($link_urls)) {
                             $allowed_conditions[] = "((`links`.`domain_id` = 0 OR `links`.`domain_id` IS NULL) AND `links`.`url` IN (" . implode(', ', $link_urls) . "))";
@@ -75,10 +73,10 @@ class Directory extends Controller {
                         foreach($links as $link_url) {
                             $link_url = trim($link_url);
                             if(empty($link_url)) continue;
-                            $link_urls[] = "'" . $mysqli->real_escape_string($link_url) . "'";
+                            $link_urls[] = "'" . database()->escape($link_url) . "'";
                         }
                         if(!empty($link_urls)) {
-                            $allowed_conditions[] = "(`domains`.`host` = '" . $mysqli->real_escape_string($domain_host) . "' AND `links`.`url` IN (" . implode(', ', $link_urls) . "))";
+                            $allowed_conditions[] = "(`domains`.`host` = '" . database()->escape($domain_host) . "' AND `links`.`url` IN (" . implode(', ', $link_urls) . "))";
                         }
                     }
                 }
