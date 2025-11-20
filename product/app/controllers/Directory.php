@@ -62,7 +62,7 @@ class Directory extends Controller {
                         foreach($links as $link_url) {
                             $link_url = trim($link_url);
                             if(empty($link_url)) continue;
-                            $link_urls[] = "'" . database()->escape($link_url) . "'";
+                            $link_urls[] = "'" . database()->real_escape_string($link_url) . "'";
                         }
                         if(!empty($link_urls)) {
                             $allowed_conditions[] = "((`links`.`domain_id` = 0 OR `links`.`domain_id` IS NULL) AND `links`.`url` IN (" . implode(', ', $link_urls) . "))";
@@ -73,10 +73,10 @@ class Directory extends Controller {
                         foreach($links as $link_url) {
                             $link_url = trim($link_url);
                             if(empty($link_url)) continue;
-                            $link_urls[] = "'" . database()->escape($link_url) . "'";
+                            $link_urls[] = "'" . database()->real_escape_string($link_url) . "'";
                         }
                         if(!empty($link_urls)) {
-                            $allowed_conditions[] = "(`domains`.`host` = '" . database()->escape($domain_host) . "' AND `links`.`url` IN (" . implode(', ', $link_urls) . "))";
+                            $allowed_conditions[] = "(`domains`.`host` = '" . database()->real_escape_string($domain_host) . "' AND `links`.`url` IN (" . implode(', ', $link_urls) . "))";
                         }
                     }
                 }
