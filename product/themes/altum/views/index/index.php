@@ -127,54 +127,77 @@
                                         let claim_button_default_href = document.querySelector('#claim_button').href;
                                         let checkUrlTimeout = null;
                                         
-                                        ['change', 'paste', 'keyup', 'keypress'].forEach(event_type => document.querySelector('#claim_url').addEventListener(event_type, event => {
+                                        /* Intercept claim button click */
+                                        document.querySelector('#claim_button').addEventListener('click', function(e) {
                                             let url = get_slug(document.querySelector('#claim_url').value);
                                             let domain_id_element = document.querySelector('#domain_id');
                                             let domain_id = domain_id_element ? domain_id_element.value : null;
 
-                                            let query_params = new URLSearchParams();
-                                            if(url) query_params.set('claim-url', url);
-                                            if(domain_id) query_params.set('domain-id', domain_id);
-
-                                            document.querySelector('#claim_button').href = query_params.toString()
-                                                ? `${claim_button_default_href}?${query_params}`
-                                                : claim_button_default_href;
-
-                                            /* Check URL availability if subdirectory redirect is enabled */
-                                            <?php 
-                                            $subdirectory_redirect_enabled = (isset(settings()->main->subdirectory_redirect_is_enabled) && settings()->main->subdirectory_redirect_is_enabled) ||
-                                                                             (isset(settings()->links->subdirectory_redirect_is_enabled) && settings()->links->subdirectory_redirect_is_enabled);
-                                            $subdirectory_redirect_base_url = !empty(settings()->main->subdirectory_redirect_base_url) ? settings()->main->subdirectory_redirect_base_url : 
-                                                                               (!empty(settings()->links->subdirectory_redirect_base_url) ? settings()->links->subdirectory_redirect_base_url : '');
-                                            if($subdirectory_redirect_enabled && !empty($subdirectory_redirect_base_url)): ?>
-                                            if(url && url.length >= 3) {
-                                                /* Debounce the check */
-                                                clearTimeout(checkUrlTimeout);
-                                                checkUrlTimeout = setTimeout(() => {
-                                                    $.ajax({
-                                                        type: 'POST',
-                                                        url: <?= json_encode(url('check-url-availability')) ?>,
-                                                        data: {
-                                                            url: url,
-                                                            domain_id: domain_id || '',
-                                                            token: <?= json_encode(\Altum\Csrf::get('global_token')) ?>
-                                                        },
-                                                        success: (response) => {
-                                                            if(response.status === 'success' && response.details && response.details.available) {
-                                                                /* URL is available - redirect */
-                                                                if(confirm(response.details.message + ' ' + <?= json_encode(l('index.subdirectory_redirect_confirm')) ?>)) {
-                                                                    window.location.href = response.details.redirect_url;
-                                                                }
-                                                            }
-                                                        },
-                                                        error: () => {
-                                                            /* Silently fail - don't interrupt user flow */
-                                                        }
-                                                    });
-                                                }, 500);
+                                            if(!url || url.length < 1) {
+                                                return; /* Let default behavior happen if no URL entered */
                                             }
-                                            <?php endif ?>
 
+                                            e.preventDefault();
+
+                                            /* Check URL availability */
+                                            $.ajax({
+                                                type: 'POST',
+                                                url: <?= json_encode(url('check-url-availability')) ?>,
+                                                data: {
+                                                    url: url,
+                                                    domain_id: domain_id || '',
+                                                    token: <?= json_encode(\Altum\Csrf::get('global_token')) ?>
+                                                },
+                                                success: (response) => {
+                                                    if(response.status === 'success' && response.details) {
+                                                        if(response.details.status === 'available') {
+                                                            /* URL is available - show message and redirect */
+                                                            alert(response.details.message);
+                                                            
+                                                            /* Try to visit the full URL first (domain.com/username) */
+                                                            if(response.details.full_url) {
+                                                                /* Use fetch to check if URL exists, then redirect */
+                                                                fetch(response.details.full_url, { method: 'HEAD', mode: 'no-cors' })
+                                                                    .then(() => {
+                                                                        /* URL exists, redirect to it */
+                                                                        window.location.href = response.details.full_url;
+                                                                    })
+                                                                    .catch(() => {
+                                                                        /* URL doesn't exist or error, redirect to register */
+                                                                        if(response.details.redirect_url) {
+                                                                            window.location.href = response.details.redirect_url;
+                                                                        }
+                                                                    });
+                                                                
+                                                                /* Fallback: redirect to register after short delay */
+                                                                setTimeout(() => {
+                                                                    if(response.details.redirect_url) {
+                                                                        window.location.href = response.details.redirect_url;
+                                                                    }
+                                                                }, 500);
+                                                            } else if(response.details.redirect_url) {
+                                                                window.location.href = response.details.redirect_url;
+                                                            }
+                                                        } else if(response.details.status === 'used') {
+                                                            /* URL is already used */
+                                                            alert(response.details.message);
+                                                        } else if(response.details.status === 'banned') {
+                                                            /* URL is banned */
+                                                            alert(response.details.message);
+                                                        }
+                                                    }
+                                                },
+                                                error: () => {
+                                                    /* On error, fall back to default behavior */
+                                                    let query_params = new URLSearchParams();
+                                                    query_params.set('claim-url', url);
+                                                    if(domain_id) query_params.set('domain-id', domain_id);
+                                                    window.location.href = claim_button_default_href + '?' + query_params.toString();
+                                                }
+                                            });
+                                        });
+                                        
+                                        ['change', 'paste', 'keyup', 'keypress'].forEach(event_type => document.querySelector('#claim_url').addEventListener(event_type, event => {
                                             if(event.key === 'Enter') {
                                                 event.preventDefault();
                                                 document.querySelector('#claim_button').click();
