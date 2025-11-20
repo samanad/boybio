@@ -151,31 +151,15 @@
                                                 success: (response) => {
                                                     if(response.status === 'success' && response.details) {
                                                         if(response.details.status === 'available') {
-                                                            /* URL is available - show message and redirect */
+                                                            /* URL is available - show message */
                                                             alert(response.details.message);
                                                             
                                                             /* Try to visit the full URL first (domain.com/username) */
                                                             if(response.details.full_url) {
-                                                                /* Use fetch to check if URL exists, then redirect */
-                                                                fetch(response.details.full_url, { method: 'HEAD', mode: 'no-cors' })
-                                                                    .then(() => {
-                                                                        /* URL exists, redirect to it */
-                                                                        window.location.href = response.details.full_url;
-                                                                    })
-                                                                    .catch(() => {
-                                                                        /* URL doesn't exist or error, redirect to register */
-                                                                        if(response.details.redirect_url) {
-                                                                            window.location.href = response.details.redirect_url;
-                                                                        }
-                                                                    });
-                                                                
-                                                                /* Fallback: redirect to register after short delay */
-                                                                setTimeout(() => {
-                                                                    if(response.details.redirect_url) {
-                                                                        window.location.href = response.details.redirect_url;
-                                                                    }
-                                                                }, 500);
+                                                                /* Try visiting the URL - if it doesn't exist (404), it will redirect to register */
+                                                                window.location.href = response.details.full_url;
                                                             } else if(response.details.redirect_url) {
+                                                                /* Fallback to register if no full_url */
                                                                 window.location.href = response.details.redirect_url;
                                                             }
                                                         } else if(response.details.status === 'used') {
