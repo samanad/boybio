@@ -131,7 +131,8 @@
                                                 return;
                                             }
                                             
-                                            let claim_button_default_href = claim_button.href;
+                                            /* Store the original register URL before we potentially change the href */
+                                            let claim_button_default_href = <?= json_encode(url('register')) ?>;
                                             
                                             /* Create modal for claim URL status */
                                             let claim_status_modal = `
