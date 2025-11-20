@@ -2036,7 +2036,13 @@ class AdminSettings extends Controller {
             
             /* Process links for each domain */
             foreach($domains_for_processing as $domain_key => $domain_host) {
-                $links_text = $_POST['directory_guest_links_' . $domain_key] ?? '';
+                /* PHP converts dots to underscores in POST field names, so we need to check both */
+                $field_name_with_dots = 'directory_guest_links_' . $domain_key;
+                $field_name_with_underscores = 'directory_guest_links_' . str_replace('.', '_', $domain_key);
+                
+                /* Try with dots first, then with underscores */
+                $links_text = $_POST[$field_name_with_dots] ?? $_POST[$field_name_with_underscores] ?? '';
+                
                 if(!empty($links_text)) {
                     /* Split by newlines, trim, filter empty */
                     $links = array_filter(array_map('trim', explode("\n", $links_text)));
