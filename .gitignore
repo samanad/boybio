@@ -80,3 +80,6 @@ product/install/installed
 .env
 .env.local
 
+# LinkDooni custom landing page (git-ignored)
+linkdoo/
+
