@@ -61,9 +61,25 @@ class CheckUrlAvailability extends Controller {
                 ]);
             } elseif($is_existing_link) {
                 /* URL is already used */
+                /* Get domain info for full URL */
+                $full_url = SITE_URL . $url;
+                if($domain_id) {
+                    $domain = db()->where('domain_id', $domain_id)->getOne('domains', ['scheme', 'host']);
+                    if($domain) {
+                        $full_url = $domain->scheme . $domain->host . '/' . $url;
+                    }
+                } else {
+                    /* Check if link exists on main domain */
+                    $link = db()->where('url', $url)->where('domain_id', 0)->getOne('links', ['link_id']);
+                    if($link) {
+                        $full_url = SITE_URL . $url;
+                    }
+                }
+                
                 Response::json('', 'success', [
                     'status' => 'used',
-                    'message' => l('index.claim_url_used')
+                    'message' => l('index.claim_url_used'),
+                    'full_url' => $full_url
                 ]);
             } else {
                 /* URL is available */

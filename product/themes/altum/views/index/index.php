@@ -125,7 +125,28 @@
     'use strict';
 
                                         let claim_button_default_href = document.querySelector('#claim_button').href;
-                                        let checkUrlTimeout = null;
+                                        
+                                        /* Create modal for claim URL status */
+                                        let claim_status_modal = `
+                                            <div class="modal fade" id="claim_url_status_modal" tabindex="-1" role="dialog">
+                                                <div class="modal-dialog modal-dialog-centered" role="document">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="claim_url_status_title"></h5>
+                                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                <span aria-hidden="true">&times;</span>
+                                                            </button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p id="claim_url_status_message"></p>
+                                                        </div>
+                                                        <div class="modal-footer" id="claim_url_status_footer">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+                                        document.body.insertAdjacentHTML('beforeend', claim_status_modal);
                                         
                                         /* Intercept claim button click */
                                         document.querySelector('#claim_button').addEventListener('click', function(e) {
@@ -150,24 +171,36 @@
                                                 },
                                                 success: (response) => {
                                                     if(response.status === 'success' && response.details) {
+                                                        let modal = $('#claim_url_status_modal');
+                                                        let title = $('#claim_url_status_title');
+                                                        let message = $('#claim_url_status_message');
+                                                        let footer = $('#claim_url_status_footer');
+                                                        
                                                         if(response.details.status === 'available') {
-                                                            /* URL is available - show message */
-                                                            alert(response.details.message);
-                                                            
-                                                            /* Try to visit the full URL first (domain.com/username) */
-                                                            if(response.details.full_url) {
-                                                                /* Try visiting the URL - if it doesn't exist (404), it will redirect to register */
-                                                                window.location.href = response.details.full_url;
-                                                            } else if(response.details.redirect_url) {
-                                                                /* Fallback to register if no full_url */
-                                                                window.location.href = response.details.redirect_url;
-                                                            }
+                                                            /* URL is available - show message and button */
+                                                            title.text(<?= json_encode(l('index.claim_url_available_title') ?? 'URL Available') ?>);
+                                                            message.text(response.details.message);
+                                                            footer.html(`
+                                                                <button type="button" class="btn btn-primary" onclick="window.location.href='${response.details.full_url || response.details.redirect_url}'">
+                                                                    <?= l('index.claim_url_visit') ?>
+                                                                </button>
+                                                                <button type="button" class="btn btn-secondary" data-dismiss="modal"><?= l('global.close') ?></button>
+                                                            `);
+                                                            modal.modal('show');
                                                         } else if(response.details.status === 'used') {
-                                                            /* URL is already used */
-                                                            alert(response.details.message);
+                                                            /* URL is already used - show message and button to visit */
+                                                            title.text(<?= json_encode(l('index.claim_url_used_title') ?? 'URL Taken') ?>);
+                                                            message.text(response.details.message);
+                                                            footer.html(`
+                                                                <button type="button" class="btn btn-primary" onclick="window.location.href='${response.details.full_url || ''}'">
+                                                                    <?= l('index.claim_url_visit') ?>
+                                                                </button>
+                                                                <button type="button" class="btn btn-secondary" data-dismiss="modal"><?= l('global.close') ?></button>
+                                                            `);
+                                                            modal.modal('show');
                                                         } else if(response.details.status === 'banned') {
-                                                            /* URL is banned */
-                                                            alert(response.details.message);
+                                                            /* URL is banned - show nothing (don't show modal) */
+                                                            return;
                                                         }
                                                     }
                                                 },
