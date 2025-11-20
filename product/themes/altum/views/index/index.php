@@ -135,6 +135,11 @@
                                         $subdirectory_redirect_base_url = SITE_URL;
                                     }
                                     $claim_base_url = rtrim($subdirectory_redirect_base_url, '/');
+                                    
+                                    /* Debug: Log the URL being used (remove in production) */
+                                    if(DEBUG) {
+                                        error_log("Claim button base URL: " . $claim_base_url . " (links: " . ($links_url ?: 'empty') . ", main: " . ($main_url ?: 'empty') . ")");
+                                    }
                                 ?>
                                 <?php ob_start() ?>
                                     <script>
