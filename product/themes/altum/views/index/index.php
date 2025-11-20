@@ -122,8 +122,15 @@
 
                                 <?php 
                                     /* Get subdirectory redirect base URL if set, otherwise use SITE_URL */
-                                    $subdirectory_redirect_base_url = !empty(settings()->main->subdirectory_redirect_base_url) ? settings()->main->subdirectory_redirect_base_url : 
-                                                                       (!empty(settings()->links->subdirectory_redirect_base_url) ? settings()->links->subdirectory_redirect_base_url : SITE_URL);
+                                    /* Check links setting first (more specific), then main setting, then fallback to SITE_URL */
+                                    $subdirectory_redirect_base_url = '';
+                                    if(!empty(settings()->links->subdirectory_redirect_base_url)) {
+                                        $subdirectory_redirect_base_url = settings()->links->subdirectory_redirect_base_url;
+                                    } elseif(!empty(settings()->main->subdirectory_redirect_base_url)) {
+                                        $subdirectory_redirect_base_url = settings()->main->subdirectory_redirect_base_url;
+                                    } else {
+                                        $subdirectory_redirect_base_url = SITE_URL;
+                                    }
                                     $claim_base_url = rtrim($subdirectory_redirect_base_url, '/');
                                 ?>
                                 <?php ob_start() ?>
@@ -164,8 +171,15 @@
 
                             <?php 
                                 /* Get subdirectory redirect base URL if set, otherwise use SITE_URL */
-                                $subdirectory_redirect_base_url = !empty(settings()->main->subdirectory_redirect_base_url) ? settings()->main->subdirectory_redirect_base_url : 
-                                                                   (!empty(settings()->links->subdirectory_redirect_base_url) ? settings()->links->subdirectory_redirect_base_url : SITE_URL);
+                                /* Check links setting first (more specific), then main setting, then fallback to SITE_URL */
+                                $subdirectory_redirect_base_url = '';
+                                if(!empty(settings()->links->subdirectory_redirect_base_url)) {
+                                    $subdirectory_redirect_base_url = settings()->links->subdirectory_redirect_base_url;
+                                } elseif(!empty(settings()->main->subdirectory_redirect_base_url)) {
+                                    $subdirectory_redirect_base_url = settings()->main->subdirectory_redirect_base_url;
+                                } else {
+                                    $subdirectory_redirect_base_url = SITE_URL;
+                                }
                                 $claim_base_url = rtrim($subdirectory_redirect_base_url, '/');
                             ?>
                             <a id="claim_button" href="<?= $claim_base_url ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
