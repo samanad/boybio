@@ -328,7 +328,16 @@
             
             <?php 
             $domains = $data->domains ?? [];
-            $directory_guest_links = settings()->links->directory_guest_links ?? [];
+            $directory_guest_links_raw = settings()->links->directory_guest_links ?? null;
+            /* Convert object to array if needed */
+            $directory_guest_links = [];
+            if($directory_guest_links_raw) {
+                if(is_object($directory_guest_links_raw)) {
+                    $directory_guest_links = json_decode(json_encode($directory_guest_links_raw), true);
+                } else {
+                    $directory_guest_links = $directory_guest_links_raw;
+                }
+            }
             
             if(empty($domains)): ?>
                 <div class="alert alert-info">
