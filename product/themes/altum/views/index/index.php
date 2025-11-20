@@ -146,7 +146,7 @@
                                         let claim_url_input = document.querySelector('#claim_url');
                                         let domain_id_element = document.querySelector('#domain_id');
                                         
-                                        ['change', 'paste', 'keyup', 'keypress'].forEach(event_type => claim_url_input.addEventListener(event_type, event => {
+                                        function updateClaimButtonHref() {
                                             let url = get_slug(claim_url_input.value);
                                             let domain_id = domain_id_element ? domain_id_element.value : null;
 
@@ -166,15 +166,29 @@
                                                 
                                                 console.log('Setting claim button href to:', full_url);
                                                 document.querySelector('#claim_button').href = full_url;
+                                                return full_url;
                                             } else {
                                                 document.querySelector('#claim_button').href = claim_button_default_href;
+                                                return claim_button_default_href;
                                             }
+                                        }
+                                        
+                                        ['change', 'paste', 'keyup', 'keypress'].forEach(event_type => claim_url_input.addEventListener(event_type, event => {
+                                            updateClaimButtonHref();
 
                                             if(event.key === 'Enter') {
                                                 event.preventDefault();
                                                 document.querySelector('#claim_button').click();
                                             }
                                         }));
+                                        
+                                        /* Also update href on button click to ensure it's current */
+                                        document.querySelector('#claim_button').addEventListener('click', function(e) {
+                                            let current_href = updateClaimButtonHref();
+                                            if(current_href && current_href !== claim_button_default_href) {
+                                                this.href = current_href;
+                                            }
+                                        });
                                     </script>
                                 <?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>
                             <?php endif ?>
