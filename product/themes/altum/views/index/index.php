@@ -247,7 +247,7 @@
                                 <?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>
                             <?php endif ?>
 
-                            <a id="claim_button" href="<?= url('register') ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
+                            <a id="claim_button" href="<?= settings()->links->claim_url_is_enabled ? '#' : url('register') ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
                                 <?= l(settings()->links->claim_url_is_enabled ? 'index.claim' : 'index.sign_up') ?> <i class="fas fa-fw fa-sm fa-arrow-right"></i>
                             </a>
                         <?php endif ?>
