@@ -36,6 +36,8 @@ class Directory extends Controller {
         $is_admin = is_logged_in() && $user && $user->type == 1;
         $is_user = is_logged_in() && $user && $user->type != 1;
         
+        $directory_display_join = '';
+        
         if($is_admin) {
             /* Admin always sees only verified badge links (requested by users) */
             $directory_display_where = 'AND `is_verified` = 1';
@@ -49,9 +51,11 @@ class Directory extends Controller {
             if(empty($directory_guest_links)) {
                 /* No links configured, show nothing */
                 $directory_display_where = 'AND 1 = 0';
+                $directory_display_join = '';
             } else {
                 /* Build WHERE clause to match links in the allowed list */
                 $allowed_conditions = [];
+                $needs_domains_join = false;
                 
                 foreach($directory_guest_links as $domain_host => $links) {
                     if(empty($links)) continue;
@@ -69,6 +73,7 @@ class Directory extends Controller {
                         }
                     } else {
                         /* For custom domains */
+                        $needs_domains_join = true;
                         $link_urls = [];
                         foreach($links as $link_url) {
                             $link_url = trim($link_url);
@@ -83,15 +88,19 @@ class Directory extends Controller {
                 
                 if(!empty($allowed_conditions)) {
                     $directory_display_where = 'AND (' . implode(' OR ', $allowed_conditions) . ')';
+                    $directory_display_join = $needs_domains_join ? 'LEFT JOIN `domains` ON `links`.`domain_id` = `domains`.`domain_id`' : '';
                 } else {
                     /* No valid links, show nothing */
                     $directory_display_where = 'AND 1 = 0';
+                    $directory_display_join = '';
                 }
             }
         }
 
         /* Prepare the paginator */
-        $total_rows = database()->query("SELECT COUNT(*) AS `total` FROM `links` WHERE `type` = 'biolink' AND `is_enabled` = 1 AND `links`.`directory_is_enabled` = 1 {$directory_display_where} {$filters->get_sql_where()}")->fetch_object()->total ?? 0;
+        $total_rows_query = "SELECT COUNT(*) AS `total` FROM `links` {$directory_display_join} WHERE `links`.`type` = 'biolink' AND `links`.`is_enabled` = 1 AND `links`.`directory_is_enabled` = 1 {$directory_display_where} {$filters->get_sql_where()}";
+        $total_rows_result = database()->query($total_rows_query);
+        $total_rows = $total_rows_result ? $total_rows_result->fetch_object()->total ?? 0 : 0;
         $paginator = (new \Altum\Paginator($total_rows, $filters->get_results_per_page(), $_GET['page'] ?? 1, url('directory?' . $filters->get_get() . '&page=%d')));
 
         /* Get the links list for the project */
