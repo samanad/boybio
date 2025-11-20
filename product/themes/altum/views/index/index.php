@@ -172,7 +172,8 @@
                                             if(url && url.length > 0) {
                                                 let full_url = '';
                                                 
-                                                if(domain_id && domain_id.trim()) {
+                                                /* If domain selector exists and a domain is selected, use it */
+                                                if(domain_id_element && domain_id && domain_id.trim()) {
                                                     let selected_option = domain_id_element.options[domain_id_element.selectedIndex];
                                                     if(selected_option && selected_option.dataset.fullUrl) {
                                                         full_url = selected_option.dataset.fullUrl.replace(/\/$/, '') + '/' + url;
@@ -180,6 +181,7 @@
                                                         full_url = claim_button_default_href + '/' + url;
                                                     }
                                                 } else {
+                                                    /* No domain selector or no domain selected - use subdirectory_redirect_base_url */
                                                     full_url = claim_button_default_href + '/' + url;
                                                 }
                                                 
