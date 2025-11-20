@@ -108,8 +108,16 @@ class Index extends Controller {
 
         /* Get the available domains to use for claim URL */
         $all_domains = (new Domain())->get_available_additional_domains();
-        $claim_url_available_domains = settings()->links->claim_url_available_domains ?? [];
-        $claim_url_available_domains = is_array($claim_url_available_domains) ? $claim_url_available_domains : [];
+        $claim_url_available_domains_raw = settings()->links->claim_url_available_domains ?? null;
+        /* Convert object to array if needed */
+        $claim_url_available_domains = [];
+        if($claim_url_available_domains_raw) {
+            if(is_object($claim_url_available_domains_raw)) {
+                $claim_url_available_domains = json_decode(json_encode($claim_url_available_domains_raw), true);
+            } else {
+                $claim_url_available_domains = $claim_url_available_domains_raw;
+            }
+        }
         
         /* Filter domains based on admin settings */
         $domains = [];
