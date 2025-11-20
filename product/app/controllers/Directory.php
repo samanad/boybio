@@ -43,18 +43,52 @@ class Directory extends Controller {
             /* Users always see explore things links (set by admin) */
             $directory_display_where = 'AND `is_explore_things` = 1';
         } else {
-            /* Guests see links based on directory_display setting */
-            switch(settings()->links->directory_display) {
-                case 'verified':
-                    $directory_display_where = 'AND `is_verified` = 1';
-                    break;
-                case 'explore_things':
-                    $directory_display_where = 'AND `is_explore_things` = 1';
-                    break;
-                case 'all':
-                default:
-                    $directory_display_where = null;
-                    break;
+            /* Guests see links from the directory_guest_links list */
+            $directory_guest_links = settings()->links->directory_guest_links ?? [];
+            
+            if(empty($directory_guest_links)) {
+                /* No links configured, show nothing */
+                $directory_display_where = 'AND 1 = 0';
+            } else {
+                /* Build WHERE clause to match links in the allowed list */
+                $allowed_conditions = [];
+                
+                $mysqli = database()->mysqli();
+                
+                foreach($directory_guest_links as $domain_host => $links) {
+                    if(empty($links)) continue;
+                    
+                    /* For main domain (domain_id = 0 or NULL) */
+                    if($domain_host == (parse_url(SITE_URL, PHP_URL_HOST))) {
+                        $link_urls = [];
+                        foreach($links as $link_url) {
+                            $link_url = trim($link_url);
+                            if(empty($link_url)) continue;
+                            $link_urls[] = "'" . $mysqli->real_escape_string($link_url) . "'";
+                        }
+                        if(!empty($link_urls)) {
+                            $allowed_conditions[] = "((`links`.`domain_id` = 0 OR `links`.`domain_id` IS NULL) AND `links`.`url` IN (" . implode(', ', $link_urls) . "))";
+                        }
+                    } else {
+                        /* For custom domains */
+                        $link_urls = [];
+                        foreach($links as $link_url) {
+                            $link_url = trim($link_url);
+                            if(empty($link_url)) continue;
+                            $link_urls[] = "'" . $mysqli->real_escape_string($link_url) . "'";
+                        }
+                        if(!empty($link_urls)) {
+                            $allowed_conditions[] = "(`domains`.`host` = '" . $mysqli->real_escape_string($domain_host) . "' AND `links`.`url` IN (" . implode(', ', $link_urls) . "))";
+                        }
+                    }
+                }
+                
+                if(!empty($allowed_conditions)) {
+                    $directory_display_where = 'AND (' . implode(' OR ', $allowed_conditions) . ')';
+                } else {
+                    /* No valid links, show nothing */
+                    $directory_display_where = 'AND 1 = 0';
+                }
             }
         }
 

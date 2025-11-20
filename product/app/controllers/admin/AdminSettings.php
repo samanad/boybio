@@ -35,9 +35,32 @@ class AdminSettings extends Controller {
         /* Set a custom title */
         Title::set(sprintf(l('admin_settings.title'), l('admin_settings.' . $method . '.tab')));
 
+        /* Get domains for directory guest links (if links method) */
+        $domains = [];
+        if($method == 'links') {
+            /* Add main domain */
+            $site_url_parsed = parse_url(SITE_URL);
+            $main_domain = $site_url_parsed['host'] ?? '';
+            if($main_domain) {
+                $domains['main'] = [
+                    'host' => $main_domain,
+                    'label' => $main_domain . ' (Main)'
+                ];
+            }
+            
+            /* Get all enabled custom domains */
+            $domains_result = database()->query("SELECT `host` FROM `domains` WHERE `is_enabled` = 1 ORDER BY `host` ASC");
+            while($row = $domains_result->fetch_object()) {
+                $domains[$row->host] = [
+                    'host' => $row->host,
+                    'label' => $row->host
+                ];
+            }
+        }
+
         /* Method View */
         $view = new \Altum\View('admin/settings/partials/' . $method, (array) $this);
-        $this->add_view_content('method', $view->run());
+        $this->add_view_content('method', $view->run(['domains' => $domains]));
 
         /* Main View */
         $view = new \Altum\View('admin/settings/index', (array) $this);
@@ -1993,7 +2016,35 @@ class AdminSettings extends Controller {
             $_POST['splash_page_auto_redirect'] = (int) isset($_POST['splash_page_auto_redirect']);
             $_POST['splash_page_link_unlock_seconds'] = (int) ($_POST['splash_page_link_unlock_seconds'] ?? 0);
             $_POST['directory_is_enabled'] = (int) isset($_POST['directory_is_enabled']);
-            $_POST['directory_display'] = in_array($_POST['directory_display'], ['all', 'verified', 'explore_things']) ? $_POST['directory_display'] : 'all';
+            
+            /* Process directory guest links per domain */
+            $directory_guest_links = [];
+            $domains_for_processing = [];
+            
+            /* Add main domain */
+            $site_url_parsed = parse_url(SITE_URL);
+            $main_domain = $site_url_parsed['host'] ?? '';
+            if($main_domain) {
+                $domains_for_processing['main'] = $main_domain;
+            }
+            
+            /* Get all enabled custom domains */
+            $domains_result = database()->query("SELECT `host` FROM `domains` WHERE `is_enabled` = 1 ORDER BY `host` ASC");
+            while($row = $domains_result->fetch_object()) {
+                $domains_for_processing[$row->host] = $row->host;
+            }
+            
+            /* Process links for each domain */
+            foreach($domains_for_processing as $domain_key => $domain_host) {
+                $links_text = $_POST['directory_guest_links_' . $domain_key] ?? '';
+                if(!empty($links_text)) {
+                    /* Split by newlines, trim, filter empty */
+                    $links = array_filter(array_map('trim', explode("\n", $links_text)));
+                    if(!empty($links)) {
+                        $directory_guest_links[$domain_host] = array_values($links);
+                    }
+                }
+            }
             $_POST['domains_is_enabled'] = (int) isset($_POST['domains_is_enabled']);
             $_POST['projects_is_enabled'] = (int) isset($_POST['projects_is_enabled']);
             $_POST['additional_domains_is_enabled'] = (int) isset($_POST['additional_domains_is_enabled']);
@@ -2066,7 +2117,7 @@ class AdminSettings extends Controller {
                 'splash_page_auto_redirect' => $_POST['splash_page_auto_redirect'],
                 'splash_page_link_unlock_seconds' => $_POST['splash_page_link_unlock_seconds'],
                 'directory_is_enabled' => $_POST['directory_is_enabled'],
-                'directory_display' => $_POST['directory_display'],
+                'directory_guest_links' => $directory_guest_links,
                 'domains_is_enabled' => $_POST['domains_is_enabled'],
                 'projects_is_enabled' => $_POST['projects_is_enabled'],
                 'additional_domains_is_enabled' => $_POST['additional_domains_is_enabled'],

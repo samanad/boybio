@@ -323,13 +323,41 @@
         </div>
 
         <div class="form-group">
-            <label for="directory_display"><?= l('admin_settings.links.directory_display') ?></label>
-            <select id="directory_display" name="directory_display" class="custom-select">
-                <option value="all" <?= settings()->links->directory_display == 'all' ? 'selected="selected"' : null ?>><?= l('admin_settings.links.directory_display_all') ?></option>
-                <option value="verified" <?= settings()->links->directory_display == 'verified' ? 'selected="selected"' : null ?>><?= l('admin_settings.links.directory_display_verified') ?></option>
-                <option value="explore_things" <?= settings()->links->directory_display == 'explore_things' ? 'selected="selected"' : null ?>><?= l('admin_settings.links.directory_display_explore_things') ?></option>
-            </select>
-            <small class="form-text text-muted"><?= l('admin_settings.links.directory_display_help') ?></small>
+            <label><?= l('admin_settings.links.directory_display') ?></label>
+            <small class="form-text text-muted d-block mb-3"><?= l('admin_settings.links.directory_display_help') ?></small>
+            
+            <?php 
+            $domains = $data['domains'] ?? [];
+            $directory_guest_links = settings()->links->directory_guest_links ?? [];
+            
+            if(empty($domains)): ?>
+                <div class="alert alert-info">
+                    <i class="fas fa-fw fa-info-circle mr-1"></i>
+                    <?= l('admin_settings.links.directory_guest_links_no_domains') ?>
+                </div>
+            <?php else: ?>
+                <?php foreach($domains as $domain_key => $domain_info): 
+                    $domain_host = $domain_info['host'];
+                    $domain_label = $domain_info['label'];
+                    $links_for_domain = $directory_guest_links[$domain_host] ?? [];
+                    $links_text = !empty($links_for_domain) ? implode("\n", $links_for_domain) : '';
+                ?>
+                    <div class="form-group">
+                        <label for="directory_guest_links_<?= $domain_key ?>">
+                            <i class="fas fa-fw fa-sm fa-link text-muted mr-1"></i> 
+                            <?= htmlspecialchars($domain_label) ?>
+                        </label>
+                        <textarea 
+                            id="directory_guest_links_<?= $domain_key ?>" 
+                            name="directory_guest_links_<?= $domain_key ?>" 
+                            class="form-control" 
+                            rows="5" 
+                            placeholder="<?= l('admin_settings.links.directory_guest_links_placeholder') ?>"
+                        ><?= htmlspecialchars($links_text) ?></textarea>
+                        <small class="form-text text-muted"><?= sprintf(l('admin_settings.links.directory_guest_links_help'), htmlspecialchars($domain_host)) ?></small>
+                    </div>
+                <?php endforeach ?>
+            <?php endif ?>
         </div>
     </div>
 
