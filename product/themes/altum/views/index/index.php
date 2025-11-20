@@ -140,7 +140,9 @@
                                     <script>
     'use strict';
 
-                                        let claim_button_default_href = <?= json_encode($claim_base_url) ?>;
+                                        /* Use subdirectory redirect base URL from settings */
+                                        let claim_button_default_href = <?= json_encode($claim_base_url, JSON_UNESCAPED_SLASHES) ?>;
+                                        console.log('Claim button base URL:', claim_button_default_href);
                                         let claim_url_input = document.querySelector('#claim_url');
                                         let domain_id_element = document.querySelector('#domain_id');
                                         
