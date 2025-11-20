@@ -2011,7 +2011,8 @@ class AdminSettings extends Controller {
             if(isset($_POST['claim_url_available_domains']) && is_array($_POST['claim_url_available_domains'])) {
                 foreach($_POST['claim_url_available_domains'] as $domain_id) {
                     $domain_id = (int) $domain_id;
-                    if($domain_id > 0) {
+                    /* Allow 0 for main domain and positive IDs for custom domains */
+                    if($domain_id >= 0) {
                         $claim_url_available_domains[] = $domain_id;
                     }
                 }
