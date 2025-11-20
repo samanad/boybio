@@ -120,11 +120,17 @@
                                     </div>
                                 </div>
 
+                                <?php 
+                                    /* Get subdirectory redirect base URL if set, otherwise use SITE_URL */
+                                    $subdirectory_redirect_base_url = !empty(settings()->main->subdirectory_redirect_base_url) ? settings()->main->subdirectory_redirect_base_url : 
+                                                                       (!empty(settings()->links->subdirectory_redirect_base_url) ? settings()->links->subdirectory_redirect_base_url : SITE_URL);
+                                    $claim_base_url = rtrim($subdirectory_redirect_base_url, '/');
+                                ?>
                                 <?php ob_start() ?>
                                     <script>
     'use strict';
 
-                                        let claim_button_default_href = <?= json_encode(SITE_URL) ?>;
+                                        let claim_button_default_href = <?= json_encode($claim_base_url) ?>;
                                         let claim_url_input = document.querySelector('#claim_url');
                                         let domain_id_element = document.querySelector('#domain_id');
                                         
@@ -133,7 +139,7 @@
                                             let domain_id = domain_id_element ? domain_id_element.value : null;
 
                                             if(url && url.length > 0) {
-                                                let full_url = claim_button_default_href + url;
+                                                let full_url = claim_button_default_href + '/' + url;
                                                 
                                                 if(domain_id && domain_id.trim()) {
                                                     let selected_option = domain_id_element.options[domain_id_element.selectedIndex];
@@ -156,7 +162,13 @@
                                 <?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>
                             <?php endif ?>
 
-                            <a id="claim_button" href="<?= SITE_URL ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
+                            <?php 
+                                /* Get subdirectory redirect base URL if set, otherwise use SITE_URL */
+                                $subdirectory_redirect_base_url = !empty(settings()->main->subdirectory_redirect_base_url) ? settings()->main->subdirectory_redirect_base_url : 
+                                                                   (!empty(settings()->links->subdirectory_redirect_base_url) ? settings()->links->subdirectory_redirect_base_url : SITE_URL);
+                                $claim_base_url = rtrim($subdirectory_redirect_base_url, '/');
+                            ?>
+                            <a id="claim_button" href="<?= $claim_base_url ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
                                 <?= l(settings()->links->claim_url_is_enabled ? 'index.claim' : 'index.sign_up') ?> <i class="fas fa-fw fa-sm fa-arrow-right"></i>
                             </a>
                         <?php endif ?>
