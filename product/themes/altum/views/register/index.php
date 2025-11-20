@@ -59,7 +59,7 @@
         </div>
     <?php endif ?>
 
-    <?php if(settings()->facebook->is_enabled || settings()->google->is_enabled || settings()->twitter->is_enabled || settings()->discord->is_enabled || settings()->linkedin->is_enabled || settings()->microsoft->is_enabled): ?>
+    <?php if((isset(settings()->facebook->is_enabled) && settings()->facebook->is_enabled) || (isset(settings()->google->is_enabled) && settings()->google->is_enabled) || (isset(settings()->twitter->is_enabled) && settings()->twitter->is_enabled) || (isset(settings()->discord->is_enabled) && settings()->discord->is_enabled) || (isset(settings()->linkedin->is_enabled) && settings()->linkedin->is_enabled) || (isset(settings()->microsoft->is_enabled) && settings()->microsoft->is_enabled)): ?>
         <hr class="border-gray-100 my-3" />
 
         <div>
