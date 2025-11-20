@@ -120,51 +120,54 @@
                                     </div>
                                 </div>
 
-                            <a id="claim_button" href="<?= settings()->links->claim_url_is_enabled ? 'javascript:void(0)' : url('register') ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
+                            <a id="claim_button" href="<?= settings()->links->claim_url_is_enabled ? '#' : url('register') ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
                                 <?= l(settings()->links->claim_url_is_enabled ? 'index.claim' : 'index.sign_up') ?> <i class="fas fa-fw fa-sm fa-arrow-right"></i>
                             </a>
+                            <?php endif ?>
+                        <?php endif ?>
 
+                        <?php if(settings()->links->claim_url_is_enabled): ?>
+                            <?php ob_start() ?>
                                 <script>
-                                    (function() {
-                                        var claim_button_default_href = <?= json_encode(url('register')) ?>;
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        var claim_button = document.getElementById('claim_button');
+                                        if(!claim_button) return;
                                         
-                                        function createClaimModal() {
-                                            if(!document.querySelector('#claim_url_status_modal')) {
-                                                var modal = '<div class="modal fade" id="claim_url_status_modal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="claim_url_status_title"></h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><p id="claim_url_status_message"></p></div><div class="modal-footer" id="claim_url_status_footer"></div></div></div></div>';
-                                                document.body.insertAdjacentHTML('beforeend', modal);
-                                            }
-                                        }
+                                        var claim_url_input = document.getElementById('claim_url');
+                                        var domain_id_select = document.getElementById('domain_id');
+                                        var register_url = <?= json_encode(url('register')) ?>;
                                         
-                                        function handleClaimClick(e) {
-                                            if(e) e.preventDefault();
+                                        claim_button.addEventListener('click', function(e) {
+                                            e.preventDefault();
                                             
-                                            var url_input = document.querySelector('#claim_url');
-                                            if(!url_input) {
-                                                window.location.href = claim_button_default_href;
-                                                return false;
+                                            if(!claim_url_input) {
+                                                window.location.href = register_url;
+                                                return;
                                             }
                                             
                                             var url = '';
                                             if(typeof get_slug === 'function') {
-                                                url = get_slug(url_input.value);
+                                                url = get_slug(claim_url_input.value);
                                             } else {
-                                                url = url_input.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+                                                url = claim_url_input.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
                                             }
                                             
                                             var domain_id = '';
-                                            var domain_el = document.querySelector('#domain_id');
-                                            if(domain_el) domain_id = domain_el.value || '';
+                                            if(domain_id_select) domain_id = domain_id_select.value || '';
                                             
                                             if(!url || url.length < 1) {
-                                                window.location.href = claim_button_default_href;
-                                                return false;
+                                                window.location.href = register_url;
+                                                return;
                                             }
                                             
-                                            createClaimModal();
-                                            
                                             if(typeof $ === 'undefined' || typeof $.ajax === 'undefined') {
-                                                window.location.href = claim_button_default_href + '?claim-url=' + encodeURIComponent(url) + (domain_id ? '&domain-id=' + domain_id : '');
-                                                return false;
+                                                window.location.href = register_url + '?claim-url=' + encodeURIComponent(url) + (domain_id ? '&domain-id=' + domain_id : '');
+                                                return;
+                                            }
+                                            
+                                            if(!document.getElementById('claim_url_status_modal')) {
+                                                var modal_html = '<div class="modal fade" id="claim_url_status_modal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="claim_url_status_title"></h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><p id="claim_url_status_message"></p></div><div class="modal-footer" id="claim_url_status_footer"></div></div></div></div>';
+                                                document.body.insertAdjacentHTML('beforeend', modal_html);
                                             }
                                             
                                             $.ajax({
@@ -196,30 +199,22 @@
                                                     }
                                                 },
                                                 error: function() {
-                                                    window.location.href = claim_button_default_href + '?claim-url=' + encodeURIComponent(url) + (domain_id ? '&domain-id=' + domain_id : '');
+                                                    window.location.href = register_url + '?claim-url=' + encodeURIComponent(url) + (domain_id ? '&domain-id=' + domain_id : '');
                                                 }
                                             });
-                                            
-                                            return false;
-                                        }
+                                        });
                                         
-                                        var btn = document.querySelector('#claim_button');
-                                        if(btn) {
-                                            btn.addEventListener('click', handleClaimClick);
-                                            
-                                            var url_input = document.querySelector('#claim_url');
-                                            if(url_input) {
-                                                url_input.addEventListener('keypress', function(e) {
-                                                    if(e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        btn.click();
-                                                    }
-                                                });
-                                            }
+                                        if(claim_url_input) {
+                                            claim_url_input.addEventListener('keypress', function(e) {
+                                                if(e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    claim_button.click();
+                                                }
+                                            });
                                         }
-                                    })();
+                                    });
                                 </script>
-                            <?php endif ?>
+                            <?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>
                         <?php endif ?>
 
                         <?php //ALTUMCODE:DEMO if(!DEMO): ?>
