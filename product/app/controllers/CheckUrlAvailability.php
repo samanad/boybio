@@ -61,18 +61,18 @@ class CheckUrlAvailability extends Controller {
                 ]);
             } elseif($is_existing_link) {
                 /* URL is already used */
-                /* Get domain info for full URL */
+                /* Get the existing link to find its domain */
+                $link_query = $domain_id 
+                    ? "SELECT `link_id`, `domain_id` FROM `links` WHERE `url` = '{$escaped_url}' AND `domain_id` = " . (int) $domain_id . " LIMIT 1"
+                    : "SELECT `link_id`, `domain_id` FROM `links` WHERE `url` = '{$escaped_url}' AND (`domain_id` IS NULL OR `domain_id` = 0) LIMIT 1";
+                $existing_link = database()->query($link_query)->fetch_object();
+                
+                /* Construct full URL based on the link's domain */
                 $full_url = SITE_URL . $url;
-                if($domain_id) {
-                    $domain = db()->where('domain_id', $domain_id)->getOne('domains', ['scheme', 'host']);
+                if($existing_link && $existing_link->domain_id) {
+                    $domain = db()->where('domain_id', $existing_link->domain_id)->getOne('domains', ['scheme', 'host']);
                     if($domain) {
                         $full_url = $domain->scheme . $domain->host . '/' . $url;
-                    }
-                } else {
-                    /* Check if link exists on main domain */
-                    $link = db()->where('url', $url)->where('domain_id', 0)->getOne('links', ['link_id']);
-                    if($link) {
-                        $full_url = SITE_URL . $url;
                     }
                 }
                 
