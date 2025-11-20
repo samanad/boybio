@@ -354,7 +354,7 @@
                             rows="5" 
                             placeholder="<?= l('admin_settings.links.directory_guest_links_placeholder') ?>"
                         ><?= htmlspecialchars($links_text) ?></textarea>
-                        <small class="form-text text-muted"><?= sprintf(l('admin_settings.links.directory_guest_links_help'), htmlspecialchars($domain_host)) ?></small>
+                        <small class="form-text text-muted"><?= sprintf(l('admin_settings.links.directory_guest_links_help'), htmlspecialchars($domain_host), htmlspecialchars($domain_host)) ?></small>
                     </div>
                 <?php endforeach ?>
             <?php endif ?>
