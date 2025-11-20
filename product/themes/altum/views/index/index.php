@@ -184,9 +184,26 @@
                                         
                                         /* Also update href on button click to ensure it's current */
                                         document.querySelector('#claim_button').addEventListener('click', function(e) {
+                                            let url = get_slug(claim_url_input.value);
+                                            console.log('Button clicked, URL from input:', url);
+                                            console.log('Current button href before update:', this.href);
+                                            
+                                            if(!url || url.length < 1) {
+                                                console.log('No URL entered, preventing navigation');
+                                                e.preventDefault();
+                                                return false;
+                                            }
+                                            
                                             let current_href = updateClaimButtonHref();
+                                            console.log('Updated button href:', current_href);
+                                            
                                             if(current_href && current_href !== claim_button_default_href) {
                                                 this.href = current_href;
+                                                console.log('Final button href:', this.href);
+                                            } else {
+                                                console.log('No valid URL, preventing navigation');
+                                                e.preventDefault();
+                                                return false;
                                             }
                                         });
                                     </script>
