@@ -157,9 +157,13 @@
                                             
                                             /* Intercept claim button click */
                                             claim_button.addEventListener('click', function(e) {
+                                                e.preventDefault(); /* Always prevent default first */
+                                                
                                                 let url_input = document.querySelector('#claim_url');
                                                 if(!url_input) {
-                                                    return; /* Let default behavior happen */
+                                                    /* If no input field, redirect to register */
+                                                    window.location.href = claim_button_default_href;
+                                                    return;
                                                 }
                                                 
                                                 let url = get_slug(url_input.value);
@@ -167,10 +171,10 @@
                                                 let domain_id = domain_id_element ? domain_id_element.value : null;
 
                                                 if(!url || url.length < 1) {
-                                                    return; /* Let default behavior happen if no URL entered */
+                                                    /* If no URL entered, redirect to register */
+                                                    window.location.href = claim_button_default_href;
+                                                    return;
                                                 }
-
-                                                e.preventDefault();
 
                                                 /* Check URL availability */
                                                 $.ajax({
