@@ -159,6 +159,7 @@
                             <a id="claim_button" href="<?= SITE_URL ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
                                 <?= l(settings()->links->claim_url_is_enabled ? 'index.claim' : 'index.sign_up') ?> <i class="fas fa-fw fa-sm fa-arrow-right"></i>
                             </a>
+                        <?php endif ?>
 
                         <?php //ALTUMCODE:DEMO if(!DEMO): ?>
                         <?php if(settings()->links->biolinks_is_enabled && settings()->links->example_url && !settings()->links->claim_url_is_enabled): ?>
@@ -1163,28 +1164,28 @@
         }
 </script>
 
-<?php if(settings()->main->display_index_faq): ?>
-    <?php
-    $faqs = [];
-    foreach($faq_language_keys as $key) {
-        $faqs[] = [
-            '@type' => 'Question',
-            'name' => l('index.faq.' . $key . '.question'),
-            'acceptedAnswer' => [
-                '@type' => 'Answer',
-                'text' => l('index.faq.' . $key . '.answer'),
-            ]
-        ];
-    }
-    ?>
-    <script type="application/ld+json">
-        {
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": <?= json_encode($faqs) ?>
+    <?php if(settings()->main->display_index_faq): ?>
+        <?php
+        $faqs = [];
+        foreach($faq_language_keys as $key) {
+            $faqs[] = [
+                '@type' => 'Question',
+                'name' => l('index.faq.' . $key . '.question'),
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => l('index.faq.' . $key . '.answer'),
+                ]
+            ];
         }
-    </script>
-<?php endif ?>
+        ?>
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": <?= json_encode($faqs) ?>
+            }
+        </script>
+    <?php endif ?>
 <?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>
 
 <?php ob_start() ?>
