@@ -124,10 +124,13 @@
                                     /* Get subdirectory redirect base URL if set, otherwise use SITE_URL */
                                     /* Check links setting first (more specific), then main setting, then fallback to SITE_URL */
                                     $subdirectory_redirect_base_url = '';
-                                    if(!empty(settings()->links->subdirectory_redirect_base_url)) {
-                                        $subdirectory_redirect_base_url = settings()->links->subdirectory_redirect_base_url;
-                                    } elseif(!empty(settings()->main->subdirectory_redirect_base_url)) {
-                                        $subdirectory_redirect_base_url = settings()->main->subdirectory_redirect_base_url;
+                                    $links_url = isset(settings()->links->subdirectory_redirect_base_url) ? trim(settings()->links->subdirectory_redirect_base_url) : '';
+                                    $main_url = isset(settings()->main->subdirectory_redirect_base_url) ? trim(settings()->main->subdirectory_redirect_base_url) : '';
+                                    
+                                    if(!empty($links_url)) {
+                                        $subdirectory_redirect_base_url = $links_url;
+                                    } elseif(!empty($main_url)) {
+                                        $subdirectory_redirect_base_url = $main_url;
                                     } else {
                                         $subdirectory_redirect_base_url = SITE_URL;
                                     }
@@ -173,10 +176,13 @@
                                 /* Get subdirectory redirect base URL if set, otherwise use SITE_URL */
                                 /* Check links setting first (more specific), then main setting, then fallback to SITE_URL */
                                 $subdirectory_redirect_base_url = '';
-                                if(!empty(settings()->links->subdirectory_redirect_base_url)) {
-                                    $subdirectory_redirect_base_url = settings()->links->subdirectory_redirect_base_url;
-                                } elseif(!empty(settings()->main->subdirectory_redirect_base_url)) {
-                                    $subdirectory_redirect_base_url = settings()->main->subdirectory_redirect_base_url;
+                                $links_url = isset(settings()->links->subdirectory_redirect_base_url) ? trim(settings()->links->subdirectory_redirect_base_url) : '';
+                                $main_url = isset(settings()->main->subdirectory_redirect_base_url) ? trim(settings()->main->subdirectory_redirect_base_url) : '';
+                                
+                                if(!empty($links_url)) {
+                                    $subdirectory_redirect_base_url = $links_url;
+                                } elseif(!empty($main_url)) {
+                                    $subdirectory_redirect_base_url = $main_url;
                                 } else {
                                     $subdirectory_redirect_base_url = SITE_URL;
                                 }
