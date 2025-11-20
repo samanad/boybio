@@ -120,102 +120,36 @@
                                     </div>
                                 </div>
 
-                            <a id="claim_button" href="<?= settings()->links->claim_url_is_enabled ? '#' : url('register') ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
+                                <?php ob_start() ?>
+                                    <script>
+    'use strict';
+
+                                        let claim_button_default_href = document.querySelector('#claim_button').href;
+                                        ['change', 'paste', 'keyup', 'keypress'].forEach(event_type => document.querySelector('#claim_url').addEventListener(event_type, event => {
+                                            let url = get_slug(document.querySelector('#claim_url').value);
+                                            let domain_id_element = document.querySelector('#domain_id');
+                                            let domain_id = domain_id_element ? domain_id_element.value : null;
+
+                                            let query_params = new URLSearchParams();
+                                            if(url) query_params.set('claim-url', url);
+                                            if(domain_id) query_params.set('domain-id', domain_id);
+
+                                            document.querySelector('#claim_button').href = query_params.toString()
+                                                ? `${claim_button_default_href}?${query_params}`
+                                                : claim_button_default_href;
+
+                                            if(event.key === 'Enter') {
+                                                event.preventDefault();
+                                                document.querySelector('#claim_button').click();
+                                            }
+                                        }));
+                                    </script>
+                                <?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>
+                            <?php endif ?>
+
+                            <a id="claim_button" href="<?= url('register') ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
                                 <?= l(settings()->links->claim_url_is_enabled ? 'index.claim' : 'index.sign_up') ?> <i class="fas fa-fw fa-sm fa-arrow-right"></i>
                             </a>
-                            <?php endif ?>
-                        <?php endif ?>
-
-                        <?php if(settings()->links->claim_url_is_enabled): ?>
-                            <?php ob_start() ?>
-                                <script>
-                                    document.addEventListener('DOMContentLoaded', function() {
-                                        var claim_button = document.getElementById('claim_button');
-                                        if(!claim_button) return;
-                                        
-                                        var claim_url_input = document.getElementById('claim_url');
-                                        var domain_id_select = document.getElementById('domain_id');
-                                        var register_url = <?= json_encode(url('register')) ?>;
-                                        
-                                        claim_button.addEventListener('click', function(e) {
-                                            e.preventDefault();
-                                            
-                                            if(!claim_url_input) {
-                                                window.location.href = register_url;
-                                                return;
-                                            }
-                                            
-                                            var url = '';
-                                            if(typeof get_slug === 'function') {
-                                                url = get_slug(claim_url_input.value);
-                                            } else {
-                                                url = claim_url_input.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-                                            }
-                                            
-                                            var domain_id = '';
-                                            if(domain_id_select) domain_id = domain_id_select.value || '';
-                                            
-                                            if(!url || url.length < 1) {
-                                                window.location.href = register_url;
-                                                return;
-                                            }
-                                            
-                                            if(typeof $ === 'undefined' || typeof $.ajax === 'undefined') {
-                                                window.location.href = register_url + '?claim-url=' + encodeURIComponent(url) + (domain_id ? '&domain-id=' + domain_id : '');
-                                                return;
-                                            }
-                                            
-                                            if(!document.getElementById('claim_url_status_modal')) {
-                                                var modal_html = '<div class="modal fade" id="claim_url_status_modal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="claim_url_status_title"></h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><p id="claim_url_status_message"></p></div><div class="modal-footer" id="claim_url_status_footer"></div></div></div></div>';
-                                                document.body.insertAdjacentHTML('beforeend', modal_html);
-                                            }
-                                            
-                                            $.ajax({
-                                                type: 'POST',
-                                                url: <?= json_encode(url('check-url-availability')) ?>,
-                                                data: {
-                                                    url: url,
-                                                    domain_id: domain_id,
-                                                    token: <?= json_encode(\Altum\Csrf::get('global_token')) ?>
-                                                },
-                                                success: function(response) {
-                                                    if(response.status === 'success' && response.details) {
-                                                        var modal = $('#claim_url_status_modal');
-                                                        var title = $('#claim_url_status_title');
-                                                        var message = $('#claim_url_status_message');
-                                                        var footer = $('#claim_url_status_footer');
-                                                        
-                                                        if(response.details.status === 'available') {
-                                                            title.text(<?= json_encode(l('index.claim_url_available_title') ?? 'URL Available') ?>);
-                                                            message.text(response.details.message);
-                                                            footer.html('<button type="button" class="btn btn-primary" onclick="window.location.href=\'' + (response.details.full_url || response.details.redirect_url) + '\'"><?= l('index.claim_url_visit') ?></button><button type="button" class="btn btn-secondary" data-dismiss="modal"><?= l('global.close') ?></button>');
-                                                            modal.modal('show');
-                                                        } else if(response.details.status === 'used') {
-                                                            title.text(<?= json_encode(l('index.claim_url_used_title') ?? 'URL Taken') ?>);
-                                                            message.text(response.details.message);
-                                                            footer.html('<button type="button" class="btn btn-primary" onclick="window.location.href=\'' + (response.details.full_url || '') + '\'"><?= l('index.claim_url_visit') ?></button><button type="button" class="btn btn-secondary" data-dismiss="modal"><?= l('global.close') ?></button>');
-                                                            modal.modal('show');
-                                                        }
-                                                    }
-                                                },
-                                                error: function() {
-                                                    window.location.href = register_url + '?claim-url=' + encodeURIComponent(url) + (domain_id ? '&domain-id=' + domain_id : '');
-                                                }
-                                            });
-                                        });
-                                        
-                                        if(claim_url_input) {
-                                            claim_url_input.addEventListener('keypress', function(e) {
-                                                if(e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    claim_button.click();
-                                                }
-                                            });
-                                        }
-                                    });
-                                </script>
-                            <?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>
-                        <?php endif ?>
 
                         <?php //ALTUMCODE:DEMO if(!DEMO): ?>
                         <?php if(settings()->links->biolinks_is_enabled && settings()->links->example_url && !settings()->links->claim_url_is_enabled): ?>
