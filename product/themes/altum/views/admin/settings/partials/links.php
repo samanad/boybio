@@ -228,6 +228,36 @@
             </select>
         </div>
 
+        <?php if(settings()->links->main_domain_is_enabled || !empty($data->claim_url_domains)): ?>
+        <div class="form-group">
+            <label for="claim_url_available_domains"><?= l('admin_settings.links.claim_url_available_domains') ?></label>
+            <select id="claim_url_available_domains" name="claim_url_available_domains[]" class="custom-select" multiple size="5">
+                <?php 
+                $claim_url_available_domains = settings()->links->claim_url_available_domains ?? [];
+                $claim_url_available_domains = is_array($claim_url_available_domains) ? $claim_url_available_domains : [];
+                ?>
+                <?php if(settings()->links->main_domain_is_enabled): ?>
+                    <?php 
+                    $site_url_parsed = parse_url(SITE_URL);
+                    $main_domain = $site_url_parsed['host'] ?? '';
+                    ?>
+                    <option value="0" <?= in_array(0, $claim_url_available_domains) ? 'selected="selected"' : null ?>>
+                        <?= htmlspecialchars($main_domain) ?> (Main)
+                    </option>
+                <?php endif ?>
+                <?php foreach($data->claim_url_domains ?? [] as $domain): ?>
+                    <option value="<?= $domain->domain_id ?>" <?= in_array($domain->domain_id, $claim_url_available_domains) ? 'selected="selected"' : null ?>>
+                        <?= htmlspecialchars($domain->scheme . $domain->host) ?>
+                        <?php if($domain->type == 1): ?>
+                            (Additional)
+                        <?php endif ?>
+                    </option>
+                <?php endforeach ?>
+            </select>
+            <small class="form-text text-muted"><?= l('admin_settings.links.claim_url_available_domains_help') ?></small>
+        </div>
+        <?php endif ?>
+
         <div class="form-group custom-control custom-switch">
             <input id="subdirectory_redirect_is_enabled" name="subdirectory_redirect_is_enabled" type="checkbox" class="custom-control-input" <?= (isset(settings()->links->subdirectory_redirect_is_enabled) && settings()->links->subdirectory_redirect_is_enabled) ? 'checked="checked"' : null?>>
             <label class="custom-control-label" for="subdirectory_redirect_is_enabled"><i class="fas fa-fw fa-sm fa-redo text-muted mr-1"></i> <?= l('admin_settings.links.subdirectory_redirect_is_enabled') ?></label>

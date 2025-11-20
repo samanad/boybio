@@ -1423,6 +1423,8 @@ return [
     'admin_settings.links.claim_url_is_enabled_help' => 'Enabling this will give your guests the ability to write their preferred custom URL before signing up. Shows up for guests, if the main domain usage is eanbled.',
     'admin_settings.links.claim_url_type' => 'Claim URL type',
     'admin_settings.links.claim_url_type_help' => 'Which link type modal should trigger after a successful registration for URL claiming.',
+    'admin_settings.links.claim_url_available_domains' => 'Available domains for claim URL',
+    'admin_settings.links.claim_url_available_domains_help' => 'Select which domains should be available in the claim URL dropdown on the index page. Hold Ctrl/Cmd to select multiple domains. If none selected, all domains will be available (backward compatibility).',
     'admin_settings.links.subdirectory_redirect_is_enabled' => 'Enable subdirectory redirect',
     'admin_settings.links.subdirectory_redirect_is_enabled_help' => 'When enabled, 404 errors on custom domains will redirect to the base URL with the same subdirectory. Users will be informed that the link is not available before redirecting.',
     'admin_settings.links.subdirectory_redirect_base_url' => 'Subdirectory redirect base URL',

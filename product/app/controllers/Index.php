@@ -106,8 +106,51 @@ class Index extends Controller {
         $tools_categories = require APP_PATH . 'includes/tools/categories.php';
         $enabled_tools = count(array_filter((array) settings()->tools->available_tools));
 
-        /* Get the available domains to use */
-        $domains = (new Domain())->get_available_additional_domains();
+        /* Get the available domains to use for claim URL */
+        $all_domains = (new Domain())->get_available_additional_domains();
+        $claim_url_available_domains = settings()->links->claim_url_available_domains ?? [];
+        $claim_url_available_domains = is_array($claim_url_available_domains) ? $claim_url_available_domains : [];
+        
+        /* Filter domains based on admin settings */
+        $domains = [];
+        if(!empty($claim_url_available_domains)) {
+            foreach($all_domains as $domain_id => $domain) {
+                if(in_array($domain_id, $claim_url_available_domains)) {
+                    $domains[$domain_id] = $domain;
+                }
+            }
+        } else {
+            /* If no domains selected, show all (backward compatibility) */
+            $domains = $all_domains;
+        }
+        
+        /* Add main domain if enabled and selected */
+        if(settings()->links->main_domain_is_enabled && in_array(0, $claim_url_available_domains)) {
+            $site_url_parsed = parse_url(SITE_URL);
+            $main_domain_host = $site_url_parsed['host'] ?? '';
+            if($main_domain_host) {
+                $main_domain = new \stdClass();
+                $main_domain->domain_id = 0;
+                $main_domain->scheme = $site_url_parsed['scheme'] ?? 'https://';
+                $main_domain->host = $main_domain_host;
+                $main_domain->url = SITE_URL;
+                $main_domain->type = 0;
+                $domains[0] = $main_domain;
+            }
+        } elseif(settings()->links->main_domain_is_enabled && empty($claim_url_available_domains)) {
+            /* If no domains selected but main domain is enabled, show it (backward compatibility) */
+            $site_url_parsed = parse_url(SITE_URL);
+            $main_domain_host = $site_url_parsed['host'] ?? '';
+            if($main_domain_host) {
+                $main_domain = new \stdClass();
+                $main_domain->domain_id = 0;
+                $main_domain->scheme = $site_url_parsed['scheme'] ?? 'https://';
+                $main_domain->host = $main_domain_host;
+                $main_domain->url = SITE_URL;
+                $main_domain->type = 0;
+                $domains[0] = $main_domain;
+            }
+        }
 
         /* Main View */
         $view = new \Altum\View('index/index', (array) $this);

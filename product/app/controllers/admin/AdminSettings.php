@@ -35,8 +35,9 @@ class AdminSettings extends Controller {
         /* Set a custom title */
         Title::set(sprintf(l('admin_settings.title'), l('admin_settings.' . $method . '.tab')));
 
-        /* Get domains for directory guest links (if links method) */
+        /* Get domains for directory guest links and claim URL (if links method) */
         $domains = [];
+        $claim_url_domains = [];
         if($method == 'links') {
             /* Add main domain */
             $site_url_parsed = parse_url(SITE_URL);
@@ -56,11 +57,17 @@ class AdminSettings extends Controller {
                     'label' => $row->host
                 ];
             }
+            
+            /* Get all enabled domains for claim URL dropdown */
+            $claim_url_domains_result = database()->query("SELECT `domain_id`, `host`, `scheme`, `type` FROM `domains` WHERE `is_enabled` = 1 ORDER BY `host` ASC");
+            while($row = $claim_url_domains_result->fetch_object()) {
+                $claim_url_domains[] = $row;
+            }
         }
 
         /* Method View */
         $view = new \Altum\View('admin/settings/partials/' . $method, (array) $this);
-        $this->add_view_content('method', $view->run(['domains' => $domains]));
+        $this->add_view_content('method', $view->run(['domains' => $domains, 'claim_url_domains' => $claim_url_domains]));
 
         /* Main View */
         $view = new \Altum\View('admin/settings/index', (array) $this);
@@ -1999,6 +2006,17 @@ class AdminSettings extends Controller {
             $_POST['claim_url_is_enabled'] = (int) isset($_POST['claim_url_is_enabled']);
             $_POST['claim_url_type'] = in_array($_POST['claim_url_type'], ['link', 'biolink', 'file', 'vcard', 'event', 'static']) ? $_POST['claim_url_type'] : 'link';
             
+            /* Process claim URL available domains */
+            $claim_url_available_domains = [];
+            if(isset($_POST['claim_url_available_domains']) && is_array($_POST['claim_url_available_domains'])) {
+                foreach($_POST['claim_url_available_domains'] as $domain_id) {
+                    $domain_id = (int) $domain_id;
+                    if($domain_id > 0) {
+                        $claim_url_available_domains[] = $domain_id;
+                    }
+                }
+            }
+            
             /* Process subdirectory redirect settings */
             $_POST['subdirectory_redirect_is_enabled'] = (int) isset($_POST['subdirectory_redirect_is_enabled']);
             $_POST['subdirectory_redirect_base_url'] = trim($_POST['subdirectory_redirect_base_url'] ?? '');
@@ -2115,6 +2133,7 @@ class AdminSettings extends Controller {
                 'static_is_enabled' => $_POST['static_is_enabled'],
                 'claim_url_is_enabled' => $_POST['claim_url_is_enabled'],
                 'claim_url_type' => $_POST['claim_url_type'],
+                'claim_url_available_domains' => $claim_url_available_domains,
                 'subdirectory_redirect_is_enabled' => $_POST['subdirectory_redirect_is_enabled'],
                 'subdirectory_redirect_base_url' => $_POST['subdirectory_redirect_base_url'],
                 'biolinks_fonts' => $biolinks_fonts,
