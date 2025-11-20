@@ -172,7 +172,7 @@ class Spotlight extends Controller {
                 ];
             }
 
-            if(settings()->links->biolinks_is_enabled && settings()->links->directory_is_enabled && (settings()->links->directory_access == 'everyone' || (settings()->links->directory_access == 'users' && is_logged_in()))) {
+            if(settings()->links->biolinks_is_enabled && settings()->links->directory_is_enabled) {
                 $available_pages[] = [
                     'name' => l('directory.title'),
                     'url' => 'directory'
