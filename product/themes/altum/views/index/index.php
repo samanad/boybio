@@ -124,19 +124,28 @@
                                     <script>
     'use strict';
 
-                                        let claim_button_default_href = document.querySelector('#claim_button').href;
-                                        ['change', 'paste', 'keyup', 'keypress'].forEach(event_type => document.querySelector('#claim_url').addEventListener(event_type, event => {
-                                            let url = get_slug(document.querySelector('#claim_url').value);
-                                            let domain_id_element = document.querySelector('#domain_id');
+                                        let claim_button_default_href = <?= json_encode(SITE_URL) ?>;
+                                        let claim_url_input = document.querySelector('#claim_url');
+                                        let domain_id_element = document.querySelector('#domain_id');
+                                        
+                                        ['change', 'paste', 'keyup', 'keypress'].forEach(event_type => claim_url_input.addEventListener(event_type, event => {
+                                            let url = get_slug(claim_url_input.value);
                                             let domain_id = domain_id_element ? domain_id_element.value : null;
 
-                                            let query_params = new URLSearchParams();
-                                            if(url) query_params.set('claim-url', url);
-                                            if(domain_id) query_params.set('domain-id', domain_id);
-
-                                            document.querySelector('#claim_button').href = query_params.toString()
-                                                ? `${claim_button_default_href}?${query_params}`
-                                                : claim_button_default_href;
+                                            if(url && url.length > 0) {
+                                                let full_url = claim_button_default_href + url;
+                                                
+                                                if(domain_id && domain_id.trim()) {
+                                                    let selected_option = domain_id_element.options[domain_id_element.selectedIndex];
+                                                    if(selected_option && selected_option.dataset.fullUrl) {
+                                                        full_url = selected_option.dataset.fullUrl.replace(/\/$/, '') + '/' + url;
+                                                    }
+                                                }
+                                                
+                                                document.querySelector('#claim_button').href = full_url;
+                                            } else {
+                                                document.querySelector('#claim_button').href = claim_button_default_href;
+                                            }
 
                                             if(event.key === 'Enter') {
                                                 event.preventDefault();
@@ -147,7 +156,7 @@
                                 <?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>
                             <?php endif ?>
 
-                            <a id="claim_button" href="<?= url('register') ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
+                            <a id="claim_button" href="<?= SITE_URL ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
                                 <?= l(settings()->links->claim_url_is_enabled ? 'index.claim' : 'index.sign_up') ?> <i class="fas fa-fw fa-sm fa-arrow-right"></i>
                             </a>
 
