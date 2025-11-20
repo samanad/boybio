@@ -122,195 +122,160 @@
 
                                 <?php ob_start() ?>
                                     <script>
-    'use strict';
-
-                                        /* Store the original register URL globally */
-                                        let claim_button_default_href = <?= json_encode(url('register')) ?>;
-                                        
-                                        /* Create modal for claim URL status if it doesn't exist */
-                                        function createClaimModal() {
-                                            if(!document.querySelector('#claim_url_status_modal')) {
-                                                let claim_status_modal = `
-                                                    <div class="modal fade" id="claim_url_status_modal" tabindex="-1" role="dialog">
-                                                        <div class="modal-dialog modal-dialog-centered" role="document">
-                                                            <div class="modal-content">
-                                                                <div class="modal-header">
-                                                                    <h5 class="modal-title" id="claim_url_status_title"></h5>
-                                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                                        <span aria-hidden="true">&times;</span>
-                                                                    </button>
-                                                                </div>
-                                                                <div class="modal-body">
-                                                                    <p id="claim_url_status_message"></p>
-                                                                </div>
-                                                                <div class="modal-footer" id="claim_url_status_footer">
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                `;
-                                                document.body.insertAdjacentHTML('beforeend', claim_status_modal);
-                                            }
-                                        }
-                                        
-                                        /* Handle claim button click - can be called from inline onclick or event listener */
-                                        function handleClaimButtonClick(e) {
-                                            if(e) {
-                                                e.preventDefault();
-                                                e.stopPropagation();
+                                        (function() {
+                                            'use strict';
+                                            
+                                            /* Store the original register URL */
+                                            var claim_button_default_href = <?= json_encode(url('register')) ?>;
+                                            
+                                            /* Create modal for claim URL status */
+                                            function createClaimModal() {
+                                                if(!document.querySelector('#claim_url_status_modal')) {
+                                                    var claim_status_modal = '<div class="modal fade" id="claim_url_status_modal" tabindex="-1" role="dialog"><div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="claim_url_status_title"></h5><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body"><p id="claim_url_status_message"></p></div><div class="modal-footer" id="claim_url_status_footer"></div></div></div></div>';
+                                                    document.body.insertAdjacentHTML('beforeend', claim_status_modal);
+                                                }
                                             }
                                             
-                                            console.log('handleClaimButtonClick called');
-                                            
-                                            let url_input = document.querySelector('#claim_url');
-                                            if(!url_input) {
-                                                console.log('No URL input found, redirecting to register');
-                                                window.location.href = claim_button_default_href;
-                                                return false;
-                                            }
-                                            
-                                            /* Check if get_slug function exists */
-                                            if(typeof get_slug !== 'function') {
-                                                console.error('get_slug function not found');
-                                                /* Fallback: redirect to register with raw input */
-                                                let raw_url = url_input.value.trim();
-                                                if(raw_url) {
-                                                    window.location.href = claim_button_default_href + '?claim-url=' + encodeURIComponent(raw_url);
-                                                } else {
+                                            /* Handle claim button click - make it globally accessible */
+                                            window.handleClaimButtonClick = function(e) {
+                                                if(e) {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                }
+                                                
+                                                console.log('handleClaimButtonClick called');
+                                                
+                                                var url_input = document.querySelector('#claim_url');
+                                                if(!url_input) {
+                                                    console.log('No URL input found, redirecting to register');
                                                     window.location.href = claim_button_default_href;
+                                                    return false;
                                                 }
-                                                return false;
-                                            }
-                                            
-                                            let url = get_slug(url_input.value);
-                                            let domain_id_element = document.querySelector('#domain_id');
-                                            let domain_id = domain_id_element ? domain_id_element.value : null;
-
-                                            if(!url || url.length < 1) {
-                                                console.log('No URL entered, redirecting to register');
-                                                window.location.href = claim_button_default_href;
-                                                return false;
-                                            }
-
-                                            console.log('Checking URL availability:', url);
-                                            
-                                            /* Ensure modal exists */
-                                            createClaimModal();
-
-                                            /* Check URL availability */
-                                            if(typeof $ === 'undefined' || typeof $.ajax === 'undefined') {
-                                                console.error('jQuery not available');
-                                                /* Fallback: redirect to register */
-                                                window.location.href = claim_button_default_href + '?claim-url=' + encodeURIComponent(url) + (domain_id ? '&domain-id=' + domain_id : '');
-                                                return false;
-                                            }
-                                            
-                                            $.ajax({
-                                                type: 'POST',
-                                                url: <?= json_encode(url('check-url-availability')) ?>,
-                                                data: {
-                                                    url: url,
-                                                    domain_id: domain_id || '',
-                                                    token: <?= json_encode(\Altum\Csrf::get('global_token')) ?>
-                                                },
-                                                success: (response) => {
-                                                    console.log('AJAX success:', response);
-                                                    if(response.status === 'success' && response.details) {
-                                                        let modal = $('#claim_url_status_modal');
-                                                        let title = $('#claim_url_status_title');
-                                                        let message = $('#claim_url_status_message');
-                                                        let footer = $('#claim_url_status_footer');
-                                                        
-                                                        if(response.details.status === 'available') {
-                                                            /* URL is available - show message and button */
-                                                            title.text(<?= json_encode(l('index.claim_url_available_title') ?? 'URL Available') ?>);
-                                                            message.text(response.details.message);
-                                                            footer.html(`
-                                                                <button type="button" class="btn btn-primary" onclick="window.location.href='${response.details.full_url || response.details.redirect_url}'">
-                                                                    <?= l('index.claim_url_visit') ?>
-                                                                </button>
-                                                                <button type="button" class="btn btn-secondary" data-dismiss="modal"><?= l('global.close') ?></button>
-                                                            `);
-                                                            modal.modal('show');
-                                                        } else if(response.details.status === 'used') {
-                                                            /* URL is already used - show message and button to visit */
-                                                            title.text(<?= json_encode(l('index.claim_url_used_title') ?? 'URL Taken') ?>);
-                                                            message.text(response.details.message);
-                                                            footer.html(`
-                                                                <button type="button" class="btn btn-primary" onclick="window.location.href='${response.details.full_url || ''}'">
-                                                                    <?= l('index.claim_url_visit') ?>
-                                                                </button>
-                                                                <button type="button" class="btn btn-secondary" data-dismiss="modal"><?= l('global.close') ?></button>
-                                                            `);
-                                                            modal.modal('show');
-                                                        } else if(response.details.status === 'banned') {
-                                                            /* URL is banned - show nothing (don't show modal) */
-                                                            return;
-                                                        }
+                                                
+                                                /* Check if get_slug function exists */
+                                                if(typeof get_slug !== 'function') {
+                                                    console.error('get_slug function not found');
+                                                    var raw_url = url_input.value.trim();
+                                                    if(raw_url) {
+                                                        window.location.href = claim_button_default_href + '?claim-url=' + encodeURIComponent(raw_url);
+                                                    } else {
+                                                        window.location.href = claim_button_default_href;
                                                     }
-                                                },
-                                                error: (xhr, status, error) => {
-                                                    console.error('AJAX error:', status, error, xhr);
-                                                    /* On error, fall back to default behavior */
-                                                    let query_params = new URLSearchParams();
-                                                    query_params.set('claim-url', url);
-                                                    if(domain_id) query_params.set('domain-id', domain_id);
-                                                    window.location.href = claim_button_default_href + '?' + query_params.toString();
+                                                    return false;
                                                 }
-                                            });
-                                            
-                                            return false;
-                                        }
-                                        
-                                        function initClaimButton() {
-                                            let claim_button = document.querySelector('#claim_button');
-                                            if(!claim_button) {
-                                                console.error('Claim button not found');
-                                                return false;
-                                            }
-                                            
-                                            console.log('Claim button found, attaching event listener');
-                                            
-                                            /* Create modal */
-                                            createClaimModal();
-                                            
-                                            /* Also attach event listener as backup (in case inline onclick doesn't work) */
-                                            claim_button.addEventListener('click', function(e) {
-                                                handleClaimButtonClick(e);
-                                            });
-                                            
-                                            /* Handle Enter key in URL input */
-                                            let url_input = document.querySelector('#claim_url');
-                                            if(url_input) {
-                                                ['change', 'paste', 'keyup', 'keypress'].forEach(event_type => {
-                                                    url_input.addEventListener(event_type, function(event) {
-                                                        if(event.key === 'Enter') {
-                                                            event.preventDefault();
-                                                            claim_button.click();
+                                                
+                                                var url = get_slug(url_input.value);
+                                                var domain_id_element = document.querySelector('#domain_id');
+                                                var domain_id = domain_id_element ? domain_id_element.value : null;
+
+                                                if(!url || url.length < 1) {
+                                                    console.log('No URL entered, redirecting to register');
+                                                    window.location.href = claim_button_default_href;
+                                                    return false;
+                                                }
+
+                                                console.log('Checking URL availability:', url);
+                                                
+                                                /* Ensure modal exists */
+                                                createClaimModal();
+
+                                                /* Check URL availability */
+                                                if(typeof $ === 'undefined' || typeof $.ajax === 'undefined') {
+                                                    console.error('jQuery not available');
+                                                    window.location.href = claim_button_default_href + '?claim-url=' + encodeURIComponent(url) + (domain_id ? '&domain-id=' + domain_id : '');
+                                                    return false;
+                                                }
+                                                
+                                                $.ajax({
+                                                    type: 'POST',
+                                                    url: <?= json_encode(url('check-url-availability')) ?>,
+                                                    data: {
+                                                        url: url,
+                                                        domain_id: domain_id || '',
+                                                        token: <?= json_encode(\Altum\Csrf::get('global_token')) ?>
+                                                    },
+                                                    success: function(response) {
+                                                        console.log('AJAX success:', response);
+                                                        if(response.status === 'success' && response.details) {
+                                                            var modal = $('#claim_url_status_modal');
+                                                            var title = $('#claim_url_status_title');
+                                                            var message = $('#claim_url_status_message');
+                                                            var footer = $('#claim_url_status_footer');
+                                                            
+                                                            if(response.details.status === 'available') {
+                                                                title.text(<?= json_encode(l('index.claim_url_available_title') ?? 'URL Available') ?>);
+                                                                message.text(response.details.message);
+                                                                footer.html('<button type="button" class="btn btn-primary" onclick="window.location.href=\'' + (response.details.full_url || response.details.redirect_url) + '\'"><?= l('index.claim_url_visit') ?></button><button type="button" class="btn btn-secondary" data-dismiss="modal"><?= l('global.close') ?></button>');
+                                                                modal.modal('show');
+                                                            } else if(response.details.status === 'used') {
+                                                                title.text(<?= json_encode(l('index.claim_url_used_title') ?? 'URL Taken') ?>);
+                                                                message.text(response.details.message);
+                                                                footer.html('<button type="button" class="btn btn-primary" onclick="window.location.href=\'' + (response.details.full_url || '') + '\'"><?= l('index.claim_url_visit') ?></button><button type="button" class="btn btn-secondary" data-dismiss="modal"><?= l('global.close') ?></button>');
+                                                                modal.modal('show');
+                                                            } else if(response.details.status === 'banned') {
+                                                                return;
+                                                            }
                                                         }
-                                                    });
+                                                    },
+                                                    error: function(xhr, status, error) {
+                                                        console.error('AJAX error:', status, error, xhr);
+                                                        var query_params = new URLSearchParams();
+                                                        query_params.set('claim-url', url);
+                                                        if(domain_id) query_params.set('domain-id', domain_id);
+                                                        window.location.href = claim_button_default_href + '?' + query_params.toString();
+                                                    }
                                                 });
+                                                
+                                                return false;
+                                            };
+                                            
+                                            /* Initialize when DOM is ready */
+                                            function initClaimButton() {
+                                                var claim_button = document.querySelector('#claim_button');
+                                                if(!claim_button) {
+                                                    console.error('Claim button not found');
+                                                    return false;
+                                                }
+                                                
+                                                console.log('Claim button found, attaching event listener');
+                                                createClaimModal();
+                                                
+                                                /* Attach event listener as backup */
+                                                claim_button.addEventListener('click', window.handleClaimButtonClick);
+                                                
+                                                /* Handle Enter key in URL input */
+                                                var url_input = document.querySelector('#claim_url');
+                                                if(url_input) {
+                                                    ['change', 'paste', 'keyup', 'keypress'].forEach(function(event_type) {
+                                                        url_input.addEventListener(event_type, function(event) {
+                                                            if(event.key === 'Enter') {
+                                                                event.preventDefault();
+                                                                claim_button.click();
+                                                            }
+                                                        });
+                                                    });
+                                                }
+                                                
+                                                return true;
                                             }
                                             
-                                            return true;
-                                        }
-                                        
-                                        /* Try to initialize immediately if DOM is ready, otherwise wait */
-                                        if(document.readyState === 'loading') {
-                                            document.addEventListener('DOMContentLoaded', function() {
+                                            /* Initialize when ready */
+                                            if(document.readyState === 'loading') {
+                                                document.addEventListener('DOMContentLoaded', function() {
+                                                    if(typeof $ !== 'undefined') {
+                                                        $(initClaimButton);
+                                                    } else {
+                                                        setTimeout(initClaimButton, 100);
+                                                    }
+                                                });
+                                            } else {
                                                 if(typeof $ !== 'undefined') {
-                                                    $(document).ready(initClaimButton);
+                                                    $(initClaimButton);
                                                 } else {
                                                     setTimeout(initClaimButton, 100);
                                                 }
-                                            });
-                                        } else {
-                                            if(typeof $ !== 'undefined') {
-                                                $(document).ready(initClaimButton);
-                                            } else {
-                                                setTimeout(initClaimButton, 100);
                                             }
-                                        }
+                                        })();
                                     </script>
                                 <?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>
                             <?php endif ?>
