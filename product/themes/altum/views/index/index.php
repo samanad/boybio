@@ -100,6 +100,20 @@
                                 <div class="mb-3">
                                     <div class="input-group">
                                         <div class="input-group-prepend">
+                                            <?php 
+                                                /* Get subdirectory redirect base URL for display */
+                                                $display_base_url = '';
+                                                $links_url = isset(settings()->links->subdirectory_redirect_base_url) ? trim(settings()->links->subdirectory_redirect_base_url) : '';
+                                                $main_url = isset(settings()->main->subdirectory_redirect_base_url) ? trim(settings()->main->subdirectory_redirect_base_url) : '';
+                                                if(!empty($links_url)) {
+                                                    $display_base_url = $links_url;
+                                                } elseif(!empty($main_url)) {
+                                                    $display_base_url = $main_url;
+                                                } else {
+                                                    $display_base_url = SITE_URL;
+                                                }
+                                                $display_base_url = rtrim($display_base_url, '/');
+                                            ?>
                                             <?php if(count($data->domains)): ?>
                                                 <select id="domain_id" name="domain_id" class="appearance-none custom-select form-control input-group-text h-100">
                                                     <?php if(settings()->links->main_domain_is_enabled): ?>
@@ -112,7 +126,7 @@
                                                 </select>
                                             <?php else: ?>
                                                 <div class="input-group-text bg-gray-50">
-                                                    <?= remove_url_protocol_from_url(SITE_URL) ?>
+                                                    <?= remove_url_protocol_from_url($display_base_url) ?>
                                                 </div>
                                             <?php endif ?>
                                         </div>
