@@ -327,7 +327,7 @@
             <small class="form-text text-muted d-block mb-3"><?= l('admin_settings.links.directory_display_help') ?></small>
             
             <?php 
-            $domains = $data['domains'] ?? [];
+            $domains = $data->domains ?? [];
             $directory_guest_links = settings()->links->directory_guest_links ?? [];
             
             if(empty($domains)): ?>
@@ -337,8 +337,8 @@
                 </div>
             <?php else: ?>
                 <?php foreach($domains as $domain_key => $domain_info): 
-                    $domain_host = $domain_info['host'];
-                    $domain_label = $domain_info['label'];
+                    $domain_host = is_array($domain_info) ? $domain_info['host'] : $domain_info->host;
+                    $domain_label = is_array($domain_info) ? $domain_info['label'] : $domain_info->label;
                     $links_for_domain = $directory_guest_links[$domain_host] ?? [];
                     $links_text = !empty($links_for_domain) ? implode("\n", $links_for_domain) : '';
                 ?>
