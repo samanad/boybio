@@ -1800,8 +1800,15 @@ class Router {
                     /* Check for subdirectory redirect feature */
                     $subdirectory_redirect_enabled = (isset(settings()->main->subdirectory_redirect_is_enabled) && settings()->main->subdirectory_redirect_is_enabled) ||
                                                      (isset(settings()->links->subdirectory_redirect_is_enabled) && settings()->links->subdirectory_redirect_is_enabled);
-                    $subdirectory_redirect_base_url = !empty(settings()->main->subdirectory_redirect_base_url) ? settings()->main->subdirectory_redirect_base_url : 
-                                                       (!empty(settings()->links->subdirectory_redirect_base_url) ? settings()->links->subdirectory_redirect_base_url : '');
+                    /* Check links setting first (more specific), then main setting */
+                    $subdirectory_redirect_base_url = '';
+                    $links_url = isset(settings()->links->subdirectory_redirect_base_url) ? trim(settings()->links->subdirectory_redirect_base_url) : '';
+                    $main_url = isset(settings()->main->subdirectory_redirect_base_url) ? trim(settings()->main->subdirectory_redirect_base_url) : '';
+                    if(!empty($links_url)) {
+                        $subdirectory_redirect_base_url = $links_url;
+                    } elseif(!empty($main_url)) {
+                        $subdirectory_redirect_base_url = $main_url;
+                    }
                     
                     if(isset(self::$data['domain']) && 
                        $subdirectory_redirect_enabled &&
