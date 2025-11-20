@@ -95,7 +95,7 @@
                     </a>
                 </div>
             <?php endif ?>
-            <?php if(settings()->linkedin->is_enabled): ?>
+            <?php if(isset(settings()->linkedin) && isset(settings()->linkedin->is_enabled) && settings()->linkedin->is_enabled): ?>
                 <div class="mt-2">
                     <a href="<?= url('login/linkedin-initiate') ?>" class="btn btn-light btn-block">
                         <img src="<?= ASSETS_FULL_URL . 'images/linkedin.svg' ?>" class="mr-1" />
@@ -103,7 +103,7 @@
                     </a>
                 </div>
             <?php endif ?>
-            <?php if(settings()->microsoft->is_enabled): ?>
+            <?php if(isset(settings()->microsoft) && isset(settings()->microsoft->is_enabled) && settings()->microsoft->is_enabled): ?>
                 <div class="mt-2">
                     <a href="<?= url('login/microsoft-initiate') ?>" class="btn btn-light btn-block">
                         <img src="<?= ASSETS_FULL_URL . 'images/microsoft.svg' ?>" class="mr-1" />
