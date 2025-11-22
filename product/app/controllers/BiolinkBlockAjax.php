@@ -6450,8 +6450,10 @@ class BiolinkBlockAjax extends Controller {
                 Response::json(l('global.error_message.file_upload'), 'error');
             }
 
-            if(!is_writable(UPLOADS_PATH . $upload_folder)) {
-                Response::json(sprintf(l('global.error_message.directory_not_writable'), UPLOADS_PATH . $upload_folder), 'error');
+            if(!\Altum\Plugin::is_active('offload') || (\Altum\Plugin::is_active('offload') && !settings()->offload->uploads_url)) {
+                if(!is_writable(UPLOADS_PATH . $upload_folder)) {
+                    Response::json(sprintf(l('global.error_message.directory_not_writable'), UPLOADS_PATH . $upload_folder), 'error');
+                }
             }
 
             if(!in_array($file_extension, $allowed_extensions)) {
