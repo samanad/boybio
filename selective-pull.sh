@@ -60,8 +60,25 @@ if [ "$1" == "--files" ] && [ -n "$2" ]; then
     echo "Pulling only specified files..."
     echo ""
     
+    # Protected files that should NEVER be overwritten
+    PROTECTED_FILES=("product/config.php" "product/app/config/config.php")
+    
     # Checkout specific files from remote branch
     while IFS= read -r file; do
+        # Skip protected files
+        SKIP_FILE=false
+        for protected in "${PROTECTED_FILES[@]}"; do
+            if [ "$file" == "$protected" ]; then
+                echo "PROTECTED (skipped): $file - This file contains sensitive configuration and will not be overwritten"
+                SKIP_FILE=true
+                break
+            fi
+        done
+        
+        if [ "$SKIP_FILE" = true ]; then
+            continue
+        fi
+        
         if [ -f "$file" ] || [ -d "$file" ]; then
             echo "Updating: $file"
             git checkout origin/backup -- "$file" 2>/dev/null || echo "  Warning: Could not update $file"
@@ -115,6 +132,15 @@ fi
 echo "=== STANDARD PULL (with untracked file handling) ==="
 echo ""
 
+# Protected files - backup before pull
+PROTECTED_FILES=("product/config.php" "product/app/config/config.php")
+for protected in "${PROTECTED_FILES[@]}"; do
+    if [ -f "$protected" ]; then
+        echo "Backing up protected file: $protected"
+        cp "$protected" "$protected.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+    fi
+done
+
 # Check for untracked files that would conflict
 echo "Checking for conflicting untracked files..."
 CONFLICTING=$(git merge-tree $(git merge-base HEAD origin/backup) HEAD origin/backup 2>/dev/null | grep -E "^\+.*" | awk '{print $2}' | head -20)
@@ -141,6 +167,23 @@ fi
 # Pull
 if git pull origin backup; then
     echo "✓ Pull successful"
+    
+    # Restore protected files if they were overwritten
+    for protected in "${PROTECTED_FILES[@]}"; do
+        if [ -f "$protected.backup."* ] 2>/dev/null; then
+            BACKUP_FILE=$(ls -t "$protected.backup."* 2>/dev/null | head -1)
+            if [ -f "$BACKUP_FILE" ]; then
+                # Check if file was actually changed (compare with backup)
+                if ! cmp -s "$protected" "$BACKUP_FILE" 2>/dev/null; then
+                    echo "Restoring protected file: $protected"
+                    cp "$BACKUP_FILE" "$protected"
+                    echo "✓ Restored $protected from backup"
+                fi
+                # Clean up backup
+                rm -f "$BACKUP_FILE"
+            fi
+        fi
+    done
 else
     echo "Pull failed - see error above"
     if [ "$STASHED" = true ]; then
@@ -168,4 +211,7 @@ if [ "$STASHED" = true ]; then
     echo "Note: You had local changes that were stashed."
     echo "To restore them: git stash pop"
 fi
+
+
+
 
