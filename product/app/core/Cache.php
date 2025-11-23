@@ -29,9 +29,21 @@ class Cache {
 
         /* Cache adapter for phpFastCache */
         if($driver == 'Files') {
+            $cache_path = UPLOADS_PATH . 'cache';
+            
+            /* Ensure cache directory exists and is writable */
+            if(!is_dir($cache_path)) {
+                @mkdir($cache_path, 0777, true);
+            }
+            
+            /* Try to make cache directory writable if it's not */
+            if(is_dir($cache_path) && !is_writable($cache_path)) {
+                @chmod($cache_path, 0777);
+            }
+            
             $config = new \Phpfastcache\Drivers\Files\Config([
                 'securityKey' => PRODUCT_KEY,
-                'path' => UPLOADS_PATH . 'cache',
+                'path' => $cache_path,
                 'preventCacheSlams' => true,
                 'cacheSlamsTimeout' => 20,
                 'secureFileManipulation' => true
@@ -44,7 +56,20 @@ class Cache {
 
         \Phpfastcache\CacheManager::setDefaultConfig($config);
 
-        self::$adapter = \Phpfastcache\CacheManager::getInstance($driver);
+        try {
+            self::$adapter = \Phpfastcache\CacheManager::getInstance($driver);
+        } catch(\Exception $e) {
+            /* If cache initialization fails, fall back to Devnull driver */
+            if($driver == 'Files') {
+                $config = new \Phpfastcache\Config\Config([
+                    'path' => UPLOADS_PATH . 'cache',
+                ]);
+                \Phpfastcache\CacheManager::setDefaultConfig($config);
+                self::$adapter = \Phpfastcache\CacheManager::getInstance('Devnull');
+            } else {
+                throw $e;
+            }
+        }
     }
 
     public static function cache_function_result($key, $tag, $function_to_cache, $cached_seconds = CACHE_DEFAULT_SECONDS) {
