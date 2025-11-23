@@ -154,7 +154,9 @@ function upload_file_to_s3($s3, $local_path, $s3_key, $storage_name, $content_ty
 /* Function to recursively upload directory */
 function upload_directory_to_s3($s3, $local_dir, $s3_prefix, $storage_name, $base_path = null) {
     if($base_path === null) {
-        $base_path = $local_dir;
+        $base_path = rtrim($local_dir, '/\\');
+    } else {
+        $base_path = rtrim($base_path, '/\\');
     }
     
     if(!is_dir($local_dir)) {
@@ -169,9 +171,28 @@ function upload_directory_to_s3($s3, $local_dir, $s3_prefix, $storage_name, $bas
     foreach($files as $file) {
         if($file->isFile()) {
             $local_path = $file->getPathname();
-            $relative_path = str_replace($base_path . '/', '', $local_path);
-            $relative_path = str_replace('\\', '/', $relative_path); // Fix Windows paths
-            $s3_key = $s3_prefix . $relative_path;
+            
+            /* Normalize paths - convert to forward slashes and remove trailing slashes */
+            $normalized_base = str_replace('\\', '/', $base_path);
+            $normalized_local = str_replace('\\', '/', $local_path);
+            
+            /* Calculate relative path correctly */
+            if(strpos($normalized_local, $normalized_base) === 0) {
+                $relative_path = substr($normalized_local, strlen($normalized_base) + 1);
+            } else {
+                /* Fallback: try with trailing slash */
+                $normalized_base_slash = $normalized_base . '/';
+                if(strpos($normalized_local, $normalized_base_slash) === 0) {
+                    $relative_path = substr($normalized_local, strlen($normalized_base_slash));
+                } else {
+                    /* If still no match, use basename only */
+                    $relative_path = basename($local_path);
+                }
+            }
+            
+            /* Ensure s3_prefix doesn't have trailing slash, and relative_path is clean */
+            $s3_prefix_clean = rtrim($s3_prefix, '/');
+            $s3_key = $s3_prefix_clean . '/' . $relative_path;
             
             upload_file_to_s3($s3, $local_path, $s3_key, $storage_name);
         }
@@ -208,7 +229,8 @@ echo "\n";
 /* 4. Upload plugins folder */
 echo "4. Uploading plugins (plugins/)...\n";
 if(is_dir(PLUGINS_PATH)) {
-    upload_directory_to_s3($s3, PLUGINS_PATH, 'plugins/', $offload_settings->storage_name);
+    /* Use PLUGINS_PATH as base_path to ensure correct relative path calculation */
+    upload_directory_to_s3($s3, PLUGINS_PATH, 'plugins/', $offload_settings->storage_name, PLUGINS_PATH);
 } else {
     echo "  ⚠️  Directory not found: " . PLUGINS_PATH . "\n";
 }
@@ -217,6 +239,7 @@ echo "\n";
 /* 5. Upload translations */
 echo "5. Uploading translations (app/languages/)...\n";
 if(is_dir(APP_PATH . 'languages/')) {
+    /* Use APP_PATH . 'languages/' as base_path to ensure correct relative path calculation */
     upload_directory_to_s3($s3, APP_PATH . 'languages/', 'app/languages/', $offload_settings->storage_name, APP_PATH . 'languages/');
 } else {
     echo "  ⚠️  Directory not found: " . APP_PATH . "languages/\n";
