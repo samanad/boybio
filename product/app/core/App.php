@@ -255,6 +255,35 @@ class App {
             redirect(\Altum\Router::$original_request . (\Altum\Router::$original_request_query ? '?' . \Altum\Router::$original_request_query : null));
         }
 
+        /* Auto-set Persian language if accessing from Google Login Persistent IP */
+        if(!\Altum\Router::$language_code && !is_logged_in()) {
+            $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
+            $current_ip = get_ip();
+            
+            if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip) {
+                /* Check if Persian language is available */
+                $persian_language_code = 'fa'; // Persian language code
+                $persian_language_name = 'persian'; // Persian language name
+                
+                /* Try to find Persian language in active languages */
+                $persian_found = false;
+                foreach(Language::$active_languages as $lang_name => $lang_code) {
+                    if($lang_code == $persian_language_code || $lang_name == $persian_language_name) {
+                        $persian_found = true;
+                        $persian_language_code = $lang_code;
+                        $persian_language_name = $lang_name;
+                        break;
+                    }
+                }
+                
+                /* If Persian is found, redirect to Persian version */
+                if($persian_found) {
+                    header('Location: ' . SITE_URL . $persian_language_code . '/' . \Altum\Router::$original_request . (\Altum\Router::$original_request_query ? '?' . \Altum\Router::$original_request_query : null));
+                    die();
+                }
+            }
+        }
+
         /* Redirect based on browser language if needed */
         $browser_language_code = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? mb_substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) : null;
         if(settings()->main->auto_language_detection_is_enabled && \Altum\Router::$controller_settings['no_browser_language_detection'] == false && !\Altum\Router::$language_code && !is_logged_in() && $browser_language_code && Language::$default_code != $browser_language_code && array_search($browser_language_code, Language::$active_languages)) {
