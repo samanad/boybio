@@ -35,14 +35,18 @@ PROTECTED_FILES=(
 )
 
 # Get files that differ between local and remote
-git diff --name-only HEAD origin/backup | while IFS= read -r file; do
+# Use process substitution to avoid subshell issues with counters
+while IFS= read -r file; do
+    # Skip empty lines
+    [ -z "$file" ] && continue
+    
     # Skip protected files
     SKIP_FILE=false
     for protected in "${PROTECTED_FILES[@]}"; do
         if [ "$file" == "$protected" ]; then
             echo "  PROTECTED (skipped): $file"
             SKIP_FILE=true
-            ((SKIPPED_COUNT++)) || true
+            SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
             break
         fi
     done
@@ -53,31 +57,37 @@ git diff --name-only HEAD origin/backup | while IFS= read -r file; do
     
     # Check if file exists in remote branch
     if git cat-file -e "origin/backup:$file" 2>/dev/null; then
-        # File exists in remote, try to update it
+        # Check if file actually differs (not just listed)
+        if git diff --quiet HEAD origin/backup -- "$file" 2>/dev/null; then
+            # File is the same, skip it silently
+            continue
+        fi
+        
+        # File exists in remote and differs, try to update it
         if [ -f "$file" ] || [ -d "$file" ]; then
             echo "  Updating: $file"
             if git checkout origin/backup -- "$file" 2>/dev/null; then
-                ((UPDATED_COUNT++)) || true
+                UPDATED_COUNT=$((UPDATED_COUNT + 1))
             else
                 echo "    Warning: Could not update $file"
-                ((ERROR_COUNT++)) || true
+                ERROR_COUNT=$((ERROR_COUNT + 1))
             fi
         else
             # File doesn't exist locally but exists in remote - create it
             echo "  Creating: $file"
             if git checkout origin/backup -- "$file" 2>/dev/null; then
-                ((UPDATED_COUNT++)) || true
+                UPDATED_COUNT=$((UPDATED_COUNT + 1))
             else
                 echo "    Warning: Could not create $file"
-                ((ERROR_COUNT++)) || true
+                ERROR_COUNT=$((ERROR_COUNT + 1))
             fi
         fi
     else
         # File doesn't exist in remote - skip it (it's local-only)
         echo "  Skipping (local-only): $file"
-        ((SKIPPED_COUNT++)) || true
+        SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
     fi
-done
+done < <(git diff --name-only HEAD origin/backup)
 
 echo ""
 echo "✓ Update complete"
