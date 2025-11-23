@@ -1570,11 +1570,22 @@ class AdminSettings extends Controller {
             $_POST['short_app_name'] = input_clean($_POST['short_app_name']);
             $_POST['app_description'] = input_clean($_POST['app_description']);
             $_POST['theme_color'] = !verify_hex_color($_POST['theme_color']) ? '#ffffff' : $_POST['theme_color'];
-            $_POST['app_start_url'] = get_url($_POST['app_start_url']);
-            if(empty($_POST['app_start_url']) || !string_starts_with(SITE_URL, $_POST['app_start_url'])) {
+            /* Process and validate app start URL */
+            if(!empty($_POST['app_start_url'])) {
+                $_POST['app_start_url'] = get_url($_POST['app_start_url']);
+                
+                /* Only validate if URL is provided - allow custom domains/subdomains */
+                $parsed_url = parse_url($_POST['app_start_url']);
+                if(!$parsed_url || empty($parsed_url['scheme']) || empty($parsed_url['host'])) {
+                    /* Invalid URL format, use default */
+                    $_POST['app_start_url'] = SITE_URL;
+                }
+            } else {
+                /* Empty URL, use default */
                 $_POST['app_start_url'] = SITE_URL;
             }
 
+            /* Parse URL and add UTM parameters if not present */
             $parsed_url = parse_url($_POST['app_start_url']);
             parse_str($parsed_url['query'] ?? '', $query);
 
