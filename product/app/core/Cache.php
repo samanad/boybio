@@ -41,8 +41,28 @@ class Cache {
                 @chmod($cache_path, 0777);
             }
             
+            /* Pre-create the subdirectory structure that phpfastcache will use */
+            /* phpfastcache creates: cache/{securityKey}/Files/ */
+            $security_key = PRODUCT_KEY;
+            $subdirectory = $cache_path . '/' . $security_key . '/Files';
+            
+            if(!is_dir($subdirectory)) {
+                @mkdir($subdirectory, 0777, true);
+            }
+            
+            /* Ensure subdirectory is writable */
+            if(is_dir($subdirectory) && !is_writable($subdirectory)) {
+                @chmod($subdirectory, 0777);
+            }
+            
+            /* Also ensure parent subdirectory is writable */
+            $parent_subdirectory = $cache_path . '/' . $security_key;
+            if(is_dir($parent_subdirectory) && !is_writable($parent_subdirectory)) {
+                @chmod($parent_subdirectory, 0777);
+            }
+            
             $config = new \Phpfastcache\Drivers\Files\Config([
-                'securityKey' => PRODUCT_KEY,
+                'securityKey' => $security_key,
                 'path' => $cache_path,
                 'preventCacheSlams' => true,
                 'cacheSlamsTimeout' => 20,
