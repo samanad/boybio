@@ -644,10 +644,12 @@ class Uploads {
         /* Local uploading */
         else {
             $save_directory_path = UPLOADS_PATH . Uploads::get_path($uploads_file_key);
-            if(!is_writable($save_directory_path)) {
-                unlink($temp_file_path);
-                $return_error(sprintf(l('global.error_message.directory_not_writable'), $save_directory_path));
-                return null;
+            if(!\Altum\Plugin::is_active('offload') || (\Altum\Plugin::is_active('offload') && !settings()->offload->uploads_url)) {
+                if(!is_writable($save_directory_path)) {
+                    unlink($temp_file_path);
+                    $return_error(sprintf(l('global.error_message.directory_not_writable'), $save_directory_path));
+                    return null;
+                }
             }
 
             $save_file_path = $save_directory_path . $final_file_name;

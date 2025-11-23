@@ -1559,8 +1559,10 @@ class AdminSettings extends Controller {
                 redirect('admin/settings/pwa');
             }
 
-            if(!is_writable(UPLOADS_PATH . \Altum\Uploads::get_path('pwa'))) {
-                Alerts::add_error(sprintf(l('global.error_message.directory_not_writable'), UPLOADS_PATH . \Altum\Uploads::get_path('pwa')));
+            if(!\Altum\Plugin::is_active('offload') || (\Altum\Plugin::is_active('offload') && !settings()->offload->uploads_url)) {
+                if(!is_writable(UPLOADS_PATH . \Altum\Uploads::get_path('pwa'))) {
+                    Alerts::add_error(sprintf(l('global.error_message.directory_not_writable'), UPLOADS_PATH . \Altum\Uploads::get_path('pwa')));
+                }
             }
 
             /* :) */
