@@ -13,7 +13,18 @@
         <?php
         $has_announcements = true;
 
-        $announcement_content = settings()->announcements->translations->{\Altum\Language::$name}->{$type . '_content'} ?: settings()->announcements->{$type . '_content'};
+        // Safely get translated content or fallback to default
+        $announcement_content = null;
+        if(
+            isset(settings()->announcements->translations)
+            && isset(settings()->announcements->translations->{\Altum\Language::$name})
+            && isset(settings()->announcements->translations->{\Altum\Language::$name}->{$type . '_content'})
+            && !empty(settings()->announcements->translations->{\Altum\Language::$name}->{$type . '_content'})
+        ) {
+            $announcement_content = settings()->announcements->translations->{\Altum\Language::$name}->{$type . '_content'};
+        } else {
+            $announcement_content = settings()->announcements->{$type . '_content'} ?? '';
+        }
 
         /* Dynamic variables processing */
         $replacers = [
