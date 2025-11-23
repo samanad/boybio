@@ -1579,10 +1579,52 @@ class AdminSettings extends Controller {
                 if(!$parsed_url || empty($parsed_url['scheme']) || empty($parsed_url['host'])) {
                     /* Invalid URL format, use default */
                     $_POST['app_start_url'] = SITE_URL;
+                } else {
+                    /* Check if Persian language code should be added to the path */
+                    $persian_language_code = 'fa';
+                    $path = $parsed_url['path'] ?? '/';
+                    
+                    /* Check if Persian is an active language */
+                    $persian_is_active = false;
+                    foreach(\Altum\Language::$active_languages as $lang_name => $lang_code) {
+                        if($lang_code == $persian_language_code || $lang_name == 'persian') {
+                            $persian_is_active = true;
+                            $persian_language_code = $lang_code;
+                            break;
+                        }
+                    }
+                    
+                    /* If Persian is active and path doesn't already contain a language code, add /fa/ */
+                    if($persian_is_active) {
+                        $path_parts = explode('/', trim($path, '/'));
+                        $first_part = $path_parts[0] ?? '';
+                        
+                        /* Check if first part is already a language code */
+                        $has_language_code = in_array($first_part, \Altum\Language::$active_languages);
+                        
+                        /* If no language code in path, add Persian language code */
+                        if(!$has_language_code) {
+                            $path = '/' . $persian_language_code . ($path == '/' ? '' : $path);
+                            $_POST['app_start_url'] = $parsed_url['scheme'] . '://' . $parsed_url['host'] . 
+                                (isset($parsed_url['port']) ? ':' . $parsed_url['port'] : '') . 
+                                $path . 
+                                (isset($parsed_url['query']) ? '?' . $parsed_url['query'] : '') .
+                                (isset($parsed_url['fragment']) ? '#' . $parsed_url['fragment'] : '');
+                        }
+                    }
                 }
             } else {
-                /* Empty URL, use default */
-                $_POST['app_start_url'] = SITE_URL;
+                /* Empty URL, use default with Persian if available */
+                $persian_language_code = 'fa';
+                $persian_is_active = false;
+                foreach(\Altum\Language::$active_languages as $lang_name => $lang_code) {
+                    if($lang_code == $persian_language_code || $lang_name == 'persian') {
+                        $persian_is_active = true;
+                        $persian_language_code = $lang_code;
+                        break;
+                    }
+                }
+                $_POST['app_start_url'] = SITE_URL . ($persian_is_active ? $persian_language_code . '/' : '');
             }
 
             /* Parse URL and add UTM parameters if not present */
