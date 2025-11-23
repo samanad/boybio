@@ -1579,52 +1579,10 @@ class AdminSettings extends Controller {
                 if(!$parsed_url || empty($parsed_url['scheme']) || empty($parsed_url['host'])) {
                     /* Invalid URL format, use default */
                     $_POST['app_start_url'] = SITE_URL;
-                } else {
-                    /* Check if Persian language code should be added to the path */
-                    $persian_language_code = 'fa';
-                    $path = $parsed_url['path'] ?? '/';
-                    
-                    /* Check if Persian is an active language */
-                    $persian_is_active = false;
-                    foreach(\Altum\Language::$active_languages as $lang_name => $lang_code) {
-                        if($lang_code == $persian_language_code || $lang_name == 'persian') {
-                            $persian_is_active = true;
-                            $persian_language_code = $lang_code;
-                            break;
-                        }
-                    }
-                    
-                    /* If Persian is active and path doesn't already contain a language code, add /fa/ */
-                    if($persian_is_active) {
-                        $path_parts = explode('/', trim($path, '/'));
-                        $first_part = $path_parts[0] ?? '';
-                        
-                        /* Check if first part is already a language code */
-                        $has_language_code = in_array($first_part, \Altum\Language::$active_languages);
-                        
-                        /* If no language code in path, add Persian language code */
-                        if(!$has_language_code) {
-                            $path = '/' . $persian_language_code . ($path == '/' ? '' : $path);
-                            $_POST['app_start_url'] = $parsed_url['scheme'] . '://' . $parsed_url['host'] . 
-                                (isset($parsed_url['port']) ? ':' . $parsed_url['port'] : '') . 
-                                $path . 
-                                (isset($parsed_url['query']) ? '?' . $parsed_url['query'] : '') .
-                                (isset($parsed_url['fragment']) ? '#' . $parsed_url['fragment'] : '');
-                        }
-                    }
                 }
             } else {
-                /* Empty URL, use default with Persian if available */
-                $persian_language_code = 'fa';
-                $persian_is_active = false;
-                foreach(\Altum\Language::$active_languages as $lang_name => $lang_code) {
-                    if($lang_code == $persian_language_code || $lang_name == 'persian') {
-                        $persian_is_active = true;
-                        $persian_language_code = $lang_code;
-                        break;
-                    }
-                }
-                $_POST['app_start_url'] = SITE_URL . ($persian_is_active ? $persian_language_code . '/' : '');
+                /* Empty URL, use default */
+                $_POST['app_start_url'] = SITE_URL;
             }
 
             /* Parse URL and add UTM parameters if not present */
@@ -1725,9 +1683,55 @@ class AdminSettings extends Controller {
                 'desktop_screenshots' => $desktop_screenshots,
                 'shortcuts' => $shortcuts,
             ]);
-            pwa_save_manifest($manifest);
+            
+            /* Save manifest file - ensure it uses the new URL from POST, not cached settings */
+            $manifest_json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+            $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
+            
+            /* Save to cloud if offload is active */
+            if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
+                try {
+                    $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
+                    
+                    /* Create temporary file */
+                    $temp_file = sys_get_temp_dir() . '/manifest_' . time() . '.json';
+                    file_put_contents($temp_file, $manifest_json);
+                    
+                    /* Upload to S3 */
+                    $s3->putObject([
+                        'Bucket' => settings()->offload->storage_name,
+                        'Key' => UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json',
+                        'ContentType' => 'application/manifest+json',
+                        'SourceFile' => $temp_file,
+                        'ACL' => 'public-read',
+                        'CacheControl' => 'no-cache'
+                    ]);
+                    
+                    /* Delete temp file */
+                    unlink($temp_file);
+                } catch (\Exception $exception) {
+                    /* If cloud upload fails, try local save */
+                    if(is_writable(dirname($manifest_file_path))) {
+                        file_put_contents($manifest_file_path, $manifest_json);
+                    }
+                }
+            } else {
+                /* Save locally */
+                if(is_writable(dirname($manifest_file_path)) || is_writable($manifest_file_path)) {
+                    file_put_contents($manifest_file_path, $manifest_json);
+                }
+            }
+            
+            /* Also call the original function if it exists */
+            if(function_exists('pwa_save_manifest')) {
+                pwa_save_manifest($manifest);
+            }
 
+            /* Update settings in database */
             $this->update_settings('pwa', json_encode($value));
+            
+            /* Clear cache to ensure new settings are loaded */
+            cache()->deleteItem('settings');
         }
     }
 
