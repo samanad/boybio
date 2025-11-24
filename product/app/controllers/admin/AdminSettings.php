@@ -1807,22 +1807,15 @@ class AdminSettings extends Controller {
                 @unlink($manifest_file_path);
             }
             
-            /* Save locally - skip writability check if cloud is active */
-            if(!\Altum\Plugin::is_active('offload') || (\Altum\Plugin::is_active('offload') && !settings()->offload->uploads_url)) {
-                /* Cloud is not active - check writability */
-                if(!is_writable($manifest_dir) && !is_writable($manifest_file_path)) {
-                    error_log('PWA Manifest: Directory not writable: ' . $manifest_dir);
-                } else {
-                    $local_save_success = @file_put_contents($manifest_file_path, $manifest_json);
-                    if($local_save_success === false) {
-                        error_log('PWA Manifest: Failed to save locally to ' . $manifest_file_path);
-                    }
-                }
+            /* Save locally - always check writability */
+            if(!is_writable($manifest_dir) && !is_writable($manifest_file_path)) {
+                error_log('PWA Manifest: Directory not writable: ' . $manifest_dir);
+                Alerts::add_error(sprintf(l('global.error_message.directory_not_writable'), $manifest_dir));
             } else {
-                /* Cloud is active - try to save locally without writability check */
                 $local_save_success = @file_put_contents($manifest_file_path, $manifest_json);
                 if($local_save_success === false) {
-                    error_log('PWA Manifest: Failed to save locally to ' . $manifest_file_path . ' (cloud is active, continuing anyway)');
+                    error_log('PWA Manifest: Failed to save locally to ' . $manifest_file_path);
+                    Alerts::add_error('PWA Manifest: Failed to save locally. Please check directory permissions.');
                 }
             }
             
