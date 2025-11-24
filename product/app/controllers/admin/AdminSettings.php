@@ -1684,8 +1684,8 @@ class AdminSettings extends Controller {
                 'shortcuts' => $shortcuts,
             ]);
             
-            /* Save manifest file - ensure it uses the new URL from POST, not cached settings */
-            $manifest_json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+            /* Save manifest file FIRST - ensure it uses the new URL from POST, not cached settings */
+            $manifest_json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
             
             /* Save to cloud if offload is active */
@@ -1704,7 +1704,8 @@ class AdminSettings extends Controller {
                         'ContentType' => 'application/manifest+json',
                         'SourceFile' => $temp_file,
                         'ACL' => 'public-read',
-                        'CacheControl' => 'no-cache'
+                        'CacheControl' => 'no-cache, no-store, must-revalidate',
+                        'Expires' => '0'
                     ]);
                     
                     /* Delete temp file */
@@ -1722,16 +1723,13 @@ class AdminSettings extends Controller {
                 }
             }
             
-            /* Also call the original function if it exists */
-            if(function_exists('pwa_save_manifest')) {
-                pwa_save_manifest($manifest);
-            }
-
-            /* Update settings in database */
+            /* Update settings in database AFTER manifest is saved */
             $this->update_settings('pwa', json_encode($value));
             
             /* Clear cache to ensure new settings are loaded */
             cache()->deleteItem('settings');
+            
+            /* Do NOT call pwa_save_manifest() as it may overwrite our cloud-saved manifest with old settings */
         }
     }
 
