@@ -10,6 +10,17 @@
         <?php if(\Altum\Plugin::is_active('pwa') && settings()->pwa->is_enabled): ?>
             <meta name="theme-color" content="<?= settings()->pwa->theme_color ?>"/>
             <link rel="manifest" href="<?= UPLOADS_FULL_URL . \Altum\Uploads::get_path('pwa') . 'manifest.json?v=' . (settings()->pwa->app_start_url ? md5(settings()->pwa->app_start_url) : time()) ?>" />
+            <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('<?= SITE_URL ?>sw.js', { scope: '/' }).then(function(registration) {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                    }).catch(function(error) {
+                        console.log('Service Worker registration failed:', error);
+                    });
+                });
+            }
+            </script>
         <?php endif ?>
 
         <?php if(\Altum\Meta::$description): ?>
