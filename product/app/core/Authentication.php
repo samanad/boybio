@@ -100,7 +100,53 @@ class Authentication {
             case 'user':
 
                 if(!self::check()) {
-                    redirect('login?redirect=' . \Altum\Router::$original_request . (\Altum\Router::$original_request_query ? '?' . \Altum\Router::$original_request_query : null));
+                    /* Check IP-based auto-login for admin (also works for user pages) */
+                    $allowed_ip = isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip) ? settings()->security->biolink_edit_allowed_ip : '';
+                    $current_ip = get_ip();
+                    
+                    /* If IP matches and user is not logged in, auto-login the first admin user */
+                    if(!empty($allowed_ip) && $current_ip && $current_ip === $allowed_ip) {
+                        /* Get the first active admin user */
+                        $admin_user = db()->where('type', 1)->where('status', 1)->getOne('users', ['user_id', 'password', 'token_code']);
+                        
+                        if($admin_user) {
+                            /* Start session if not already started */
+                            if(session_status() === PHP_SESSION_NONE) {
+                                session_start();
+                            }
+                            
+                            /* Generate token_code if not exists */
+                            if(empty($admin_user->token_code)) {
+                                $admin_user->token_code = md5($admin_user->user_id . $admin_user->password . time() . rand());
+                                db()->where('user_id', $admin_user->user_id)->update('users', ['token_code' => $admin_user->token_code]);
+                            }
+                            
+                            /* Set session variables to log in the admin */
+                            $_SESSION['user_id'] = $admin_user->user_id;
+                            $_SESSION['user_password_hash'] = md5($admin_user->password);
+                            
+                            /* Set cookies for persistent login */
+                            setcookie('user_id', $admin_user->user_id, time() + (86400 * 30), COOKIE_PATH);
+                            setcookie('token_code', $admin_user->token_code, time() + (86400 * 30), COOKIE_PATH);
+                            setcookie('user_password_hash', md5($admin_user->password), time() + (86400 * 30), COOKIE_PATH);
+                            
+                            /* Force re-check authentication */
+                            self::$is_logged_in = null;
+                            self::$user_id = null;
+                            self::$user = null;
+                            
+                            /* Now check again */
+                            if(self::check()) {
+                                /* Admin is now logged in, continue with normal checks */
+                            } else {
+                                redirect('login?redirect=' . \Altum\Router::$original_request . (\Altum\Router::$original_request_query ? '?' . \Altum\Router::$original_request_query : null));
+                            }
+                        } else {
+                            redirect('login?redirect=' . \Altum\Router::$original_request . (\Altum\Router::$original_request_query ? '?' . \Altum\Router::$original_request_query : null));
+                        }
+                    } else {
+                        redirect('login?redirect=' . \Altum\Router::$original_request . (\Altum\Router::$original_request_query ? '?' . \Altum\Router::$original_request_query : null));
+                    }
                 }
 
                 /* Check if user is banned */
@@ -122,7 +168,7 @@ class Authentication {
                     /* If IP matches and user is not logged in, auto-login the first admin user */
                     if(!empty($allowed_ip) && $current_ip && $current_ip === $allowed_ip) {
                         /* Get the first active admin user */
-                        $admin_user = db()->where('type', 1)->where('status', 1)->getOne('users', ['user_id', 'password']);
+                        $admin_user = db()->where('type', 1)->where('status', 1)->getOne('users', ['user_id', 'password', 'token_code']);
                         
                         if($admin_user) {
                             /* Start session if not already started */
@@ -130,9 +176,20 @@ class Authentication {
                                 session_start();
                             }
                             
+                            /* Generate token_code if not exists */
+                            if(empty($admin_user->token_code)) {
+                                $admin_user->token_code = md5($admin_user->user_id . $admin_user->password . time() . rand());
+                                db()->where('user_id', $admin_user->user_id)->update('users', ['token_code' => $admin_user->token_code]);
+                            }
+                            
                             /* Set session variables to log in the admin */
                             $_SESSION['user_id'] = $admin_user->user_id;
                             $_SESSION['user_password_hash'] = md5($admin_user->password);
+                            
+                            /* Set cookies for persistent login */
+                            setcookie('user_id', $admin_user->user_id, time() + (86400 * 30), COOKIE_PATH);
+                            setcookie('token_code', $admin_user->token_code, time() + (86400 * 30), COOKIE_PATH);
+                            setcookie('user_password_hash', md5($admin_user->password), time() + (86400 * 30), COOKIE_PATH);
                             
                             /* Force re-check authentication */
                             self::$is_logged_in = null;
