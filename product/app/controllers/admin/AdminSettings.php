@@ -1752,34 +1752,37 @@ class AdminSettings extends Controller {
             $manifest_json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
             
-            /* Save manifest - only to cloud if offload is active, otherwise save locally */
+            /* Always save manifest locally first */
             $local_save_success = false;
             $cloud_save_success = false;
             
-            if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
-                /* Cloud is active - skip local save, only save to cloud */
-                /* Delete old local manifest if it exists to avoid serving old version */
-                if(file_exists($manifest_file_path)) {
-                    @unlink($manifest_file_path);
-                }
-            } else {
-                /* Cloud is not active - save locally */
-                $manifest_dir = dirname($manifest_file_path);
-                if(!is_dir($manifest_dir)) {
-                    @mkdir($manifest_dir, 0777, true);
-                }
-                
-                /* Delete old local manifest if it exists to force fresh save */
-                if(file_exists($manifest_file_path)) {
-                    @unlink($manifest_file_path);
-                }
-                
-                /* Save locally */
-                if(is_writable($manifest_dir) || is_writable($manifest_file_path)) {
+            /* Save locally - always do this regardless of cloud status */
+            $manifest_dir = dirname($manifest_file_path);
+            if(!is_dir($manifest_dir)) {
+                @mkdir($manifest_dir, 0777, true);
+            }
+            
+            /* Delete old local manifest if it exists to force fresh save */
+            if(file_exists($manifest_file_path)) {
+                @unlink($manifest_file_path);
+            }
+            
+            /* Save locally - skip writability check if cloud is active */
+            if(!\Altum\Plugin::is_active('offload') || (\Altum\Plugin::is_active('offload') && !settings()->offload->uploads_url)) {
+                /* Cloud is not active - check writability */
+                if(!is_writable($manifest_dir) && !is_writable($manifest_file_path)) {
+                    error_log('PWA Manifest: Directory not writable: ' . $manifest_dir);
+                } else {
                     $local_save_success = @file_put_contents($manifest_file_path, $manifest_json);
                     if($local_save_success === false) {
                         error_log('PWA Manifest: Failed to save locally to ' . $manifest_file_path);
                     }
+                }
+            } else {
+                /* Cloud is active - try to save locally without writability check */
+                $local_save_success = @file_put_contents($manifest_file_path, $manifest_json);
+                if($local_save_success === false) {
+                    error_log('PWA Manifest: Failed to save locally to ' . $manifest_file_path . ' (cloud is active, continuing anyway)');
                 }
             }
             
