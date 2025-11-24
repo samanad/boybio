@@ -1736,7 +1736,10 @@ class AdminSettings extends Controller {
             /* Save manifest file - ensure it uses the new URL from POST, not cached settings */
             /* Force manifest to use POST data for start_url */
             $manifest['start_url'] = $_POST['app_start_url'];
-            $manifest['scope'] = parse_url($_POST['app_start_url'], PHP_URL_SCHEME) . '://' . parse_url($_POST['app_start_url'], PHP_URL_HOST) . '/';
+            $parsed_start_url = parse_url($_POST['app_start_url']);
+            $manifest['scope'] = ($parsed_start_url && isset($parsed_start_url['scheme']) && isset($parsed_start_url['host'])) 
+                ? $parsed_start_url['scheme'] . '://' . $parsed_start_url['host'] . '/' 
+                : SITE_URL;
             
             $manifest_json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
