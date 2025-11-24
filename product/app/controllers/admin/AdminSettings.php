@@ -1795,6 +1795,13 @@ class AdminSettings extends Controller {
             /* Clear cache to ensure new settings are loaded */
             cache()->deleteItem('settings');
             
+            /* Log manifest generation for debugging */
+            error_log('PWA Manifest generated with start_url: ' . $_POST['app_start_url']);
+            error_log('PWA Manifest saved to: ' . $manifest_file_path);
+            if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
+                error_log('PWA Manifest uploaded to cloud: ' . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json');
+            }
+            
             /* Do NOT call pwa_save_manifest() as it may overwrite our cloud-saved manifest with old settings */
         }
     }
