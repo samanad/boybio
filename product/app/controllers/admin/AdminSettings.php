@@ -1734,6 +1734,10 @@ class AdminSettings extends Controller {
             }
             
             /* Save manifest file - ensure it uses the new URL from POST, not cached settings */
+            /* Force manifest to use POST data for start_url */
+            $manifest['start_url'] = $_POST['app_start_url'];
+            $manifest['scope'] = parse_url($_POST['app_start_url'], PHP_URL_SCHEME) . '://' . parse_url($_POST['app_start_url'], PHP_URL_HOST) . '/';
+            
             $manifest_json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
             
@@ -1746,26 +1750,42 @@ class AdminSettings extends Controller {
             if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
                 try {
                     $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
+                    $manifest_key = UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
+                    
+                    /* Delete old manifest from cloud first to ensure fresh upload */
+                    try {
+                        $s3->deleteObject([
+                            'Bucket' => settings()->offload->storage_name,
+                            'Key' => $manifest_key
+                        ]);
+                    } catch (\Exception $e) {
+                        /* Ignore if file doesn't exist */
+                    }
                     
                     /* Create temporary file */
-                    $temp_file = sys_get_temp_dir() . '/manifest_' . time() . '.json';
+                    $temp_file = sys_get_temp_dir() . '/manifest_' . time() . '_' . rand(1000, 9999) . '.json';
                     file_put_contents($temp_file, $manifest_json);
                     
                     /* Upload to S3 with cache-busting headers */
                     $s3->putObject([
                         'Bucket' => settings()->offload->storage_name,
-                        'Key' => UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json',
+                        'Key' => $manifest_key,
                         'ContentType' => 'application/manifest+json',
-                        'SourceFile' => $temp_file,
+                        'Body' => $manifest_json, // Use Body instead of SourceFile for better reliability
                         'ACL' => 'public-read',
                         'CacheControl' => 'no-cache, no-store, must-revalidate, max-age=0',
-                        'Expires' => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT'
+                        'Expires' => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
+                        'Metadata' => [
+                            'version' => time(),
+                            'start_url' => md5($_POST['app_start_url'])
+                        ]
                     ]);
                     
                     /* Delete temp file */
-                    unlink($temp_file);
+                    @unlink($temp_file);
                 } catch (\Exception $exception) {
                     /* Cloud upload failed, but local save should have worked */
+                    error_log('PWA Manifest cloud upload failed: ' . $exception->getMessage());
                 }
             }
             
