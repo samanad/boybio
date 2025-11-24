@@ -19,7 +19,8 @@ defined('ALTUMCODE') || die();
 $enabled_notification_handlers = [];
 
 foreach(require APP_PATH . 'includes/available_notification_handlers.php' as $type => $notification_handler) {
-    if(settings()->notification_handlers->{$type . '_is_enabled'}) {
+    $property_name = $type . '_is_enabled';
+    if(isset(settings()->notification_handlers->{$property_name}) && settings()->notification_handlers->{$property_name}) {
         $enabled_notification_handlers[$type] = $notification_handler;
     }
 }
