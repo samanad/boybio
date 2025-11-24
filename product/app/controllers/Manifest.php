@@ -35,19 +35,11 @@ class Manifest extends Controller {
             die();
         }
 
-        /* Always serve local manifest file if it exists */
+        /* Always serve local manifest file if it exists - no redirects */
         $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
         
         if(file_exists($manifest_file_path)) {
             readfile($manifest_file_path);
-            die();
-        }
-
-        /* If local file doesn't exist and cloud is active, try to redirect to cloud */
-        if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
-            /* UPLOADS_FULL_URL is already set correctly in Settings.php and includes the base URL */
-            $cloud_manifest_url = UPLOADS_FULL_URL . \Altum\Uploads::get_path('pwa') . 'manifest.json';
-            header('Location: ' . $cloud_manifest_url, true, 307);
             die();
         }
 
