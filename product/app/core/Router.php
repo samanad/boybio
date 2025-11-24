@@ -1696,6 +1696,19 @@ class Router {
             return;
         }
 
+        /* Check for manifest.json early - handle uploads/pwa/manifest.json requests */
+        if(!empty(self::$params[0]) && self::$params[0] === 'uploads' && 
+           !empty(self::$params[1]) && self::$params[1] === 'pwa' && 
+           !empty(self::$params[2]) && self::$params[2] === 'manifest.json' && 
+           file_exists(APP_PATH . 'controllers/Manifest.php')) {
+            self::$controller_key = 'manifest';
+            self::$controller = 'Manifest';
+            self::$path = '';
+            unset(self::$params[0], self::$params[1], self::$params[2]);
+            self::$params = array_values(self::$params);
+            return;
+        }
+
         /* Check if the current link accessed is actually the original url or not (multi domain use) */
         $original_url_host = parse_url(url(), PHP_URL_HOST);
         $request_url_host = input_clean($_SERVER['HTTP_HOST']);
