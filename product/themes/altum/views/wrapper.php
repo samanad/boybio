@@ -9,7 +9,7 @@
 
         <?php if(\Altum\Plugin::is_active('pwa') && settings()->pwa->is_enabled): ?>
             <meta name="theme-color" content="<?= settings()->pwa->theme_color ?>"/>
-            <link rel="manifest" href="<?= UPLOADS_FULL_URL . \Altum\Uploads::get_path('pwa') . 'manifest.json?v=' . (settings()->pwa->app_start_url ? md5(settings()->pwa->app_start_url) : time()) ?>" />
+            <link rel="manifest" href="<?= SITE_URL . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json?v=' . (settings()->pwa->app_start_url ? md5(settings()->pwa->app_start_url) : time()) ?>" />
             <script>
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {

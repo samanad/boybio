@@ -12,7 +12,7 @@
                 <link rel="manifest" href="<?= UPLOADS_FULL_URL . \Altum\Uploads::get_path('pwa') . $this->link->settings->pwa_file_name . '.json?v=' . md5($this->link->settings->pwa_theme_color ?? time()) ?>" />
                 <meta name="theme-color" content="<?= $this->link->settings->pwa_theme_color ?>"/>
             <?php else: ?>
-                <link rel="manifest" href="<?= UPLOADS_FULL_URL . \Altum\Uploads::get_path('pwa') . 'manifest.json?v=' . (settings()->pwa->app_start_url ? md5(settings()->pwa->app_start_url) : time()) ?>" />
+                <link rel="manifest" href="<?= SITE_URL . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json?v=' . (settings()->pwa->app_start_url ? md5(settings()->pwa->app_start_url) : time()) ?>" />
                 <meta name="theme-color" content="<?= settings()->pwa->theme_color ?>"/>
             <?php endif ?>
             <script>
