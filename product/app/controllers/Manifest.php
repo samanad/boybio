@@ -35,15 +35,27 @@ class Manifest extends Controller {
             die();
         }
 
-        /* Always serve local manifest file if it exists - no redirects */
+        /* Always serve local manifest file if it exists - never use cloud */
         $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
         
         if(file_exists($manifest_file_path)) {
-            readfile($manifest_file_path);
+            /* Read and output the local file directly - ensure we're serving from local, not cloud */
+            $manifest_content = file_get_contents($manifest_file_path);
+            
+            /* Verify we're reading from local path (not cloud) */
+            if($manifest_content === false) {
+                error_log('PWA Manifest: Failed to read local manifest file from ' . $manifest_file_path);
+                http_response_code(500);
+                die();
+            }
+            
+            /* Output the local file content */
+            echo $manifest_content;
             die();
         }
 
-        /* Manifest file doesn't exist */
+        /* Manifest file doesn't exist locally */
+        error_log('PWA Manifest: Local manifest file not found at ' . $manifest_file_path);
         http_response_code(404);
         die();
     }
