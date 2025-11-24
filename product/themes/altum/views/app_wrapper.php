@@ -9,7 +9,7 @@
 
     <?php if(\Altum\Plugin::is_active('pwa') && isset(settings()->pwa->is_enabled) && settings()->pwa->is_enabled): ?>
         <meta name="theme-color" content="<?= settings()->pwa->theme_color ?? '#000000' ?>"/>
-        <link rel="manifest" href="<?= UPLOADS_FULL_URL . \Altum\Uploads::get_path('pwa') . 'manifest.json' ?>" />
+        <link rel="manifest" href="<?= UPLOADS_FULL_URL . \Altum\Uploads::get_path('pwa') . 'manifest.json?v=' . (settings()->pwa->app_start_url ? md5(settings()->pwa->app_start_url) : time()) ?>" />
     <?php endif ?>
 
     <?php if(\Altum\Meta::$description): ?>
