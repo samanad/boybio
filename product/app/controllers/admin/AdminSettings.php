@@ -1802,12 +1802,17 @@ class AdminSettings extends Controller {
                 @mkdir($manifest_dir, 0777, true);
             }
             
+            /* Ensure directory is writable - try to fix permissions if needed */
+            if(!is_writable($manifest_dir)) {
+                @chmod($manifest_dir, 0777);
+            }
+            
             /* Delete old local manifest if it exists to force fresh save */
             if(file_exists($manifest_file_path)) {
                 @unlink($manifest_file_path);
             }
             
-            /* Save locally - always check writability */
+            /* Save locally - check writability after attempting to fix permissions */
             if(!is_writable($manifest_dir) && !is_writable($manifest_file_path)) {
                 error_log('PWA Manifest: Directory not writable: ' . $manifest_dir);
                 Alerts::add_error(sprintf(l('global.error_message.directory_not_writable'), $manifest_dir));
