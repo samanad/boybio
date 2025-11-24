@@ -1749,6 +1749,26 @@ class AdminSettings extends Controller {
                 ? $parsed_start_url['scheme'] . '://' . $parsed_start_url['host'] . '/' 
                 : SITE_URL;
             
+            /* Detect and set language from start_url path */
+            $detected_lang = 'en'; // Default
+            if($parsed_start_url && isset($parsed_start_url['path'])) {
+                $path_parts = explode('/', trim($parsed_start_url['path'], '/'));
+                if(!empty($path_parts[0]) && strlen($path_parts[0]) == 2) {
+                    /* Check if first path segment is a valid language code */
+                    $potential_lang_code = strtolower($path_parts[0]);
+                    /* Check against active languages */
+                    if(isset(\Altum\Language::$active_languages)) {
+                        foreach(\Altum\Language::$active_languages as $lang_name => $lang_code) {
+                            if(strtolower($lang_code) === $potential_lang_code || strtolower($lang_name) === $potential_lang_code) {
+                                $detected_lang = $lang_code;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            $manifest['lang'] = $detected_lang;
+            
             $manifest_json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
             
