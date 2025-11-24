@@ -1763,12 +1763,17 @@ class AdminSettings extends Controller {
                 @unlink($manifest_file_path);
             }
             
-            /* Save new manifest locally */
+            /* Save new manifest locally - only if cloud is not active, or as backup */
+            $local_save_success = false;
             if(is_writable($manifest_dir) || is_writable($manifest_file_path)) {
-                @file_put_contents($manifest_file_path, $manifest_json);
+                $local_save_success = @file_put_contents($manifest_file_path, $manifest_json);
+                if($local_save_success === false) {
+                    error_log('PWA Manifest: Failed to save locally to ' . $manifest_file_path);
+                }
             }
             
             /* Also save to cloud if offload is active */
+            $cloud_save_success = false;
             if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
                 try {
                     $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
@@ -1805,10 +1810,17 @@ class AdminSettings extends Controller {
                     
                     /* Delete temp file */
                     @unlink($temp_file);
+                    $cloud_save_success = true;
                 } catch (\Exception $exception) {
                     /* Cloud upload failed, but local save should have worked */
                     error_log('PWA Manifest cloud upload failed: ' . $exception->getMessage());
+                    $cloud_save_success = false;
                 }
+            }
+            
+            /* If cloud save succeeded but local failed, try to save locally again */
+            if($cloud_save_success && !$local_save_success && is_writable($manifest_dir)) {
+                @file_put_contents($manifest_file_path, $manifest_json);
             }
             
             /* Update settings in database AFTER manifest is saved */
