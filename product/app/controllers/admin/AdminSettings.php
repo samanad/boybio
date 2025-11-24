@@ -1669,6 +1669,26 @@ class AdminSettings extends Controller {
                 ];
             }
 
+            /* Detect language from start_url path */
+            $detected_lang = 'en'; // Default
+            $parsed_start_url_for_lang = parse_url($_POST['app_start_url']);
+            if($parsed_start_url_for_lang && isset($parsed_start_url_for_lang['path'])) {
+                $path_parts = explode('/', trim($parsed_start_url_for_lang['path'], '/'));
+                if(!empty($path_parts[0]) && strlen($path_parts[0]) == 2) {
+                    /* Check if first path segment is a valid language code */
+                    $potential_lang_code = strtolower($path_parts[0]);
+                    /* Check against active languages */
+                    if(isset(\Altum\Language::$active_languages)) {
+                        foreach(\Altum\Language::$active_languages as $lang_name => $lang_code) {
+                            if(strtolower($lang_code) === $potential_lang_code || strtolower($lang_name) === $potential_lang_code) {
+                                $detected_lang = $lang_code;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
             /* Generate the manifest file - ensure we use POST data, not cached settings */
             if(!function_exists('pwa_generate_manifest')) {
                 /* Fallback if function doesn't exist - generate manifest manually */
@@ -1715,7 +1735,7 @@ class AdminSettings extends Controller {
                     }, $shortcuts)),
                     'categories' => ['utilities'],
                     'dir' => 'auto',
-                    'lang' => 'en'
+                    'lang' => $detected_lang
                 ];
             } else {
                 $manifest = pwa_generate_manifest([
