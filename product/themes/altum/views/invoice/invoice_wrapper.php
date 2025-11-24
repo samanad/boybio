@@ -13,7 +13,7 @@
         <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('<?= SITE_URL ?>sw.js', { scope: '/' }).then(function(registration) {
+                navigator.serviceWorker.register('<?= htmlspecialchars(SITE_URL, ENT_QUOTES, 'UTF-8') ?>sw.js', { scope: '/' }).then(function(registration) {
                     console.log('Service Worker registered successfully:', registration.scope);
                 }).catch(function(error) {
                     console.log('Service Worker registration failed:', error);
