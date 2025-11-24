@@ -1752,28 +1752,38 @@ class AdminSettings extends Controller {
             $manifest_json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
             
-            /* Always save locally first as backup - ensure directory exists */
-            $manifest_dir = dirname($manifest_file_path);
-            if(!is_dir($manifest_dir)) {
-                @mkdir($manifest_dir, 0777, true);
-            }
-            
-            /* Delete old local manifest if it exists to force fresh save */
-            if(file_exists($manifest_file_path)) {
-                @unlink($manifest_file_path);
-            }
-            
-            /* Save new manifest locally - only if cloud is not active, or as backup */
+            /* Save manifest - only to cloud if offload is active, otherwise save locally */
             $local_save_success = false;
-            if(is_writable($manifest_dir) || is_writable($manifest_file_path)) {
-                $local_save_success = @file_put_contents($manifest_file_path, $manifest_json);
-                if($local_save_success === false) {
-                    error_log('PWA Manifest: Failed to save locally to ' . $manifest_file_path);
+            $cloud_save_success = false;
+            
+            if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
+                /* Cloud is active - skip local save, only save to cloud */
+                /* Delete old local manifest if it exists to avoid serving old version */
+                if(file_exists($manifest_file_path)) {
+                    @unlink($manifest_file_path);
+                }
+            } else {
+                /* Cloud is not active - save locally */
+                $manifest_dir = dirname($manifest_file_path);
+                if(!is_dir($manifest_dir)) {
+                    @mkdir($manifest_dir, 0777, true);
+                }
+                
+                /* Delete old local manifest if it exists to force fresh save */
+                if(file_exists($manifest_file_path)) {
+                    @unlink($manifest_file_path);
+                }
+                
+                /* Save locally */
+                if(is_writable($manifest_dir) || is_writable($manifest_file_path)) {
+                    $local_save_success = @file_put_contents($manifest_file_path, $manifest_json);
+                    if($local_save_success === false) {
+                        error_log('PWA Manifest: Failed to save locally to ' . $manifest_file_path);
+                    }
                 }
             }
             
-            /* Also save to cloud if offload is active */
-            $cloud_save_success = false;
+            /* Save to cloud if offload is active */
             if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
                 try {
                     $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
@@ -1818,10 +1828,6 @@ class AdminSettings extends Controller {
                 }
             }
             
-            /* If cloud save succeeded but local failed, try to save locally again */
-            if($cloud_save_success && !$local_save_success && is_writable($manifest_dir)) {
-                @file_put_contents($manifest_file_path, $manifest_json);
-            }
             
             /* Update settings in database AFTER manifest is saved */
             $this->update_settings('pwa', json_encode($value));
