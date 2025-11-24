@@ -1831,9 +1831,19 @@ class AdminSettings extends Controller {
             
             /* Log manifest generation for debugging */
             error_log('PWA Manifest generated with start_url: ' . $_POST['app_start_url']);
-            error_log('PWA Manifest saved to: ' . $manifest_file_path);
+            error_log('PWA Manifest saved locally: ' . ($local_save_success ? 'SUCCESS' : 'FAILED') . ' to ' . $manifest_file_path);
             if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
-                error_log('PWA Manifest uploaded to cloud: ' . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json');
+                error_log('PWA Manifest uploaded to cloud: ' . ($cloud_save_success ? 'SUCCESS' : 'FAILED') . ' to ' . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json');
+                error_log('PWA Manifest cloud URL: ' . settings()->offload->uploads_url . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json');
+            }
+            
+            /* Verify the saved manifest content */
+            if($local_save_success && file_exists($manifest_file_path)) {
+                $saved_content = file_get_contents($manifest_file_path);
+                $saved_manifest = json_decode($saved_content, true);
+                if(isset($saved_manifest['start_url']) && $saved_manifest['start_url'] !== $_POST['app_start_url']) {
+                    error_log('PWA Manifest WARNING: Saved local manifest has different start_url! Expected: ' . $_POST['app_start_url'] . ', Got: ' . $saved_manifest['start_url']);
+                }
             }
             
             /* Do NOT call pwa_save_manifest() as it may overwrite our cloud-saved manifest with old settings */
