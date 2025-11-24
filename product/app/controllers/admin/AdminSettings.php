@@ -1669,26 +1669,80 @@ class AdminSettings extends Controller {
                 ];
             }
 
-            /* Generate the manifest file */
-            $manifest = pwa_generate_manifest([
-                'name' => $_POST['app_name'],
-                'short_name' => $_POST['short_app_name'],
-                'description' => $_POST['app_description'],
-                'background_color' => $_POST['background_color'],
-                'theme_color' => $_POST['theme_color'],
-                'app_icon_url' => settings()->pwa->app_icon ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon : null,
-                'app_icon_maskable_url' => settings()->pwa->app_icon_maskable ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable : null,
-                'start_url' => $_POST['app_start_url'],
-                'mobile_screenshots' => $mobile_screenshots,
-                'desktop_screenshots' => $desktop_screenshots,
-                'shortcuts' => $shortcuts,
-            ]);
+            /* Generate the manifest file - ensure we use POST data, not cached settings */
+            if(!function_exists('pwa_generate_manifest')) {
+                /* Fallback if function doesn't exist - generate manifest manually */
+                $icons = [];
+                if(settings()->pwa->app_icon) {
+                    $icons[] = [
+                        'src' => \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon,
+                        'sizes' => '512x512',
+                        'type' => 'image/png',
+                        'purpose' => 'any'
+                    ];
+                }
+                if(settings()->pwa->app_icon_maskable) {
+                    $icons[] = [
+                        'src' => \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable,
+                        'sizes' => '512x512',
+                        'type' => 'image/png',
+                        'purpose' => 'maskable'
+                    ];
+                }
+                
+                $manifest = [
+                    'id' => md5($_POST['app_name'] . $_POST['app_start_url']),
+                    'name' => $_POST['app_name'],
+                    'short_name' => $_POST['short_app_name'],
+                    'description' => $_POST['app_description'],
+                    'start_url' => $_POST['app_start_url'],
+                    'scope' => parse_url($_POST['app_start_url'], PHP_URL_SCHEME) . '://' . parse_url($_POST['app_start_url'], PHP_URL_HOST) . '/',
+                    'display' => 'standalone',
+                    'orientation' => 'any',
+                    'theme_color' => $_POST['theme_color'],
+                    'background_color' => $_POST['background_color'],
+                    'icons' => $icons,
+                    'screenshots' => array_map(function($url) {
+                        return ['src' => $url, 'sizes' => '1280x720', 'type' => 'image/png'];
+                    }, array_merge($mobile_screenshots, $desktop_screenshots)),
+                    'shortcuts' => array_filter(array_map(function($shortcut) {
+                        return !empty($shortcut['name']) ? [
+                            'name' => $shortcut['name'],
+                            'description' => $shortcut['description'] ?? '',
+                            'url' => $shortcut['url'],
+                            'icons' => !empty($shortcut['icon_url']) ? [['src' => $shortcut['icon_url'], 'sizes' => '96x96']] : []
+                        ] : null;
+                    }, $shortcuts)),
+                    'categories' => ['utilities'],
+                    'dir' => 'auto',
+                    'lang' => 'en'
+                ];
+            } else {
+                $manifest = pwa_generate_manifest([
+                    'name' => $_POST['app_name'],
+                    'short_name' => $_POST['short_app_name'],
+                    'description' => $_POST['app_description'],
+                    'background_color' => $_POST['background_color'],
+                    'theme_color' => $_POST['theme_color'],
+                    'app_icon_url' => settings()->pwa->app_icon ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon : null,
+                    'app_icon_maskable_url' => settings()->pwa->app_icon_maskable ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable : null,
+                    'start_url' => $_POST['app_start_url'],
+                    'mobile_screenshots' => $mobile_screenshots,
+                    'desktop_screenshots' => $desktop_screenshots,
+                    'shortcuts' => $shortcuts,
+                ]);
+            }
             
-            /* Save manifest file FIRST - ensure it uses the new URL from POST, not cached settings */
+            /* Save manifest file - ensure it uses the new URL from POST, not cached settings */
             $manifest_json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
             
-            /* Save to cloud if offload is active */
+            /* Always save locally first as backup */
+            if(is_writable(dirname($manifest_file_path)) || is_writable($manifest_file_path)) {
+                @file_put_contents($manifest_file_path, $manifest_json);
+            }
+            
+            /* Also save to cloud if offload is active */
             if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
                 try {
                     $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
@@ -1697,29 +1751,21 @@ class AdminSettings extends Controller {
                     $temp_file = sys_get_temp_dir() . '/manifest_' . time() . '.json';
                     file_put_contents($temp_file, $manifest_json);
                     
-                    /* Upload to S3 */
+                    /* Upload to S3 with cache-busting headers */
                     $s3->putObject([
                         'Bucket' => settings()->offload->storage_name,
                         'Key' => UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json',
                         'ContentType' => 'application/manifest+json',
                         'SourceFile' => $temp_file,
                         'ACL' => 'public-read',
-                        'CacheControl' => 'no-cache, no-store, must-revalidate',
-                        'Expires' => '0'
+                        'CacheControl' => 'no-cache, no-store, must-revalidate, max-age=0',
+                        'Expires' => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT'
                     ]);
                     
                     /* Delete temp file */
                     unlink($temp_file);
                 } catch (\Exception $exception) {
-                    /* If cloud upload fails, try local save */
-                    if(is_writable(dirname($manifest_file_path))) {
-                        file_put_contents($manifest_file_path, $manifest_json);
-                    }
-                }
-            } else {
-                /* Save locally */
-                if(is_writable(dirname($manifest_file_path)) || is_writable($manifest_file_path)) {
-                    file_put_contents($manifest_file_path, $manifest_json);
+                    /* Cloud upload failed, but local save should have worked */
                 }
             }
             
