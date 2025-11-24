@@ -1734,6 +1734,14 @@ class AdminSettings extends Controller {
             }
             
             /* Save manifest file - ensure it uses the new URL from POST, not cached settings */
+            /* Ensure $manifest is an array (pwa_generate_manifest might return JSON string) */
+            if(is_string($manifest)) {
+                $manifest = json_decode($manifest, true);
+            }
+            if(!is_array($manifest)) {
+                $manifest = [];
+            }
+            
             /* Force manifest to use POST data for start_url */
             $manifest['start_url'] = $_POST['app_start_url'];
             $parsed_start_url = parse_url($_POST['app_start_url']);
