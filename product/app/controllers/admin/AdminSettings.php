@@ -1752,8 +1752,19 @@ class AdminSettings extends Controller {
             $manifest_json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
             
-            /* Always save locally first as backup */
-            if(is_writable(dirname($manifest_file_path)) || is_writable($manifest_file_path)) {
+            /* Always save locally first as backup - ensure directory exists */
+            $manifest_dir = dirname($manifest_file_path);
+            if(!is_dir($manifest_dir)) {
+                @mkdir($manifest_dir, 0777, true);
+            }
+            
+            /* Delete old local manifest if it exists to force fresh save */
+            if(file_exists($manifest_file_path)) {
+                @unlink($manifest_file_path);
+            }
+            
+            /* Save new manifest locally */
+            if(is_writable($manifest_dir) || is_writable($manifest_file_path)) {
                 @file_put_contents($manifest_file_path, $manifest_json);
             }
             
