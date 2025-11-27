@@ -7,10 +7,10 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
-        <?php if(\Altum\Plugin::is_active('pwa') && settings()->pwa->is_enabled): ?>
-            <?php if($this->user->plan_settings->custom_pwa_is_enabled && $this->link->settings->pwa_is_enabled && !empty($this->link->settings->pwa_file_name)): ?>
+        <?php if(\Altum\Plugin::is_active('pwa') && isset(settings()->pwa->is_enabled) && settings()->pwa->is_enabled): ?>
+            <?php if($this->user->plan_settings->custom_pwa_is_enabled && isset($this->link->settings->pwa_is_enabled) && $this->link->settings->pwa_is_enabled && !empty($this->link->settings->pwa_file_name)): ?>
                 <link rel="manifest" href="<?= SITE_URL . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . $this->link->settings->pwa_file_name . '.json?v=' . md5($this->link->settings->pwa_theme_color ?? time()) ?>" />
-                <meta name="theme-color" content="<?= $this->link->settings->pwa_theme_color ?>"/>
+                <meta name="theme-color" content="<?= $this->link->settings->pwa_theme_color ?? '' ?>"/>
             <?php else: ?>
                 <link rel="manifest" href="<?= SITE_URL . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json?v=' . (settings()->pwa->app_start_url ? md5(settings()->pwa->app_start_url) : time()) ?>" />
                 <meta name="theme-color" content="<?= settings()->pwa->theme_color ?>"/>
@@ -117,12 +117,12 @@
 
         <?php if(
                 \Altum\Plugin::is_active('pwa')
-                && settings()->pwa->is_enabled
-                && $this->link->settings->pwa_is_enabled
-                && $this->link->settings->pwa_display_install_bar
+                && isset(settings()->pwa->is_enabled) && settings()->pwa->is_enabled
+                && isset($this->link->settings->pwa_is_enabled) && $this->link->settings->pwa_is_enabled
+                && isset($this->link->settings->pwa_display_install_bar) && $this->link->settings->pwa_display_install_bar
         ) echo include_view(\Altum\Plugin::get('pwa')->path . 'views/partials/pwa_custom.php', [
             'id' => md5($this->link->link_id),
-            'display_delay' => $this->link->settings->pwa_display_install_bar_delay
+            'display_delay' => $this->link->settings->pwa_display_install_bar_delay ?? 0
         ]) ?>
     <?php endif ?>
 
