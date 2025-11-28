@@ -350,6 +350,10 @@ class AdminSettings extends Controller {
                 /* Clear cache immediately */
                 cache()->deleteItem('settings');
                 \Altum\Language::clear_cache();
+                
+                /* Reset static settings to force reload from database */
+                \Altum\Settings::$settings = null;
+                \Altum\Settings::initialize();
 
                 /* Set success message */
                 Alerts::add_success(l('global.success_message.update2'));
