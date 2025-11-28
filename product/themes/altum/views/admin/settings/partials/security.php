@@ -11,9 +11,8 @@
         <label for="biolink_edit_allowed_ip"><i class="fas fa-fw fa-sm fa-shield-alt text-muted mr-1"></i> <?= l('admin_settings.security.biolink_edit_allowed_ip') ?></label>
         <?php 
         $admin_ip_value = isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip) ? settings()->security->biolink_edit_allowed_ip : '';
-        $admin_ip_placeholder = !empty($admin_ip_value) ? $admin_ip_value : '1.1.1.1';
         ?>
-        <input type="text" id="biolink_edit_allowed_ip" name="biolink_edit_allowed_ip" class="form-control" value="<?= $admin_ip_value ?>" placeholder="<?= $admin_ip_placeholder ?>" />
+        <input type="text" id="biolink_edit_allowed_ip" name="biolink_edit_allowed_ip" class="form-control" value="<?= htmlspecialchars($admin_ip_value) ?>" placeholder="e.g., 192.168.1.1" />
         <small class="form-text text-muted"><?= l('admin_settings.security.biolink_edit_allowed_ip_help') ?></small>
     </div>
 
@@ -21,9 +20,8 @@
         <label for="google_login_persistent_ip"><i class="fas fa-fw fa-sm fa-google text-muted mr-1"></i> <?= l('admin_settings.security.google_login_persistent_ip') ?></label>
         <?php 
         $google_ip_value = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
-        $google_ip_placeholder = !empty($google_ip_value) ? $google_ip_value : '1.1.1.1';
         ?>
-        <input type="text" id="google_login_persistent_ip" name="google_login_persistent_ip" class="form-control" value="<?= $google_ip_value ?>" placeholder="<?= $google_ip_placeholder ?>" />
+        <input type="text" id="google_login_persistent_ip" name="google_login_persistent_ip" class="form-control" value="<?= htmlspecialchars($google_ip_value) ?>" placeholder="e.g., 192.168.1.1" />
         <small class="form-text text-muted"><?= l('admin_settings.security.google_login_persistent_ip_help') ?></small>
     </div>
 </div>
