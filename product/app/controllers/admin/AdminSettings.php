@@ -345,7 +345,7 @@ class AdminSettings extends Controller {
                 ], JSON_UNESCAPED_SLASHES);
 
                 /* Check if security settings row exists */
-                $existing = db()->where('`key`', 'security')->getOne('settings', ['setting_id']);
+                $existing = db()->where('`key`', 'security')->getOne('settings', ['id']);
                 
                 if($existing) {
                     /* Update existing row */
