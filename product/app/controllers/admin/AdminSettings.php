@@ -344,8 +344,19 @@ class AdminSettings extends Controller {
                     'google_login_persistent_ip' => $_POST['google_login_persistent_ip'],
                 ], JSON_UNESCAPED_SLASHES);
 
-                /* Update the database */
-                db()->where('`key`', 'security')->update('settings', ['value' => $value]);
+                /* Check if security settings row exists */
+                $existing = db()->where('`key`', 'security')->getOne('settings', ['setting_id']);
+                
+                if($existing) {
+                    /* Update existing row */
+                    db()->where('`key`', 'security')->update('settings', ['value' => $value]);
+                } else {
+                    /* Insert new row if it doesn't exist */
+                    db()->insert('settings', [
+                        'key' => 'security',
+                        'value' => $value
+                    ]);
+                }
 
                 /* Clear cache immediately */
                 cache()->deleteItem('settings');
