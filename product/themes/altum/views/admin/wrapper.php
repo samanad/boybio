@@ -88,5 +88,48 @@
 
 <?= \Altum\Event::get_content('javascript') ?>
 
+<script>
+'use strict';
+
+/* PWA Start URL Persistence - Ensure start page remains fixed on device */
+(function() {
+    const PWA_START_URL_KEY = 'pwa_start_url';
+    const currentUrl = new URL(window.location.href);
+    const currentPath = currentUrl.pathname + currentUrl.search.replace(/[?&]utm_[^&]*/g, '').replace(/^&/, '?');
+    
+    // Check if running in PWA standalone mode
+    const isPWAStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone === true ||
+                            (window.matchMedia('(display-mode: fullscreen)').matches && document.referrer === '');
+    
+    // If utm_source=pwa is present, store this as the start URL (first time PWA is opened)
+    if (currentUrl.searchParams.get('utm_source') === 'pwa') {
+        const startUrl = currentPath || '/';
+        localStorage.setItem(PWA_START_URL_KEY, startUrl);
+        console.log('PWA Start URL stored:', startUrl);
+    }
+    
+    // On PWA launch (standalone mode), ensure we're on the stored start URL
+    // Only redirect on initial launch (no referrer or referrer is from outside)
+    if (isPWAStandalone) {
+        const storedStartUrl = localStorage.getItem(PWA_START_URL_KEY);
+        if (storedStartUrl) {
+            // Check if this is an initial launch (no referrer or referrer is external)
+            const isInitialLaunch = !document.referrer || 
+                                   !document.referrer.includes(window.location.hostname) ||
+                                   document.referrer === '';
+            
+            // Only redirect on initial launch and if not already on the start URL
+            if (isInitialLaunch && storedStartUrl !== currentPath) {
+                const fullStartUrl = window.location.origin + storedStartUrl;
+                console.log('PWA: Initial launch detected, redirecting to stored start URL:', fullStartUrl);
+                window.location.replace(fullStartUrl); // Use replace to avoid adding to history
+                return; // Prevent further execution
+            }
+        }
+    }
+})();
+</script>
+
 </body>
 </html>
