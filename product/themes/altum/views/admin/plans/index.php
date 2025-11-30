@@ -149,7 +149,10 @@
 
             foreach((array) settings()->payment->currencies as $currency => $currency_data) {
                 foreach(['monthly', 'quarterly', 'biannual', 'annual', 'lifetime'] as $payment_frequency) {
-                    $tooltips[$payment_frequency] = $row->prices->{$payment_frequency}->{$currency} . ' ' . $currency . '<br />';
+                    $price_value = isset($row->prices->{$payment_frequency}) && isset($row->prices->{$payment_frequency}->{$currency}) 
+                        ? $row->prices->{$payment_frequency}->{$currency} 
+                        : '0';
+                    $tooltips[$payment_frequency] = $price_value . ' ' . $currency . '<br />';
                 }
             }
             ?>
