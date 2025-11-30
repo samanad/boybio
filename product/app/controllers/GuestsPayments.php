@@ -32,8 +32,9 @@ class GuestsPayments extends Controller {
 
         /* Prepare the filtering system */
         $filters = (new \Altum\Filters(['guest_payment_id', 'biolink_block_id', 'link_id', 'user_id', 'payment_processor_id', 'project_id', 'type', 'processor', 'status'], ['email', 'name'], ['guest_payment_id', 'total_amount', 'datetime']));
-        $filters->set_default_order_by($this->user->preferences->guests_payments_default_order_by, $this->user->preferences->default_order_type ?? settings()->main->default_order_type);
-        $filters->set_default_results_per_page($this->user->preferences->default_results_per_page ?? settings()->main->default_results_per_page);
+        $preferences = $this->user->preferences ?? new \StdClass();
+        $filters->set_default_order_by($preferences->guests_payments_default_order_by ?? 'guest_payment_id', $preferences->default_order_type ?? settings()->main->default_order_type);
+        $filters->set_default_results_per_page($preferences->default_results_per_page ?? settings()->main->default_results_per_page);
 
         /* Prepare the paginator */
         $total_rows = database()->query("SELECT COUNT(*) AS `total` FROM `guests_payments` WHERE `user_id` = {$this->user->user_id} {$filters->get_sql_where()}")->fetch_object()->total ?? 0;
