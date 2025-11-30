@@ -27,8 +27,9 @@ class AdminDomains extends Controller {
 
         /* Prepare the filtering system */
         $filters = (new \Altum\Filters(['is_enabled', 'user_id', 'type'], ['host'], ['domain_id', 'last_datetime', 'datetime', 'host']));
-        $filters->set_default_order_by($this->user->preferences->domains_default_order_by, $this->user->preferences->default_order_type ?? settings()->main->default_order_type);
-        $filters->set_default_results_per_page($this->user->preferences->default_results_per_page ?? settings()->main->default_results_per_page);
+        $preferences = $this->user->preferences ?? new \StdClass();
+        $filters->set_default_order_by($preferences->domains_default_order_by ?? 'domain_id', $preferences->default_order_type ?? settings()->main->default_order_type);
+        $filters->set_default_results_per_page($preferences->default_results_per_page ?? settings()->main->default_results_per_page);
 
         /* Prepare the paginator */
         $total_rows = database()->query("SELECT COUNT(*) AS `total` FROM `domains` WHERE 1 = 1 {$filters->get_sql_where()}")->fetch_object()->total ?? 0;
