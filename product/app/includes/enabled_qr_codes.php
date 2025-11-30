@@ -18,8 +18,10 @@ defined('ALTUMCODE') || die();
 
 $enabled_qr_codes = [];
 
+$available_qr_codes = isset(settings()->codes) && isset(settings()->codes->available_qr_codes) ? settings()->codes->available_qr_codes : new \StdClass();
+
 foreach(require APP_PATH . 'includes/qr_codes.php' as $type => $value) {
-    if(settings()->codes->available_qr_codes->{$type}) {
+    if(isset($available_qr_codes->{$type}) && $available_qr_codes->{$type}) {
         $enabled_qr_codes[$type] = $value;
     }
 }
