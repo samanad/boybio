@@ -32,8 +32,9 @@ class SplashPages extends Controller {
 
         /* Prepare the filtering system */
         $filters = (new \Altum\Filters([], ['name'], ['splash_page_id', 'last_datetime', 'name', 'datetime']));
-        $filters->set_default_order_by($this->user->preferences->splash_pages_default_order_by, $this->user->preferences->default_order_type ?? settings()->main->default_order_type);
-        $filters->set_default_results_per_page($this->user->preferences->default_results_per_page ?? settings()->main->default_results_per_page);
+        $preferences = $this->user->preferences ?? new \StdClass();
+        $filters->set_default_order_by($preferences->splash_pages_default_order_by ?? 'splash_page_id', $preferences->default_order_type ?? settings()->main->default_order_type);
+        $filters->set_default_results_per_page($preferences->default_results_per_page ?? settings()->main->default_results_per_page);
 
         /* Prepare the paginator */
         $total_rows = database()->query("SELECT COUNT(*) AS `total` FROM `splash_pages` WHERE `user_id` = {$this->user->user_id} {$filters->get_sql_where()}")->fetch_object()->total ?? 0;
