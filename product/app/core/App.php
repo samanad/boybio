@@ -256,7 +256,8 @@ class App {
         }
 
         /* Auto-set Persian language if accessing from Google Login Persistent IP */
-        if(!\Altum\Router::$language_code && !is_logged_in()) {
+        /* Skip this redirect if accessing a custom domain to avoid breaking custom domain routing */
+        if(!\Altum\Router::$language_code && !is_logged_in() && !isset(\Altum\Router::$data['domain'])) {
             $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
             $current_ip = get_ip();
             
