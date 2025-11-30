@@ -309,6 +309,9 @@ class App {
         /* Check for authentication checks */
         if(!is_null(\Altum\Router::$controller_settings['authentication'])) {
             \Altum\Authentication::guard(\Altum\Router::$controller_settings['authentication']);
+            
+            /* Update user after authentication check */
+            $controller->user = \Altum\Authentication::$user;
         }
 
         /* Call the controller method */

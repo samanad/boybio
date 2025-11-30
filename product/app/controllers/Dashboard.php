@@ -26,6 +26,9 @@ class Dashboard extends Controller {
     public function index() {
 
         \Altum\Authentication::guard();
+        
+        /* Ensure user is set after authentication */
+        $this->user = \Altum\Authentication::$user;
 
         /* Prepare the filtering system */
         $filters = (new \Altum\Filters(['is_enabled', 'type'], ['url', 'location_url'], ['link_id', 'last_datetime', 'datetime', 'clicks', 'url']));

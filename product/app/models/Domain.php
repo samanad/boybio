@@ -22,6 +22,8 @@ class Domain extends Model {
 
     public function get_available_domains_by_user($user) {
         if(!settings()->links->domains_is_enabled) return [];
+        
+        if(!$user || !isset($user->user_id)) return [];
 
         /* Get the domains */
         $domains = [];
@@ -50,13 +52,16 @@ class Domain extends Model {
                 WHERE 
                     {$where}
             ");
-            while($row = $domains_result->fetch_object()) {
+            
+            if($domains_result) {
+                while($row = $domains_result->fetch_object()) {
                 if($row->type == 1 && !in_array($row->domain_id, $user->plan_settings->additional_domains ?? [])) continue;
 
                 /* Build the url */
                 $row->url = $row->scheme . $row->host . '/';
 
-                $domains[$row->domain_id] = $row;
+                    $domains[$row->domain_id] = $row;
+                }
             }
 
             /* Properly tag the cache */
