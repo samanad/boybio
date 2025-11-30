@@ -66,6 +66,12 @@
             </div>
 
             <div class="form-group">
+                <label for="pwa_locked_user_ids"><i class="fas fa-fw fa-sm fa-lock text-muted mr-1"></i> <?= l('admin_settings.pwa.pwa_locked_user_ids') ?></label>
+                <textarea id="pwa_locked_user_ids" name="pwa_locked_user_ids" class="form-control" rows="3" placeholder="1, 2, 3"><?= \Altum\Plugin::is_active('pwa') && isset(settings()->pwa->pwa_locked_user_ids) ? settings()->pwa->pwa_locked_user_ids : '' ?></textarea>
+                <small class="form-text text-muted"><?= l('admin_settings.pwa.pwa_locked_user_ids_help') ?></small>
+            </div>
+
+            <div class="form-group">
                 <label for="background_color"><?= l('admin_settings.pwa.background_color') ?></label>
                 <input id="background_color" type="hidden" name="background_color" class="form-control" value="<?= settings()->pwa->background_color ?? '#000000' ?>" data-color-picker />
                 <small class="form-text text-muted"><?= l('admin_settings.pwa.background_color_help') ?></small>

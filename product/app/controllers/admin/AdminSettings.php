@@ -1631,6 +1631,16 @@ class AdminSettings extends Controller {
             settings()->pwa->app_icon = \Altum\Uploads::process_upload(settings()->pwa->app_icon, 'app_icon', 'app_icon', 'app_icon_remove', null);
             settings()->pwa->app_icon_maskable = \Altum\Uploads::process_upload(settings()->pwa->app_icon_maskable, 'app_icon', 'app_icon_maskable', 'app_icon_maskable_remove', null);
 
+            /* Process locked user IDs */
+            $_POST['pwa_locked_user_ids'] = trim($_POST['pwa_locked_user_ids'] ?? '');
+            if(!empty($_POST['pwa_locked_user_ids'])) {
+                // Clean and validate user IDs (comma-separated list)
+                $user_ids = array_filter(array_map('trim', explode(',', $_POST['pwa_locked_user_ids'])));
+                $_POST['pwa_locked_user_ids'] = implode(', ', array_filter($user_ids, function($id) {
+                    return is_numeric($id) && $id > 0;
+                }));
+            }
+
             $value = [
                 'is_enabled' => isset($_POST['is_enabled']),
                 'display_install_bar' => isset($_POST['display_install_bar']),
@@ -1643,6 +1653,7 @@ class AdminSettings extends Controller {
                 'background_color' => $_POST['background_color'],
                 'theme_color' => $_POST['theme_color'],
                 'app_start_url' => $_POST['app_start_url'],
+                'pwa_locked_user_ids' => $_POST['pwa_locked_user_ids'],
                 'app_icon' => settings()->pwa->app_icon ?? '',
                 'app_icon_maskable' => settings()->pwa->app_icon_maskable ?? '',
             ];

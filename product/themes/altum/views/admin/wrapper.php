@@ -95,18 +95,42 @@
 (function() {
     const PWA_START_URL_KEY = 'pwa_start_url';
     const currentUrl = new URL(window.location.href);
-    const currentPath = currentUrl.pathname + currentUrl.search.replace(/[?&]utm_[^&]*/g, '').replace(/^&/, '?');
+    let currentPath = currentUrl.pathname + currentUrl.search.replace(/[?&]utm_[^&]*/g, '').replace(/^&/, '?');
     
     // Check if running in PWA standalone mode
     const isPWAStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                             window.navigator.standalone === true ||
                             (window.matchMedia('(display-mode: fullscreen)').matches && document.referrer === '');
     
+    // Check if user is locked (from PHP settings)
+    const lockedUserIds = <?= json_encode(isset(settings()->pwa->pwa_locked_user_ids) && !empty(settings()->pwa->pwa_locked_user_ids) ? array_map('trim', explode(',', settings()->pwa->pwa_locked_user_ids)) : []) ?>;
+    const currentUserId = <?= is_logged_in() ? \Altum\Authentication::$user_id : 'null' ?>;
+    const isUserLocked = currentUserId && lockedUserIds.includes(String(currentUserId));
+    
+    // For locked users, force Persian (/fa/chats) as the start URL
+    if (isUserLocked) {
+        // Ensure the path starts with /fa/chats
+        const faChatsPath = '/fa/chats';
+        const currentPathWithoutQuery = currentUrl.pathname;
+        
+        // If not already on /fa/chats, redirect to it
+        if (!currentPathWithoutQuery.startsWith('/fa/chats')) {
+            const faChatsUrl = window.location.origin + faChatsPath + (currentUrl.search ? currentUrl.search : '');
+            console.log('PWA: Locked user detected, forcing Persian chats page:', faChatsUrl);
+            window.location.replace(faChatsUrl);
+            return;
+        }
+        
+        // Force the stored URL to be /fa/chats for locked users
+        currentPath = faChatsPath + (currentUrl.search.replace(/[?&]utm_[^&]*/g, '').replace(/^&/, '?') || '');
+    }
+    
     // If utm_source=pwa is present, store this as the start URL (first time PWA is opened)
     if (currentUrl.searchParams.get('utm_source') === 'pwa') {
-        const startUrl = currentPath || '/';
+        // For locked users, always store /fa/chats
+        const startUrl = isUserLocked ? '/fa/chats' : (currentPath || '/');
         localStorage.setItem(PWA_START_URL_KEY, startUrl);
-        console.log('PWA Start URL stored:', startUrl);
+        console.log('PWA Start URL stored:', startUrl, isUserLocked ? '(locked user - forced Persian)' : '');
     }
     
     // On PWA launch (standalone mode), ensure we're on the stored start URL
@@ -114,17 +138,29 @@
     if (isPWAStandalone) {
         const storedStartUrl = localStorage.getItem(PWA_START_URL_KEY);
         if (storedStartUrl) {
+            // For locked users, override stored URL with /fa/chats
+            const targetUrl = isUserLocked ? '/fa/chats' : storedStartUrl;
+            
             // Check if this is an initial launch (no referrer or referrer is external)
             const isInitialLaunch = !document.referrer || 
                                    !document.referrer.includes(window.location.hostname) ||
                                    document.referrer === '';
             
-            // Only redirect on initial launch and if not already on the start URL
-            if (isInitialLaunch && storedStartUrl !== currentPath) {
-                const fullStartUrl = window.location.origin + storedStartUrl;
-                console.log('PWA: Initial launch detected, redirecting to stored start URL:', fullStartUrl);
+            // Only redirect on initial launch and if not already on the target URL
+            if (isInitialLaunch && targetUrl !== currentPath) {
+                const fullStartUrl = window.location.origin + targetUrl;
+                console.log('PWA: Initial launch detected, redirecting to stored start URL:', fullStartUrl, isUserLocked ? '(locked user)' : '');
                 window.location.replace(fullStartUrl); // Use replace to avoid adding to history
                 return; // Prevent further execution
+            }
+        } else if (isUserLocked && isPWAStandalone) {
+            // If no stored URL but user is locked, set it to /fa/chats
+            localStorage.setItem(PWA_START_URL_KEY, '/fa/chats');
+            if (!currentPath.startsWith('/fa/chats')) {
+                const fullStartUrl = window.location.origin + '/fa/chats';
+                console.log('PWA: Locked user, no stored URL, redirecting to Persian chats:', fullStartUrl);
+                window.location.replace(fullStartUrl);
+                return;
             }
         }
     }

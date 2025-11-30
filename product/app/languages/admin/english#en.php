@@ -1199,6 +1199,8 @@ return [
     'admin_settings.pwa.shortcut_icon_x_help' => 'Make sure the icon is 192x192 pixels.',
     'admin_settings.pwa.app_start_url' => 'App start URL',
     'admin_settings.pwa.app_start_url_help' => 'What internal page should load when the PWA app is opened. UTM tracking parameters are automatically added: <code>utm_source=pwa&utm_medium=web-app&utm_campaign=install-or-pwa-launch</code>',
+    'admin_settings.pwa.pwa_locked_user_ids' => 'Locked User IDs (PWA Start URL)',
+    'admin_settings.pwa.pwa_locked_user_ids_help' => 'Comma-separated list of user IDs that will have their PWA start URL locked to the Persian (/fa/chats) version. These users cannot change their PWA start page.',
 
     'admin_settings.image_optimizer.tab' => 'Image optimizer',
     'admin_settings.image_optimizer.is_enabled' => 'Enable the image optimizer system',
