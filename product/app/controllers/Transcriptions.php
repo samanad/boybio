@@ -30,14 +30,15 @@ class Transcriptions extends Controller {
         }
 
         /* Check for exclusive personal API usage limitation */
-        if($this->user->plan_settings->exclusive_personal_api_keys && empty($this->user->preferences->openai_api_key)) {
+        $preferences = $this->user->preferences ?? new \StdClass();
+        if($this->user->plan_settings->exclusive_personal_api_keys && empty($preferences->openai_api_key ?? '')) {
             Alerts::add_error(sprintf(l('account_preferences.error_message.aix.openai_api_key'), '<a href="' . url('account-preferences') . '"><strong>' . l('account_preferences.menu') . '</strong></a>'));
         }
 
         /* Prepare the filtering system */
         $filters = (new \Altum\Filters(['user_id', 'project_id', 'language'], ['name'], ['transcription_id', 'last_datetime', 'datetime', 'name', 'words']));
-        $filters->set_default_order_by($this->user->preferences->transcriptions_default_order_by, $this->user->preferences->default_order_type ?? settings()->main->default_order_type);
-        $filters->set_default_results_per_page($this->user->preferences->default_results_per_page ?? settings()->main->default_results_per_page);
+        $filters->set_default_order_by($preferences->transcriptions_default_order_by ?? 'transcription_id', $preferences->default_order_type ?? settings()->main->default_order_type);
+        $filters->set_default_results_per_page($preferences->default_results_per_page ?? settings()->main->default_results_per_page);
 
         /* Prepare the paginator */
         $total_rows = database()->query("SELECT COUNT(*) AS `total` FROM `transcriptions` WHERE `user_id` = {$this->user->user_id} {$filters->get_sql_where()}")->fetch_object()->total ?? 0;
