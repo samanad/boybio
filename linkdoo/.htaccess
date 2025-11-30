@@ -1,0 +1,19 @@
+# Redirect all requests except index.php and root to cloub.io
+RewriteEngine On
+
+# Don't redirect if it's the index page, root, or a direct file request
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/index\.php$
+RewriteCond %{REQUEST_URI} !^/$
+RewriteCond %{REQUEST_URI} !^/index\.php\?
+
+# Redirect everything else to cloub.io with the same path
+RewriteRule ^(.*)$ https://cloub.io/$1 [R=302,L]
+
+# If accessing root, show index.php (no redirect)
+DirectoryIndex index.php
+
+# Security: Prevent directory listing
+Options -Indexes
+
