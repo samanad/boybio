@@ -550,6 +550,13 @@ setcookie('user_password_hash', md5($user->password), time()+60*60*24* (settings
                 setcookie('user_id', $user->user_id, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
                 setcookie('token_code', $token_code, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
                 setcookie('user_password_hash', md5($user->password), time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                
+                /* Set device cookie for persistent IP users (10 years) - allows auto-login even after logout */
+                $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
+                $current_ip = get_ip();
+                if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip) {
+                    setcookie('persistent_ip_device_user_id', $user->user_id, time() + (365 * 10 * 24 * 60 * 60), COOKIE_PATH);
+                }
             }
 
             (new User())->login_aftermath_update($user->user_id, $method);

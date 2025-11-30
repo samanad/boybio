@@ -24,8 +24,11 @@ class Index extends Controller {
 
     public function index() {
 
-        /* Custom index redirect if set */
-        if(!empty(settings()->main->index_url)) {
+        /* Don't redirect if this is a PWA launch (utm_source=pwa) - always show the start page */
+        $is_pwa_launch = isset($_GET['utm_source']) && $_GET['utm_source'] === 'pwa';
+        
+        /* Custom index redirect if set, but skip for PWA launches */
+        if(!empty(settings()->main->index_url) && !$is_pwa_launch) {
             header('Location: ' . settings()->main->index_url); die();
         }
 
