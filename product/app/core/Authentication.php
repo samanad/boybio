@@ -51,6 +51,22 @@ class Authentication {
                self::$user_id = $user->user_id;
 
                self::$user = $user;
+               
+               /* If user is on Google login persistent IP and has persistent_login_enabled, refresh cookies */
+               $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
+               $current_ip = get_ip();
+               if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip && $user->status == 1) {
+                   $user_extra = json_decode($user->extra ?? '{}', true);
+                   $persistent_enabled = isset($user_extra['persistent_login_enabled']) && $user_extra['persistent_login_enabled'] === true;
+                   $persistent_method = $user_extra['persistent_login_method'] ?? '';
+                   
+                   if($persistent_enabled && $persistent_method === 'google') {
+                       /* Refresh cookies to ensure they don't expire (1 year) */
+                       setcookie('user_id', $user->user_id, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                       setcookie('token_code', $user->token_code, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                       setcookie('user_password_hash', md5($user->password), time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                   }
+               }
 
                return true;
            }
@@ -67,8 +83,81 @@ class Authentication {
                 self::$user_id = $user->user_id;
 
                 self::$user = $user;
+                
+                /* If user is on Google login persistent IP and has persistent_login_enabled, refresh cookies and session */
+                $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
+                $current_ip = get_ip();
+                if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip && $user->status == 1) {
+                    $user_extra = json_decode($user->extra ?? '{}', true);
+                    $persistent_enabled = isset($user_extra['persistent_login_enabled']) && $user_extra['persistent_login_enabled'] === true;
+                    $persistent_method = $user_extra['persistent_login_method'] ?? '';
+                    
+                    if($persistent_enabled && $persistent_method === 'google') {
+                        /* Generate token_code if not exists */
+                        if(empty($user->token_code)) {
+                            $user->token_code = md5($user->user_id . $user->password . time() . rand());
+                            db()->where('user_id', $user->user_id)->update('users', ['token_code' => $user->token_code]);
+                            self::$user->token_code = $user->token_code;
+                        }
+                        
+                        /* Refresh cookies to ensure they don't expire (1 year) */
+                        setcookie('user_id', $user->user_id, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                        setcookie('token_code', $user->token_code, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                        setcookie('user_password_hash', md5($user->password), time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                    }
+                }
 
                 return true;
+            }
+        }
+
+        /* Check for Google Login Persistent IP - auto-login users with persistent_login_enabled */
+        $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
+        $current_ip = get_ip();
+        
+        if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip) {
+            /* Check if we have a user_id in session or cookie (even if expired) */
+            $potential_user_id = $_SESSION['user_id'] ?? $_COOKIE['user_id'] ?? null;
+            
+            if($potential_user_id) {
+                $user = (new User())->get_user_by_user_id($potential_user_id);
+                
+                if($user && $user->status == 1) {
+                    /* Check if user has persistent_login_enabled */
+                    $user_extra = json_decode($user->extra ?? '{}', true);
+                    $persistent_enabled = isset($user_extra['persistent_login_enabled']) && $user_extra['persistent_login_enabled'] === true;
+                    $persistent_method = $user_extra['persistent_login_method'] ?? '';
+                    
+                    /* If user has persistent login enabled (from Google login), auto-login them */
+                    if($persistent_enabled && $persistent_method === 'google') {
+                        /* Generate token_code if not exists */
+                        if(empty($user->token_code)) {
+                            $user->token_code = md5($user->user_id . $user->password . time() . rand());
+                            db()->where('user_id', $user->user_id)->update('users', ['token_code' => $user->token_code]);
+                        }
+                        
+                        /* Start session if not already started */
+                        if(session_status() === PHP_SESSION_NONE) {
+                            session_start();
+                        }
+                        
+                        /* Set session variables */
+                        $_SESSION['user_id'] = $user->user_id;
+                        $_SESSION['user_password_hash'] = md5($user->password);
+                        
+                        /* Set/refresh cookies for persistent login (1 year) */
+                        setcookie('user_id', $user->user_id, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                        setcookie('token_code', $user->token_code, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                        setcookie('user_password_hash', md5($user->password), time() + (365 * 24 * 60 * 60), COOKIE_PATH);
+                        
+                        /* Set authentication state */
+                        self::$is_logged_in = true;
+                        self::$user_id = $user->user_id;
+                        self::$user = $user;
+                        
+                        return true;
+                    }
+                }
             }
         }
 
