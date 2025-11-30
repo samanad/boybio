@@ -44,8 +44,8 @@
         </li>
 
         <li>
-            <div><?= sprintf(l('global.plan_settings.links_bulk_limit'), ($data->plan_settings->links_bulk_limit == -1 ? l('global.unlimited') : nr($data->plan_settings->links_bulk_limit))) ?></div>
-            <i class="fas fa-fw fa-sm <?= $data->plan_settings->links_bulk_limit ? 'fa-check-circle text-success' : 'fa-times-circle text-muted' ?>"></i>
+            <div><?= sprintf(l('global.plan_settings.links_bulk_limit'), ((isset($data->plan_settings->links_bulk_limit) && $data->plan_settings->links_bulk_limit == -1) ? l('global.unlimited') : nr($data->plan_settings->links_bulk_limit ?? 0))) ?></div>
+            <i class="fas fa-fw fa-sm <?= (isset($data->plan_settings->links_bulk_limit) && $data->plan_settings->links_bulk_limit) ? 'fa-check-circle text-success' : 'fa-times-circle text-muted' ?>"></i>
         </li>
     <?php endif ?>
 
