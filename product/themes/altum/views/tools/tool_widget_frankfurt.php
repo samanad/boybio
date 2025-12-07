@@ -15,15 +15,15 @@
             <p class="text-truncate text-muted small m-0"><?= $data->description ?? l('tools.' . $data->tool_id . '.description') ?></p>
         </div>
 
-        <?php if(settings()->tools->views_is_enabled || settings()->tools->last_submissions_is_enabled): ?>
+        <?php if((settings()->tools->views_is_enabled ?? false) || (settings()->tools->last_submissions_is_enabled ?? false)): ?>
             <div class="p-3 d-flex flex-column">
-                <?php if(settings()->tools->views_is_enabled): ?>
+                <?php if(settings()->tools->views_is_enabled ?? false): ?>
                     <div class="badge badge-gray-100 mb-2" data-toggle="tooltip" title="<?= l('tools.total_views') ?>">
                         <i class="fas fa-fw fa-sm fa-eye mr-1"></i> <?= nr($data->tools_usage[$data->tool_id]->total_views ?? 0) ?>
                     </div>
                 <?php endif ?>
 
-                <?php if(settings()->tools->last_submissions_is_enabled): ?>
+                <?php if(settings()->tools->last_submissions_is_enabled ?? false): ?>
                     <div class="badge badge-gray-100" data-toggle="tooltip" title="<?= l('tools.total_submissions') ?>">
                         <i class="fas fa-fw fa-sm fa-check mr-1"></i> <?= nr($data->tools_usage[$data->tool_id]->total_submissions ?? 0) ?>
                     </div>
