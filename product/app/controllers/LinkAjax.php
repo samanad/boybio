@@ -1547,13 +1547,18 @@ class LinkAjax extends Controller {
             ]);
 
             /* Generate the manifest file */
+            /* Determine which icon to use: uploaded/new icon > existing biolink icon > site default icon */
+            $pwa_icon = $image_uploaded_file['pwa_icon'] ?? $link->settings->pwa_icon ?? null;
+            $app_icon_url = $pwa_icon ? \Altum\Uploads::get_full_url('app_icon') . $pwa_icon : (settings()->pwa->app_icon ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon : null);
+            $app_icon_maskable_url = $pwa_icon ? \Altum\Uploads::get_full_url('app_icon') . $pwa_icon : (settings()->pwa->app_icon_maskable ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable : null);
+            
             $manifest = pwa_generate_manifest([
                 'name' => $_POST['seo_title'] ?: $_POST['url'] . ' - ' . settings()->main->title,
                 'short_name' => $_POST['url'],
                 'description' => $_POST['seo_meta_description'] ?: $_POST['url'],
                 'theme_color' => $_POST['pwa_theme_color'],
-                'app_icon_url' => $image_uploaded_file['pwa_icon'] ? \Altum\Uploads::get_full_url('app_icon') . $image_uploaded_file['pwa_icon'] : (settings()->pwa->app_icon ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon : null),
-                'app_icon_maskable_url' => $image_uploaded_file['pwa_icon'] ? \Altum\Uploads::get_full_url('app_icon') . $image_uploaded_file['pwa_icon'] : (settings()->pwa->app_icon_maskable ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable : null),
+                'app_icon_url' => $app_icon_url,
+                'app_icon_maskable_url' => $app_icon_maskable_url,
                 'start_url' => $start_url,
                 'scope' => $scope_url,
                 'mobile_screenshots' => [],
