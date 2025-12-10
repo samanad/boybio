@@ -1548,7 +1548,8 @@ class LinkAjax extends Controller {
 
             /* Generate the manifest file */
             /* Determine which icon to use: uploaded/new icon > existing biolink icon > site default icon */
-            $pwa_icon = $image_uploaded_file['pwa_icon'] ?? $link->settings->pwa_icon ?? null;
+            /* Use non-empty value from uploaded file, or fall back to existing link icon, or site default */
+            $pwa_icon = !empty($image_uploaded_file['pwa_icon']) ? $image_uploaded_file['pwa_icon'] : (!empty($link->settings->pwa_icon) ? $link->settings->pwa_icon : null);
             $app_icon_url = $pwa_icon ? \Altum\Uploads::get_full_url('app_icon') . $pwa_icon : (settings()->pwa->app_icon ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon : null);
             $app_icon_maskable_url = $pwa_icon ? \Altum\Uploads::get_full_url('app_icon') . $pwa_icon : (settings()->pwa->app_icon_maskable ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable : null);
             
