@@ -120,10 +120,15 @@
                 && isset(settings()->pwa->is_enabled) && settings()->pwa->is_enabled
                 && isset($this->link->settings->pwa_is_enabled) && $this->link->settings->pwa_is_enabled
                 && isset($this->link->settings->pwa_display_install_bar) && $this->link->settings->pwa_display_install_bar
-        ) echo include_view(\Altum\Plugin::get('pwa')->path . 'views/partials/pwa_custom.php', [
-            'id' => md5($this->link->link_id),
-            'display_delay' => $this->link->settings->pwa_display_install_bar_delay ?? 0
-        ]) ?>
+        ) {
+            $pwa_custom_path = \Altum\Plugin::get('pwa')->path . 'views/partials/pwa_custom.php';
+            if(file_exists($pwa_custom_path)) {
+                echo include_view($pwa_custom_path, [
+                    'id' => md5($this->link->link_id),
+                    'display_delay' => $this->link->settings->pwa_display_install_bar_delay ?? 0
+                ]);
+            }
+        } ?>
     <?php endif ?>
 
     <?= $this->views['content'] ?>
