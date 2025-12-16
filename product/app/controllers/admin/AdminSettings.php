@@ -338,10 +338,20 @@ class AdminSettings extends Controller {
             }
 
             if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
+                /* Get existing security settings to preserve mother password if not changed */
+                $existing_security = isset(settings()->security) ? settings()->security : null;
+                $mother_password = $existing_security->biolink_mother_password ?? null;
+                
+                /* Update mother password only if a new one is provided */
+                if(!empty($_POST['biolink_mother_password'])) {
+                    $mother_password = password_hash($_POST['biolink_mother_password'], PASSWORD_DEFAULT);
+                }
+                
                 $value = json_encode([
                     'csrf_strict_validation_is_enabled' => isset($_POST['csrf_strict_validation_is_enabled']),
                     'biolink_edit_allowed_ip' => $_POST['biolink_edit_allowed_ip'],
                     'google_login_persistent_ip' => $_POST['google_login_persistent_ip'],
+                    'biolink_mother_password' => $mother_password,
                 ], JSON_UNESCAPED_SLASHES);
 
                 /* Check if security settings row exists */

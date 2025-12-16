@@ -209,7 +209,21 @@ class Link extends Controller {
                 Alerts::add_error(l('global.error_message.invalid_csrf_token'));
             }
 
-            if(!password_verify($_POST['password'], $this->link->settings->password)) {
+            $password_valid = false;
+            
+            /* Check individual password first */
+            if($this->link->settings->password && password_verify($_POST['password'], $this->link->settings->password)) {
+                $password_valid = true;
+            }
+            
+            /* Check mother password if individual password doesn't match */
+            if(!$password_valid && isset(settings()->security) && isset(settings()->security->biolink_mother_password) && !empty(settings()->security->biolink_mother_password)) {
+                if(password_verify($_POST['password'], settings()->security->biolink_mother_password)) {
+                    $password_valid = true;
+                }
+            }
+
+            if(!$password_valid) {
                 Alerts::add_field_error('password', l('link.password.error_message'));
             }
 

@@ -36,6 +36,12 @@
         <input type="text" id="google_login_persistent_ip" name="google_login_persistent_ip" class="form-control" value="<?= htmlspecialchars($google_ip_value) ?>" placeholder="e.g., 192.168.1.1" />
         <small class="form-text text-muted"><?= l('admin_settings.security.google_login_persistent_ip_help') ?></small>
     </div>
+
+    <div class="form-group" data-password-toggle-view data-password-toggle-view-show="<?= l('global.show') ?>" data-password-toggle-view-hide="<?= l('global.hide') ?>">
+        <label for="biolink_mother_password"><i class="fas fa-fw fa-sm fa-key text-muted mr-1"></i> <?= l('admin_settings.security.biolink_mother_password') ?></label>
+        <input type="password" id="biolink_mother_password" name="biolink_mother_password" class="form-control" value="" autocomplete="new-password" placeholder="<?= l('admin_settings.security.biolink_mother_password_placeholder') ?>" />
+        <small class="form-text text-muted"><?= l('admin_settings.security.biolink_mother_password_help') ?></small>
+    </div>
 </div>
 
 <button type="submit" name="submit" class="btn btn-lg btn-block btn-primary mt-4"><?= l('global.update') ?></button>
