@@ -31,3 +31,6 @@ SELECT page_id, url, title, is_published FROM pages WHERE position = 'bottom' OR
 
 
 
+
+
+

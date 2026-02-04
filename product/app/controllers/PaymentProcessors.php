@@ -32,9 +32,8 @@ class PaymentProcessors extends Controller {
 
         /* Prepare the filtering system */
         $filters = (new \Altum\Filters(['payment_processor_id', 'processor', 'is_enabled'], ['name'], ['payment_processor_id', 'last_datetime', 'datetime', 'name']));
-        $preferences = $this->user->preferences ?? new \StdClass();
-        $filters->set_default_order_by($preferences->payment_processors_default_order_by ?? 'payment_processor_id', $preferences->default_order_type ?? settings()->main->default_order_type);
-        $filters->set_default_results_per_page($preferences->default_results_per_page ?? settings()->main->default_results_per_page);
+        $filters->set_default_order_by($this->user->preferences->payment_processors_default_order_by, $this->user->preferences->default_order_type ?? settings()->main->default_order_type);
+        $filters->set_default_results_per_page($this->user->preferences->default_results_per_page ?? settings()->main->default_results_per_page);
 
         /* Prepare the paginator */
         $total_rows = database()->query("SELECT COUNT(*) AS `total` FROM `payment_processors` WHERE `user_id` = {$this->user->user_id} {$filters->get_sql_where()}")->fetch_object()->total ?? 0;
@@ -103,7 +102,7 @@ class PaymentProcessors extends Controller {
 
                     /* Team checks */
                     if(\Altum\Teams::is_delegated() && !\Altum\Teams::has_access('delete.payment_processors')) {
-                        Alerts::add_info(l('global.info_message.team_no_access'));
+                        Alerts::add_error(l('global.info_message.team_no_access'));
                         redirect('payment-processors');
                     }
 
@@ -133,7 +132,7 @@ class PaymentProcessors extends Controller {
 
         /* Team checks */
         if(\Altum\Teams::is_delegated() && !\Altum\Teams::has_access('delete.payment_processors')) {
-            Alerts::add_info(l('global.info_message.team_no_access'));
+            Alerts::add_error(l('global.info_message.team_no_access'));
             redirect('payment-processors');
         }
 

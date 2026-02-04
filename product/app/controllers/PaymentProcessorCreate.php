@@ -32,7 +32,7 @@ class PaymentProcessorCreate extends Controller {
 
         /* Team checks */
         if(\Altum\Teams::is_delegated() && !\Altum\Teams::has_access('create.payment_processors')) {
-            Alerts::add_info(l('global.info_message.team_no_access'));
+            Alerts::add_error(l('global.info_message.team_no_access'));
             redirect('payment-processors');
         }
 
@@ -40,15 +40,15 @@ class PaymentProcessorCreate extends Controller {
         $total_rows = database()->query("SELECT COUNT(*) AS `total` FROM `payment_processors` WHERE `user_id` = {$this->user->user_id}")->fetch_object()->total ?? 0;
 
         if($this->user->plan_settings->payment_processors_limit != -1 && $total_rows >= $this->user->plan_settings->payment_processors_limit) {
-            Alerts::add_info(l('global.info_message.plan_feature_limit'));
+            Alerts::add_error(l('global.info_message.plan_feature_limit') . (settings()->payment->is_enabled ? ' <a href="' . url('plan') . '" class="font-weight-bold text-reset">' . l('global.info_message.plan_upgrade') . '.</a>' : null));
             redirect('payment-processors');
         }
 
         if(!empty($_POST)) {
             $settings = [];
 
-            $_POST['name'] = trim(query_clean($_POST['name']));
-            $_POST['processor'] = isset($_POST['processor']) && in_array($_POST['processor'], ['paypal', 'stripe', 'crypto_com', 'razorpay', 'paystack', 'mollie']) ? query_clean($_POST['processor']) : 'https://';
+            $_POST['name'] = input_clean($_POST['name'], 64);
+            $_POST['processor'] = isset($_POST['processor']) && in_array($_POST['processor'], include \Altum\Plugin::get('payment-blocks')->path . 'payment_blocks_payment_processors.php') ? query_clean($_POST['processor']) : 'https://';
 
             switch($_POST['processor']) {
                 case 'paypal':
@@ -86,7 +86,7 @@ class PaymentProcessorCreate extends Controller {
             /* Check for any errors */
             $required_fields = ['name'];
             foreach($required_fields as $field) {
-                if(!isset($_POST[$field]) || (isset($_POST[$field]) && empty($_POST[$field]) && $_POST[$field] != '0')) {
+                if(!isset($_POST[$field]) || trim($_POST[$field]) === '') {
                     Alerts::add_field_error($field, l('global.error_message.empty_field'));
                 }
             }

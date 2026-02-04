@@ -34,60 +34,6 @@ require_once APP_PATH . 'includes/product.php';
 /* Config file */
 require_once ROOT_PATH . 'config.php';
 
-/* Domain redirect: Redirect boybio.net to cloub.io, but allow PWA-related requests */
-if(defined('SITE_URL') && !empty(SITE_URL)) {
-    $current_host = $_SERVER['HTTP_HOST'] ?? '';
-    $site_url_host = parse_url(SITE_URL, PHP_URL_HOST);
-    
-    /* Check if we're on the old domain and should redirect */
-    if($current_host === 'boybio.net' || $current_host === 'www.boybio.net') {
-        /* Get the request URI */
-        $request_uri = $_SERVER['REQUEST_URI'] ?? '/';
-        $request_path = parse_url($request_uri, PHP_URL_PATH);
-        
-        /* List of paths that should NOT be redirected (PWA-related) */
-        $pwa_excluded_paths = [
-            '/sw.js',
-            '/manifest.json',
-            '/uploads/pwa/',
-            '/api/',
-            '/ajax/',
-            '/link-ajax',
-            '/biolink-block-ajax',
-            '/push-subscribers',
-        ];
-        
-        /* Check if this is a PWA-related request */
-        $is_pwa_request = false;
-        foreach($pwa_excluded_paths as $excluded_path) {
-            if(strpos($request_path, $excluded_path) === 0) {
-                $is_pwa_request = true;
-                break;
-            }
-        }
-        
-        /* Also check for service worker registration or manifest requests */
-        if(isset($_SERVER['HTTP_USER_AGENT']) && (
-            strpos($_SERVER['HTTP_USER_AGENT'], 'ServiceWorker') !== false ||
-            strpos($request_uri, 'sw.js') !== false ||
-            strpos($request_uri, 'manifest.json') !== false
-        )) {
-            $is_pwa_request = true;
-        }
-        
-        /* Redirect to new domain if not a PWA request */
-        if(!$is_pwa_request) {
-            $new_url = 'https://cloub.io' . $request_uri;
-            if(!empty($_SERVER['QUERY_STRING'])) {
-                $new_url .= '?' . $_SERVER['QUERY_STRING'];
-            }
-            header('HTTP/1.1 301 Moved Permanently');
-            header('Location: ' . $new_url);
-            exit;
-        }
-    }
-}
-
 /* Establish cookie / session on this path specifically */
 define('COOKIE_PATH', preg_replace('|https?://[^/]+|i', '', SITE_URL));
 

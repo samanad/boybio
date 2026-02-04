@@ -166,6 +166,9 @@ class Register extends Controller {
                 /* Log the action */
                 Logger::users($registered_user['user_id'], 'register.success');
 
+                /* Run potential hooks */
+                \Altum\CustomHooks::user_finished_registration(['user_id' => $registered_user['user_id']]);
+
                 /* If active = 1 then login the user, else send the user an activation email */
                 if($active == '1') {
 

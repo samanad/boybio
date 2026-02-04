@@ -124,7 +124,7 @@ class AdminPaymentProcessors extends Controller {
             }
 
             session_start();
-            
+
             /* Set a nice success message */
             Alerts::add_success(l('bulk_delete_modal.success_message'));
 

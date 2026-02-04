@@ -46,3 +46,6 @@ SELECT 'Footer pages fixed! IMPORTANT: Clear cache after running this script!' A
 
 
 
+
+
+

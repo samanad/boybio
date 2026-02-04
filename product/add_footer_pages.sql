@@ -43,3 +43,6 @@ SELECT 'Footer pages added successfully! You can now edit/delete them via Admin 
 
 
 
+
+
+

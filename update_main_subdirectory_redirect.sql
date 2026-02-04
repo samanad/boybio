@@ -8,3 +8,4 @@ SET `value` = JSON_SET(
 WHERE `key` = 'main' 
 AND JSON_EXTRACT(`value`, '$.subdirectory_redirect_base_url') = 'https://linkdooni.com';
 
+

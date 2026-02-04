@@ -121,3 +121,6 @@ Check your `product/config.php` file has correct database credentials
 - The script preserves directory structure in S3
 - Local files are kept by default (only deleted with `--delete-local` flag)
 
+
+
+
