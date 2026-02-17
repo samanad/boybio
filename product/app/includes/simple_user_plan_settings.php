@@ -58,7 +58,7 @@ if(settings()->main->white_labeling_is_enabled) {
     ]);
 }
 
-if(\Altum\Plugin::is_active('pwa') && settings()->pwa->is_enabled) {
+if(\Altum\Plugin::is_active('pwa') && !empty(settings()->pwa->is_enabled ?? null)) {
     $features = array_merge($features, [
         'custom_pwa_is_enabled',
     ]);

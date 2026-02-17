@@ -81,7 +81,7 @@
 
     <?php //ALTUMCODE:DEMO if(DEMO) echo include_view(THEME_PATH . 'views/partials/ac_banner.php', ['demo_url' => 'https://66biolinks.com/demo/', 'product_name' => PRODUCT_NAME, 'product_url' => PRODUCT_URL, 'product_buy_url' => PRODUCT_BUY_URL]) ?>
     <?php if(settings()->main->admin_spotlight_is_enabled || settings()->main->user_spotlight_is_enabled) require THEME_PATH . 'views/partials/spotlight.php' ?>
-    <?php if(\Altum\Plugin::is_active('pwa') && isset(settings()->pwa->is_enabled) && settings()->pwa->is_enabled && isset(settings()->pwa->display_install_bar) && settings()->pwa->display_install_bar) require \Altum\Plugin::get('pwa')->path . 'views/partials/pwa.php' ?>
+    <?php if(\Altum\Plugin::is_active('pwa') && !empty(settings()->pwa->is_enabled ?? null) && !empty(settings()->pwa->display_install_bar ?? null)) { $pwa_partial = \Altum\Plugin::get('pwa')->path . 'views/partials/pwa.php'; if(file_exists($pwa_partial)) require $pwa_partial; } ?>
 
     <div id="app_overlay" class="app-overlay" style="display: none"></div>
 

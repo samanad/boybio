@@ -17,10 +17,11 @@
 defined('ALTUMCODE') || die();
 
 $enabled_notification_handlers = [];
+$notification_handlers_settings = settings()->notification_handlers ?? new \stdClass();
 
 foreach(require APP_PATH . 'includes/available_notification_handlers.php' as $type => $notification_handler) {
     $property_name = $type . '_is_enabled';
-    if(isset(settings()->notification_handlers->{$property_name}) && settings()->notification_handlers->{$property_name}) {
+    if(property_exists($notification_handlers_settings, $property_name) && !empty($notification_handlers_settings->{$property_name})) {
         $enabled_notification_handlers[$type] = $notification_handler;
     }
 }

@@ -89,7 +89,7 @@
         <?php require THEME_PATH . 'views/partials/cookie_consent.php' ?>
         <?php require THEME_PATH . 'views/partials/ad_blocker_detector.php' ?>
         <?php if(settings()->main->admin_spotlight_is_enabled || settings()->main->user_spotlight_is_enabled) require THEME_PATH . 'views/partials/spotlight.php' ?>
-        <?php if(\Altum\Plugin::is_active('pwa') && settings()->pwa->is_enabled && settings()->pwa->display_install_bar) require \Altum\Plugin::get('pwa')->path . 'views/partials/pwa.php' ?>
+        <?php if(\Altum\Plugin::is_active('pwa') && !empty(settings()->pwa->is_enabled ?? null) && !empty(settings()->pwa->display_install_bar ?? null)) { $pwa_partial = \Altum\Plugin::get('pwa')->path . 'views/partials/pwa.php'; if(file_exists($pwa_partial)) require $pwa_partial; } ?>
         <?php if(\Altum\Plugin::is_active('push-notifications') && settings()->push_notifications->is_enabled) require \Altum\Plugin::get('push-notifications')->path . 'views/partials/push_notifications_js.php' ?>
 
         <div class="container pt-4">

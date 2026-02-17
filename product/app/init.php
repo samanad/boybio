@@ -26,6 +26,13 @@ const UPLOADS_PATH = ROOT_PATH . 'uploads/';
 const UPLOADS_URL_PATH = 'uploads/';
 const CACHE_DEFAULT_SECONDS = 2592000;
 
+/* PHP 7 compatibility: str_starts_with exists from PHP 8.0 */
+if (!function_exists('str_starts_with')) {
+    function str_starts_with($haystack, $needle) {
+        return $needle === '' || (string)$needle !== '' && strpos($haystack, $needle) === 0;
+    }
+}
+
 /* Starting to include the required files */
 require_once APP_PATH . 'includes/debug.php';
 if(!DEBUG) require_once APP_PATH . 'includes/500.php';

@@ -286,12 +286,12 @@ function get_this_device_type() {
         return $cached_device_type;
     }
 
-    return $cached_device_type = get_device_type($_SERVER['HTTP_USER_AGENT']);
+    return $cached_device_type = get_device_type($_SERVER['HTTP_USER_AGENT'] ?? '');
 }
 
 function get_device_type($user_agent) {
     /* normalize user agent */
-    $normalized_user_agent = strtolower(trim($user_agent));
+    $normalized_user_agent = strtolower(trim($user_agent ?? ''));
 
     /* regular expressions */
     $mobile_regex = '/(?:phone|windows\s+phone|ipod|blackberry|(?:android|bb\d+|meego|silk|googlebot).*mobile|palm|windows\s+ce|opera mini|avantgo|mobilesafari|docomo)/i';

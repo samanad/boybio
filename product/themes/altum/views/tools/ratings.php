@@ -1,6 +1,6 @@
 <?php defined('ALTUMCODE') || die() ?>
 
-<?php if(settings()->tools->ratings_is_enabled ?? false): ?>
+<?php $tools = settings()->tools ?? null; if($tools && property_exists($tools, 'ratings_is_enabled') && !empty($tools->ratings_is_enabled)): ?>
     <div id="rating" class="col-12 col-lg-auto d-flex flex-column">
         <div class="d-flex align-items-center flex-row-reverse justify-content-lg-end" style="justify-content: start;">
             <?php $style = ($data->tools_usage[$data->tool_id]->average_rating ?? 0) >= 4.5 ? null : 'style="opacity: 0.5;"' ?>
