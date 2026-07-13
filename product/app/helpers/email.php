@@ -142,6 +142,7 @@ function send_mail($to, $title, $content, $data = [], $reply_to = null, $debug =
             $mail->SMTPSecure = settings()->smtp->encryption;
         }
         $mail->SMTPAuth = settings()->smtp->auth;
+        $mail->AuthType = 'LOGIN';
         $mail->Host = settings()->smtp->host;
         $mail->Port = settings()->smtp->port;
         $mail->Username = settings()->smtp->username;
