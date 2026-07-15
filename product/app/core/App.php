@@ -152,10 +152,19 @@ class App {
                 /* Clear the cache */
                 cache()->deleteItemsByTag('user_id=' .  \Altum\Authentication::$user_id);
 
-                /* Make sure to redirect the person to the payment page and only let the person access the following pages */
-                if(!in_array(\Altum\Router::$controller_key, ['index', 'blog', 'affiliate', 'contact', 'page', 'pages', 'plan', 'pay', 'pay-billing', 'pay-thank-you', 'account', 'account-plan', 'account-payments', 'invoice', 'account-logs', 'account-preferences',  'account-delete', 'referrals', 'account-api', 'account-redeem-code', 'logout', 'register', 'teams-system', 'teams-member', 'teams-members']) && \Altum\Router::$path != 'admin') {
-                    redirect('plan/new');
-                }
+                /* Sync in-memory plan after expiry so free-gate below applies on this request */
+                $user->plan_id = 'free';
+            }
+
+            /* Free users: no Cloub access (incl. dashboard) until they buy on Linkdooni */
+            if(
+                $user->plan_id == 'free'
+                && (int) $user->type !== 1
+                && \Altum\Router::$path != 'admin'
+                && !in_array(\Altum\Router::$controller_key, ['login', 'register', 'logout', 'lost-password', 'reset-password', 'activate-user'], true)
+            ) {
+                header('Location: https://linkdooni.com/plan', true, 302);
+                die();
             }
 
             /* Update last activity */
