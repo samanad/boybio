@@ -1507,6 +1507,9 @@ class LinkAjax extends Controller {
         $_POST['share_is_enabled'] = (int) isset($_POST['share_is_enabled']);
         $_POST['scroll_buttons_is_enabled'] = (int) isset($_POST['scroll_buttons_is_enabled']);
         $_POST['directory_is_enabled'] = (int) isset($_POST['directory_is_enabled']);
+        $_POST['name'] = input_clean($_POST['name'] ?? '', 128);
+        $_POST['description'] = input_clean($_POST['description'] ?? '', 512);
+        $_POST['tags'] = json_encode(parse_tags_list($_POST['tags'] ?? ''), JSON_UNESCAPED_UNICODE);
         $this->check_location_url($_POST['leap_link'], true);
 
         /* Make sure the font is ok */
@@ -1704,6 +1707,9 @@ class LinkAjax extends Controller {
             'biolink_theme_id' => $_POST['biolink_theme_id'],
             'pixels_ids' => $_POST['pixels_ids'],
             'url' => $url,
+            'name' => $_POST['name'] !== '' ? $_POST['name'] : null,
+            'description' => $_POST['description'] !== '' ? $_POST['description'] : null,
+            'tags' => $_POST['tags'],
             'settings' => $settings,
             'additional' => $additional,
             'directory_is_enabled' => $_POST['directory_is_enabled'],
@@ -2665,6 +2671,9 @@ class LinkAjax extends Controller {
                 'pixels_ids' => $link->pixels_ids,
                 'type' => $link->type,
                 'url' => $url,
+                'name' => $link->name ?? null,
+                'description' => $link->description ?? null,
+                'tags' => $link->tags ?? null,
                 'location_url' => $link->location_url,
                 'settings' => json_encode($link->settings),
                 'additional' => $link->additional ?? '',

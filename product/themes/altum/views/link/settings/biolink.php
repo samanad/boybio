@@ -505,6 +505,34 @@
                                 </div>
                             </div>
 
+                            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#tags_container" aria-expanded="false" aria-controls="tags_container">
+                                <i class="fas fa-fw fa-tags fa-sm mr-1"></i> <?= l('link.settings.tags_header') ?>
+                            </button>
+
+                            <div class="collapse" id="tags_container" data-parent="#settings">
+                                <div class="form-group">
+                                    <label for="name"><i class="fas fa-fw fa-signature fa-sm text-muted mr-1"></i> <?= l('link.settings.name') ?></label>
+                                    <input id="name" type="text" class="form-control" name="name" value="<?= e($data->link->name ?? '') ?>" maxlength="128" />
+                                    <small class="form-text text-muted"><?= l('link.settings.name_help') ?></small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="tags"><i class="fas fa-fw fa-tags fa-sm text-muted mr-1"></i> <?= l('link.settings.tags') ?></label>
+                                    <?php
+                                    $link_tags = parse_tags_list($data->link->tags ?? []);
+                                    $link_tags_value = !empty($link_tags) ? implode(', ', $link_tags) : '';
+                                    ?>
+                                    <input id="tags" type="text" class="form-control" name="tags" value="<?= e($link_tags_value) ?>" maxlength="512" placeholder="<?= l('link.settings.tags_placeholder') ?>" />
+                                    <small class="form-text text-muted"><?= l('link.settings.tags_help') ?></small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="description"><i class="fas fa-fw fa-paragraph fa-sm text-muted mr-1"></i> <?= l('link.settings.description') ?></label>
+                                    <textarea id="description" class="form-control" name="description" maxlength="512" rows="3"><?= e($data->link->description ?? '') ?></textarea>
+                                    <small class="form-text text-muted"><?= l('link.settings.description_help') ?></small>
+                                </div>
+                            </div>
+
                             <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#seo_container" aria-expanded="false" aria-controls="seo_container">
                                 <i class="fas fa-fw fa-search-plus fa-sm mr-1"></i> <?= l('link.settings.seo_header') ?>
                             </button>

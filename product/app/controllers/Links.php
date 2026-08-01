@@ -28,7 +28,7 @@ class Links extends Controller {
         \Altum\Authentication::guard();
 
         /* Prepare the filtering system */
-        $filters = (new \Altum\Filters(['is_enabled', 'type', 'project_id', 'domain_id', 'pixels_ids'], ['url', 'location_url'], ['link_id', 'last_datetime', 'datetime', 'clicks', 'url'], [], ['pixels_ids' => 'json_contains']));
+        $filters = (new \Altum\Filters(['is_enabled', 'type', 'project_id', 'domain_id', 'pixels_ids'], ['url', 'location_url', 'name'], ['link_id', 'last_datetime', 'datetime', 'clicks', 'url'], [], ['pixels_ids' => 'json_contains']));
         $preferences = isset($this->user->preferences) ? $this->user->preferences : null;
         $filters->set_default_order_by(($preferences && isset($preferences->links_default_order_by)) ? $preferences->links_default_order_by : 'link_id', ($preferences && isset($preferences->default_order_type)) ? $preferences->default_order_type : settings()->main->default_order_type);
         $filters->set_default_results_per_page(($preferences && isset($preferences->default_results_per_page)) ? $preferences->default_results_per_page : settings()->main->default_results_per_page);
@@ -59,12 +59,13 @@ class Links extends Controller {
         while($row = $links_result->fetch_object()) {
             $row->full_url = $row->domain_id && isset($domains[$row->domain_id]) ? $domains[$row->domain_id]->scheme . $domains[$row->domain_id]->host . '/' . ($domains[$row->domain_id]->link_id == $row->link_id ? null : $row->url) : SITE_URL . $row->url;
             $row->settings = json_decode($row->settings);
+            $row->tags = parse_tags_list($row->tags ?? []);
             $links[] = $row;
         }
 
         /* Export handler */
-        process_export_csv($links, ['link_id', 'user_id', 'project_id', 'pixels_ids', 'type', 'url', 'location_url', 'start_date', 'end_date', 'clicks', 'is_verified', 'is_enabled', 'last_datetime', 'datetime'], sprintf(l('links.title')));
-        process_export_json($links, ['link_id', 'user_id', 'project_id', 'pixels_ids', 'type', 'url', 'location_url', 'settings', 'start_date', 'end_date', 'clicks', 'is_verified', 'is_enabled', 'last_datetime', 'datetime'], sprintf(l('links.title')));
+        process_export_csv($links, ['link_id', 'user_id', 'project_id', 'pixels_ids', 'type', 'url', 'name', 'description', 'tags', 'location_url', 'start_date', 'end_date', 'clicks', 'is_verified', 'is_enabled', 'last_datetime', 'datetime'], sprintf(l('links.title')));
+        process_export_json($links, ['link_id', 'user_id', 'project_id', 'pixels_ids', 'type', 'url', 'name', 'description', 'tags', 'location_url', 'settings', 'start_date', 'end_date', 'clicks', 'is_verified', 'is_enabled', 'last_datetime', 'datetime'], sprintf(l('links.title')));
 
         /* Prepare the pagination view */
         $pagination = (new \Altum\View('partials/pagination', (array) $this))->run(['paginator' => $paginator]);

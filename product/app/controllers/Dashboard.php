@@ -31,7 +31,7 @@ class Dashboard extends Controller {
         $this->user = \Altum\Authentication::$user;
 
         /* Prepare the filtering system */
-        $filters = (new \Altum\Filters(['is_enabled', 'type'], ['url', 'location_url'], ['link_id', 'last_datetime', 'datetime', 'clicks', 'url']));
+        $filters = (new \Altum\Filters(['is_enabled', 'type'], ['url', 'location_url', 'name'], ['link_id', 'last_datetime', 'datetime', 'clicks', 'url']));
         $preferences = isset($this->user->preferences) ? $this->user->preferences : null;
         $filters->set_default_order_by(($preferences && isset($preferences->links_default_order_by)) ? $preferences->links_default_order_by : 'link_id', ($preferences && isset($preferences->default_order_type)) ? $preferences->default_order_type : settings()->main->default_order_type);
         $filters->set_default_results_per_page(($preferences && isset($preferences->default_results_per_page)) ? $preferences->default_results_per_page : settings()->main->default_results_per_page);
@@ -69,6 +69,7 @@ class Dashboard extends Controller {
             }
 
             $row->settings = json_decode($row->settings);
+            $row->tags = parse_tags_list($row->tags ?? []);
 
             $links[] = $row;
         }

@@ -167,6 +167,7 @@
                             <select name="search_by" id="filters_search_by" class="custom-select custom-select-sm">
                                 <option value="url" <?= $data->filters->search_by == 'url' ? 'selected="selected"' : null ?>><?= l('links.filters.url') ?></option>
                                 <option value="location_url" <?= $data->filters->search_by == 'location_url' ? 'selected="selected"' : null ?>><?= l('links.filters.location_url') ?></option>
+                                <option value="name" <?= $data->filters->search_by == 'name' ? 'selected="selected"' : null ?>><?= l('links.filters.name') ?></option>
                             </select>
                         </div>
 
@@ -314,6 +315,8 @@
                         </div>
                     </th>
                     <th><?= l('link.link') ?></th>
+                    <th><?= l('links.table.group') ?></th>
+                    <th><?= l('links.table.description') ?></th>
                     <th></th>
                     <th></th>
                     <th></th>
@@ -361,6 +364,30 @@
                                 </div>
 
                             </div>
+                        </td>
+
+                        <td class="text-nowrap">
+                            <?php
+                            $row_tags = is_array($row->tags ?? null) ? $row->tags : parse_tags_list($row->tags ?? []);
+                            ?>
+                            <?php if(!empty($row_tags)): ?>
+                                <div class="d-flex flex-wrap" style="max-width: 12rem; gap: 0.25rem;">
+                                    <?php foreach($row_tags as $tag): ?>
+                                        <span class="badge badge-light"><?= e($tag) ?></span>
+                                    <?php endforeach ?>
+                                </div>
+                            <?php else: ?>
+                                <span class="text-muted">—</span>
+                            <?php endif ?>
+                        </td>
+
+                        <td>
+                            <?php $description_preview = get_first_words($row->description ?? '', 3); ?>
+                            <?php if($description_preview !== ''): ?>
+                                <span class="text-muted"><?= e($description_preview) ?></span>
+                            <?php else: ?>
+                                <span class="text-muted">—</span>
+                            <?php endif ?>
                         </td>
 
                         <td class="text-nowrap">

@@ -84,6 +84,52 @@ function string_truncate($string, $maxchar, $ending = '..') {
     return $string;
 }
 
+/* Return the first N words of a string */
+function get_first_words($string, $count = 3) {
+    $string = trim(strip_tags((string) ($string ?? '')));
+    if($string === '') {
+        return '';
+    }
+
+    $words = preg_split('/\s+/u', $string, -1, PREG_SPLIT_NO_EMPTY);
+
+    return implode(' ', array_slice($words, 0, max(1, (int) $count)));
+}
+
+/* Normalize tags from a CSV string, JSON array string, or array into a unique trimmed list */
+function parse_tags_list($value) {
+    if(is_array($value)) {
+        $parts = $value;
+    } else {
+        $value = trim((string) ($value ?? ''));
+        if($value === '') {
+            return [];
+        }
+
+        if(($value[0] ?? '') === '[') {
+            $decoded = json_decode($value, true);
+            if(is_array($decoded)) {
+                $parts = $decoded;
+            } else {
+                $parts = preg_split('/[,]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+            }
+        } else {
+            $parts = preg_split('/[,]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+        }
+    }
+
+    $tags = [];
+    foreach($parts as $part) {
+        $tag = trim(strip_tags((string) $part));
+        $tag = mb_substr($tag, 0, 64);
+        if($tag !== '' && !in_array($tag, $tags, true)) {
+            $tags[] = $tag;
+        }
+    }
+
+    return $tags;
+}
+
 function string_filter_alphanumeric($string) {
 
     $string = preg_replace('/[^a-zA-Z0-9\s]+/', '', $string);
