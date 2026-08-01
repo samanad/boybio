@@ -119,6 +119,9 @@
                                         <?php if($row->is_verified): ?>
                                             <span data-toggle="tooltip" title="<?= l('link.biolink.verified') ?>"><i class="fas fa-fw fa-xs fa-check-circle" style="color: #0086ff"></i></span>
                                         <?php endif ?>
+                                        <?php if(!empty($row->is_banned)): ?>
+                                            <span data-toggle="tooltip" title="<?= l('link.biolink.banned') ?>"><i class="fas fa-fw fa-xs fa-ban" style="color: #dc3545"></i></span>
+                                        <?php endif ?>
                                     </div>
 
                                     <div class="d-flex align-items-center">

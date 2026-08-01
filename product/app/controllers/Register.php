@@ -113,8 +113,8 @@ class Register extends Controller {
             } catch(\Exception $exception) { /* :) */ }
             $country = isset($maxmind) && isset($maxmind['country']) ? $maxmind['country']['iso_code'] : null;
 
-            /* Make sure the country is not blacklisted */
-            if($country && in_array($country, settings()->users->blacklisted_countries ?? [])) {
+            /* Country access mode (same rules as site-wide gate) */
+            if(is_country_access_denied($country)) {
                 Alerts::add_error(l('register.error_message.blacklisted_country'));
             }
 

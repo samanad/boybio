@@ -1102,6 +1102,10 @@ return [
     'maintenance.header' => 'Maintenance mode',
     'maintenance.subheader' => 'We are doing some maintenance work, we\'ll be back soon.',
 
+    'country_blocked.title' => 'Access unavailable',
+    'country_blocked.header' => 'Access unavailable',
+    'country_blocked.subheader' => 'This website is not available in your country.',
+
 
     'login.menu' => 'Sign in',
     'login.title' => 'Sign in',
@@ -2205,6 +2209,8 @@ return [
     'link.biolink.report.message' => 'Write a specific and detailed reason for reporting the page.',
     'link.biolink.verified' => 'Verified page',
     'link.biolink.verified_help' => 'This page has been manually verified by the %s team.',
+    'link.biolink.banned' => 'Banned page',
+    'link.biolink.banned_help' => 'This page has been marked as banned by the %s team.',
     'link.biolink.blocks.link' => 'Link',
     'link.biolink.blocks.heading' => 'Heading',
     'link.biolink.blocks.paragraph' => 'Paragraph',

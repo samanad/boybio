@@ -423,6 +423,7 @@ CREATE TABLE `links` (
 `start_date` datetime DEFAULT NULL,
 `end_date` datetime DEFAULT NULL,
 `is_verified` tinyint DEFAULT '0',
+`is_banned` tinyint DEFAULT '0',
 `directory_is_enabled` tinyint DEFAULT '1',
 `is_enabled` tinyint NOT NULL DEFAULT '1',
 `last_datetime` datetime DEFAULT NULL,

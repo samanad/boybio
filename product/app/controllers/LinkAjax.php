@@ -2671,6 +2671,7 @@ class LinkAjax extends Controller {
                 'start_date' => $link->start_date,
                 'end_date' => $link->end_date,
                 'is_verified' => 0,
+                'is_banned' => 0,
                 'is_enabled' => $link->is_enabled,
                 'datetime' => get_date(),
             ]);

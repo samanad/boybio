@@ -665,6 +665,13 @@ class Router {
                 ]
             ],
 
+            'country-blocked' => [
+                'controller' => 'CountryBlocked',
+                'settings' => [
+                    'wrapper' => 'basic_wrapper',
+                ]
+            ],
+
             'account' => [
                 'controller' => 'Account',
                 'settings' => [

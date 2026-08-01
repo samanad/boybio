@@ -93,6 +93,15 @@
                         </div>
 
                         <div class="form-group px-4">
+                            <label for="filters_is_banned" class="small"><?= l('admin_links.filters.is_banned') ?></label>
+                            <select name="is_banned" id="filters_is_banned" class="custom-select custom-select-sm">
+                                <option value=""><?= l('global.all') ?></option>
+                                <option value="1" <?= isset($data->filters->filters['is_banned']) && $data->filters->filters['is_banned'] == '1' ? 'selected="selected"' : null ?>><?= l('global.yes') ?></option>
+                                <option value="0" <?= isset($data->filters->filters['is_banned']) && $data->filters->filters['is_banned'] == '0' ? 'selected="selected"' : null ?>><?= l('global.no') ?></option>
+                            </select>
+                        </div>
+
+                        <div class="form-group px-4">
                             <label for="filters_is_explore_things" class="small"><?= l('admin_links.filters.is_explore_things') ?></label>
                             <select name="is_explore_things" id="filters_is_explore_things" class="custom-select custom-select-sm">
                                 <option value=""><?= l('global.all') ?></option>
@@ -229,6 +238,9 @@
                             <?php if($row->type == 'biolink' && $row->is_verified): ?>
                                 <span data-toggle="tooltip" title="<?= l('link.biolink.verified') ?>"><i class="fas fa-fw fa-xs fa-check-circle link-verified" style="color: #0086ff"></i></span>
                             <?php endif ?>
+                            <?php if($row->type == 'biolink' && ($row->is_banned ?? 0)): ?>
+                                <span data-toggle="tooltip" title="<?= l('link.biolink.banned') ?>"><i class="fas fa-fw fa-xs fa-ban link-banned" style="color: #dc3545"></i></span>
+                            <?php endif ?>
                         </div>
 
                         <?php if($row->type == 'link'): ?>
@@ -279,7 +291,7 @@
 
                 <td>
                     <div class="d-flex justify-content-end">
-                        <?= include_view(THEME_PATH . 'views/admin/links/admin_link_dropdown_button.php', ['id' => $row->link_id, 'is_verified' => $row->is_verified, 'is_explore_things' => $row->is_explore_things ?? 0, 'type' => $row->type, 'resource_name' => $row->url]) ?>
+                        <?= include_view(THEME_PATH . 'views/admin/links/admin_link_dropdown_button.php', ['id' => $row->link_id, 'is_verified' => $row->is_verified, 'is_banned' => $row->is_banned ?? 0, 'is_explore_things' => $row->is_explore_things ?? 0, 'type' => $row->type, 'resource_name' => $row->url]) ?>
                     </div>
                 </td>
             </tr>

@@ -192,7 +192,11 @@
             <?php foreach(require APP_PATH . 'includes/admin_socials.php' as $key => $value): ?>
                 <?php if(isset(settings()->socials->{$key}) && !empty(settings()->socials->{$key})): ?>
                     <a href="<?= sprintf($value['format'], settings()->socials->{$key}) ?>" class="mr-2 mr-lg-0 ml-lg-2 mb-2" target="_blank" rel="noreferrer" data-toggle="tooltip" title="<?= $value['name'] ?>">
-                        <i class="<?= $value['icon'] ?> fa-fw fa-lg"></i>
+                        <?php if(!empty($value['icon_text'])): ?>
+                            <span class="footer-social-text-icon <?= $value['icon'] ?? '' ?>" aria-hidden="true"><?= $value['icon_text'] ?></span>
+                        <?php else: ?>
+                            <i class="<?= $value['icon'] ?> fa-fw fa-lg"></i>
+                        <?php endif ?>
                     </a>
                 <?php endif ?>
             <?php endforeach ?>

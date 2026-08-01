@@ -12,6 +12,12 @@
             <?php else: ?>
                 <a href="<?= url('admin/links/is_verified/' . $data->id . '?' . \Altum\Csrf::get_url_query() . '&original_request=' . base64_encode(\Altum\Router::$original_request) . '&original_request_query=' . base64_encode(\Altum\Router::$original_request_query)) ?>" class="dropdown-item"><i class="fas fa-fw fa-sm fa-check mr-2"></i> <?= l('admin_links.add_verify') ?></a>
             <?php endif ?>
+
+            <?php if($data->is_banned ?? false): ?>
+                <a href="<?= url('admin/links/is_banned/' . $data->id . '?' . \Altum\Csrf::get_url_query() . '&original_request=' . base64_encode(\Altum\Router::$original_request) . '&original_request_query=' . base64_encode(\Altum\Router::$original_request_query)) ?>" class="dropdown-item"><i class="fas fa-fw fa-sm fa-ban mr-2"></i> <?= l('admin_links.remove_banned') ?></a>
+            <?php else: ?>
+                <a href="<?= url('admin/links/is_banned/' . $data->id . '?' . \Altum\Csrf::get_url_query() . '&original_request=' . base64_encode(\Altum\Router::$original_request) . '&original_request_query=' . base64_encode(\Altum\Router::$original_request_query)) ?>" class="dropdown-item"><i class="fas fa-fw fa-sm fa-exclamation-triangle mr-2"></i> <?= l('admin_links.add_banned') ?></a>
+            <?php endif ?>
             
             <div class="dropdown-divider"></div>
             

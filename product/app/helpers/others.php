@@ -215,6 +215,56 @@ function get_maxmind_reader_country() {
     return $cached = (new \MaxMind\Db\Reader(APP_PATH . 'includes/GeoLite2-Country.mmdb'));
 }
 
+/* Visitor ISO country code from MaxMind, or null if unknown */
+function get_visitor_country_code() {
+    static $cached_country = false;
+
+    if($cached_country !== false) {
+        return $cached_country;
+    }
+
+    try {
+        $maxmind = (get_maxmind_reader_country())->get(get_ip());
+        $cached_country = isset($maxmind['country']['iso_code']) ? $maxmind['country']['iso_code'] : null;
+    } catch(\Exception $exception) {
+        $cached_country = null;
+    }
+
+    return $cached_country;
+}
+
+/*
+ * Site-wide country access gate.
+ * Mode "block": deny when visitor country is in the selected list.
+ * Mode "only_access": deny when country is missing or not in the selected list.
+ * Mode "disabled" (or empty countries): allow.
+ */
+function is_country_access_denied($country = null) {
+    $mode = settings()->users->country_access_mode ?? 'disabled';
+
+    if(!in_array($mode, ['only_access', 'block'], true)) {
+        return false;
+    }
+
+    $countries = settings()->users->blacklisted_countries ?? [];
+    if(empty($countries) || !is_array($countries)) {
+        return false;
+    }
+
+    $country = $country ?? get_visitor_country_code();
+
+    if($mode === 'block') {
+        return $country && in_array($country, $countries, true);
+    }
+
+    /* only_access */
+    if(!$country) {
+        return true;
+    }
+
+    return !in_array($country, $countries, true);
+}
+
 function get_maxmind_reader_city() {
     static $cached = null;
 
@@ -276,6 +326,39 @@ function get_ip() {
 
     /* fallback if no valid IP found */
     return null;
+}
+
+/* Parse a settings IP list (comma, newline, or semicolon separated). Backward compatible with a single IP string. */
+function parse_settings_ip_list($value) {
+    if(is_array($value)) {
+        $parts = $value;
+    } else {
+        $value = trim((string) ($value ?? ''));
+        if($value === '') {
+            return [];
+        }
+        $parts = preg_split('/[\s,;]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+    }
+
+    $ips = [];
+    foreach($parts as $part) {
+        $ip = trim((string) $part);
+        if($ip !== '' && !in_array($ip, $ips, true)) {
+            $ips[] = $ip;
+        }
+    }
+
+    return $ips;
+}
+
+/* Check whether an IP (defaults to current visitor IP) is in a settings IP list. */
+function is_ip_in_settings_list($list_value, $ip = null) {
+    $ip = $ip ?? get_ip();
+    if(empty($ip)) {
+        return false;
+    }
+
+    return in_array($ip, parse_settings_ip_list($list_value), true);
 }
 
 function get_this_device_type() {

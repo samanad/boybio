@@ -516,7 +516,7 @@ setcookie('user_password_hash', md5($user->password), time()+60*60*24* (settings
                 $persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
                 $current_ip = get_ip();
                 
-                if(!empty($persistent_ip) && $current_ip && $current_ip === $persistent_ip) {
+                if(is_ip_in_settings_list($persistent_ip, $current_ip)) {
                     /* Set persistent login flag in user's extra field */
                     $user_extra = json_decode($user->extra ?? '{}', true);
                     $user_extra['persistent_login_enabled'] = true;
@@ -553,8 +553,7 @@ setcookie('user_password_hash', md5($user->password), time()+60*60*24* (settings
                 
                 /* Set device cookie for persistent IP users (10 years) - allows auto-login even after logout */
                 $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
-                $current_ip = get_ip();
-                if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip) {
+                if(is_ip_in_settings_list($google_persistent_ip)) {
                     setcookie('persistent_ip_device_user_id', $user->user_id, time() + (365 * 10 * 24 * 60 * 60), COOKIE_PATH);
                 }
             }
@@ -680,7 +679,7 @@ setcookie('user_password_hash', md5($user->password), time()+60*60*24* (settings
                         $persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
                         $current_ip = get_ip();
                         
-                        if(!empty($persistent_ip) && $current_ip && $current_ip === $persistent_ip) {
+                        if(is_ip_in_settings_list($persistent_ip, $current_ip)) {
                             /* Set persistent login flag in user's extra field */
                             $user_extra = [
                                 'initial_social_method' => $method,

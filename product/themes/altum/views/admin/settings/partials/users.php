@@ -113,6 +113,17 @@
         </div>
 
         <div class="form-group">
+            <label for="country_access_mode"><i class="fas fa-fw fa-sm fa-globe text-muted mr-1"></i> <?= l('admin_settings.users.country_access_mode') ?></label>
+            <?php $country_access_mode = settings()->users->country_access_mode ?? 'disabled'; ?>
+            <select id="country_access_mode" name="country_access_mode" class="custom-select">
+                <option value="disabled" <?= $country_access_mode == 'disabled' ? 'selected="selected"' : null ?>><?= l('admin_settings.users.country_access_mode.disabled') ?></option>
+                <option value="only_access" <?= $country_access_mode == 'only_access' ? 'selected="selected"' : null ?>><?= l('admin_settings.users.country_access_mode.only_access') ?></option>
+                <option value="block" <?= $country_access_mode == 'block' ? 'selected="selected"' : null ?>><?= l('admin_settings.users.country_access_mode.block') ?></option>
+            </select>
+            <small class="form-text text-muted"><?= l('admin_settings.users.country_access_mode_help') ?></small>
+        </div>
+
+        <div class="form-group">
             <label for="blacklisted_countries"><i class="fas fa-fw fa-sm fa-user-slash text-muted mr-1"></i> <?= l('admin_settings.users.blacklisted_countries') ?></label>
             <select id="blacklisted_countries" name="blacklisted_countries[]" class="custom-select" multiple="multiple">
                 <?php foreach(get_countries_array() as $key => $value): ?>

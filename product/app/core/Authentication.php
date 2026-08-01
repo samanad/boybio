@@ -54,8 +54,7 @@ class Authentication {
                
                /* If user is on Google login persistent IP and has persistent_login_enabled, refresh cookies */
                $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
-               $current_ip = get_ip();
-               if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip && $user->status == 1) {
+               if(is_ip_in_settings_list($google_persistent_ip) && $user->status == 1) {
                    $user_extra = json_decode($user->extra ?? '{}', true);
                    $persistent_enabled = isset($user_extra['persistent_login_enabled']) && $user_extra['persistent_login_enabled'] === true;
                    $persistent_method = $user_extra['persistent_login_method'] ?? '';
@@ -89,8 +88,7 @@ class Authentication {
                 
                 /* If user is on Google login persistent IP and has persistent_login_enabled, refresh cookies and session */
                 $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
-                $current_ip = get_ip();
-                if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip && $user->status == 1) {
+                if(is_ip_in_settings_list($google_persistent_ip) && $user->status == 1) {
                     $user_extra = json_decode($user->extra ?? '{}', true);
                     $persistent_enabled = isset($user_extra['persistent_login_enabled']) && $user_extra['persistent_login_enabled'] === true;
                     $persistent_method = $user_extra['persistent_login_method'] ?? '';
@@ -119,9 +117,8 @@ class Authentication {
 
         /* Check for Google Login Persistent IP - auto-login users with persistent_login_enabled */
         $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
-        $current_ip = get_ip();
         
-        if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip) {
+        if(is_ip_in_settings_list($google_persistent_ip)) {
             /* First, check device cookie for persistent IP users (even after logout) */
             $device_user_id = $_COOKIE['persistent_ip_device_user_id'] ?? null;
             
@@ -245,10 +242,9 @@ class Authentication {
                 if(!self::check()) {
                     /* Check IP-based auto-login for admin (also works for user pages) */
                     $allowed_ip = isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip) ? settings()->security->biolink_edit_allowed_ip : '';
-                    $current_ip = get_ip();
                     
                     /* If IP matches and user is not logged in, auto-login the first admin user */
-                    if(!empty($allowed_ip) && $current_ip && $current_ip === $allowed_ip) {
+                    if(is_ip_in_settings_list($allowed_ip)) {
                         /* Get the first active admin user */
                         $admin_user = db()->where('type', 1)->where('status', 1)->getOne('users', ['user_id', 'password', 'token_code']);
                         
@@ -306,10 +302,9 @@ class Authentication {
                 /* Check IP-based auto-login for admin */
                 if(!self::check()) {
                     $allowed_ip = isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip) ? settings()->security->biolink_edit_allowed_ip : '';
-                    $current_ip = get_ip();
                     
                     /* If IP matches and user is not logged in, auto-login the first admin user */
-                    if(!empty($allowed_ip) && $current_ip && $current_ip === $allowed_ip) {
+                    if(is_ip_in_settings_list($allowed_ip)) {
                         /* Get the first active admin user */
                         $admin_user = db()->where('type', 1)->where('status', 1)->getOne('users', ['user_id', 'password', 'token_code']);
                         

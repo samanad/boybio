@@ -9,31 +9,25 @@
 
     <div class="form-group">
         <label for="biolink_edit_allowed_ip"><i class="fas fa-fw fa-sm fa-shield-alt text-muted mr-1"></i> <?= l('admin_settings.security.biolink_edit_allowed_ip') ?></label>
-        <?php 
+        <?php
         $admin_ip_value = '';
-        if(isset(settings()->security)) {
-            if(isset(settings()->security->biolink_edit_allowed_ip)) {
-                $admin_ip_value = settings()->security->biolink_edit_allowed_ip;
-            }
+        if(isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip)) {
+            $admin_ip_value = implode("\n", parse_settings_ip_list(settings()->security->biolink_edit_allowed_ip));
         }
-        $admin_ip_value = (string) $admin_ip_value;
         ?>
-        <input type="text" id="biolink_edit_allowed_ip" name="biolink_edit_allowed_ip" class="form-control" value="<?= htmlspecialchars($admin_ip_value) ?>" placeholder="e.g., 192.168.1.1" />
+        <textarea id="biolink_edit_allowed_ip" name="biolink_edit_allowed_ip" class="form-control" rows="3" placeholder="<?= l('admin_settings.security.ip_list_placeholder') ?>"><?= htmlspecialchars($admin_ip_value) ?></textarea>
         <small class="form-text text-muted"><?= l('admin_settings.security.biolink_edit_allowed_ip_help') ?></small>
     </div>
 
     <div class="form-group">
         <label for="google_login_persistent_ip"><i class="fas fa-fw fa-sm fa-google text-muted mr-1"></i> <?= l('admin_settings.security.google_login_persistent_ip') ?></label>
-        <?php 
+        <?php
         $google_ip_value = '';
-        if(isset(settings()->security)) {
-            if(isset(settings()->security->google_login_persistent_ip)) {
-                $google_ip_value = settings()->security->google_login_persistent_ip;
-            }
+        if(isset(settings()->security) && isset(settings()->security->google_login_persistent_ip)) {
+            $google_ip_value = implode("\n", parse_settings_ip_list(settings()->security->google_login_persistent_ip));
         }
-        $google_ip_value = (string) $google_ip_value;
         ?>
-        <input type="text" id="google_login_persistent_ip" name="google_login_persistent_ip" class="form-control" value="<?= htmlspecialchars($google_ip_value) ?>" placeholder="e.g., 192.168.1.1" />
+        <textarea id="google_login_persistent_ip" name="google_login_persistent_ip" class="form-control" rows="3" placeholder="<?= l('admin_settings.security.ip_list_placeholder') ?>"><?= htmlspecialchars($google_ip_value) ?></textarea>
         <small class="form-text text-muted"><?= l('admin_settings.security.google_login_persistent_ip_help') ?></small>
     </div>
 
@@ -45,4 +39,3 @@
 </div>
 
 <button type="submit" name="submit" class="btn btn-lg btn-block btn-primary mt-4"><?= l('global.update') ?></button>
-

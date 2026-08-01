@@ -101,7 +101,8 @@ return [
 
     'boy_bio' => [
         'name' => 'Bb',
-        'icon' => 'fas fa-bolt',
+        'icon' => 'footer-social-bb',
+        'icon_text' => 'Bb',
         'format' => 'https://boy.bio/%s',
         'input_display_format' => true,
         'placeholder' => '',

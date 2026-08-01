@@ -251,6 +251,23 @@ class App {
             exit();
         }
 
+        /* Country access gate (whole site: pages, login, biolinks) — admins bypass when logged in */
+        $country_access_admin_ip_bypass = is_ip_in_settings_list(
+            (isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip))
+                ? settings()->security->biolink_edit_allowed_ip
+                : ''
+        );
+        if(
+            \Altum\Router::$controller_key != 'country-blocked'
+            && !$country_access_admin_ip_bypass
+            && (!is_logged_in() || (isset($user) && $user->type != 1))
+            && is_country_access_denied()
+        ) {
+            header('HTTP/1.1 403 Forbidden');
+            header('Location: ' . url('country-blocked'));
+            exit();
+        }
+
         /* Initiate the Title system */
         Title::initialize(settings()->main->title, settings()->main->title_separator ?? '-');
         Meta::initialize();
@@ -268,9 +285,8 @@ class App {
         /* Skip this redirect if accessing a custom domain to avoid breaking custom domain routing */
         if(!\Altum\Router::$language_code && !is_logged_in() && !isset(\Altum\Router::$data['domain'])) {
             $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
-            $current_ip = get_ip();
             
-            if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip) {
+            if(is_ip_in_settings_list($google_persistent_ip)) {
                 /* Check if Persian language is available */
                 $persian_language_code = 'fa'; // Persian language code
                 $persian_language_name = 'persian'; // Persian language name

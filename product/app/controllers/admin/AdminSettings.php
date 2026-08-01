@@ -257,6 +257,9 @@ class AdminSettings extends Controller {
             /* :) */
             $_POST['blacklisted_domains'] = array_filter(array_map('trim', explode(',', $_POST['blacklisted_domains'])));
             $_POST['blacklisted_countries'] = $_POST['blacklisted_countries'] ?? [];
+            $_POST['country_access_mode'] = in_array($_POST['country_access_mode'] ?? 'disabled', ['disabled', 'only_access', 'block'], true)
+                ? $_POST['country_access_mode']
+                : 'disabled';
 
             $value = json_encode([
                 'email_aliases_is_enabled' => isset($_POST['email_aliases_is_enabled']),
@@ -273,6 +276,7 @@ class AdminSettings extends Controller {
                 'auto_delete_inactive_users' => (int) $_POST['auto_delete_inactive_users'],
                 'user_deletion_reminder' => (int) $_POST['user_deletion_reminder'],
                 'blacklisted_domains' => $_POST['blacklisted_domains'],
+                'country_access_mode' => $_POST['country_access_mode'],
                 'blacklisted_countries' => $_POST['blacklisted_countries'],
                 'login_lockout_is_enabled' => isset($_POST['login_lockout_is_enabled']),
                 'login_lockout_max_retries' => (int) $_POST['login_lockout_max_retries'] < 1 ? 1 : (int) $_POST['login_lockout_max_retries'],
@@ -325,17 +329,26 @@ class AdminSettings extends Controller {
         if(!empty($_POST)) {
             //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
 
-            $_POST['biolink_edit_allowed_ip'] = trim(input_clean($_POST['biolink_edit_allowed_ip'] ?? ''));
-            $_POST['google_login_persistent_ip'] = trim(input_clean($_POST['google_login_persistent_ip'] ?? ''));
+            /* Accept multiple IPs (one per line, or comma/semicolon separated) */
+            $biolink_edit_allowed_ips = parse_settings_ip_list($_POST['biolink_edit_allowed_ip'] ?? '');
+            $google_login_persistent_ips = parse_settings_ip_list($_POST['google_login_persistent_ip'] ?? '');
 
-            /* Validate IP if provided */
-            if(!empty($_POST['biolink_edit_allowed_ip']) && !filter_var($_POST['biolink_edit_allowed_ip'], FILTER_VALIDATE_IP)) {
-                Alerts::add_field_error('biolink_edit_allowed_ip', l('admin_settings.security.biolink_edit_allowed_ip_error'));
+            foreach($biolink_edit_allowed_ips as $ip) {
+                if(!filter_var($ip, FILTER_VALIDATE_IP)) {
+                    Alerts::add_field_error('biolink_edit_allowed_ip', l('admin_settings.security.biolink_edit_allowed_ip_error'));
+                    break;
+                }
             }
 
-            if(!empty($_POST['google_login_persistent_ip']) && !filter_var($_POST['google_login_persistent_ip'], FILTER_VALIDATE_IP)) {
-                Alerts::add_field_error('google_login_persistent_ip', l('admin_settings.security.google_login_persistent_ip_error'));
+            foreach($google_login_persistent_ips as $ip) {
+                if(!filter_var($ip, FILTER_VALIDATE_IP)) {
+                    Alerts::add_field_error('google_login_persistent_ip', l('admin_settings.security.google_login_persistent_ip_error'));
+                    break;
+                }
             }
+
+            $_POST['biolink_edit_allowed_ip'] = implode(',', $biolink_edit_allowed_ips);
+            $_POST['google_login_persistent_ip'] = implode(',', $google_login_persistent_ips);
 
             if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
                 /* Get existing security settings to preserve mother password if not changed */

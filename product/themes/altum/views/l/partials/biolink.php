@@ -32,6 +32,14 @@
                         </div>
                     <?php endif ?>
 
+                    <?php if(!empty($data->link->is_banned)): ?>
+                        <div id="link-banned-wrapper-top" class="col-12 my-<?= $data->link->settings->block_spacing ?? '2' ?> text-center">
+                            <div>
+                                <small class="link-banned" data-toggle="tooltip" title="<?= sprintf(l('link.biolink.banned_help'), settings()->main->title) ?>"><i class="fas fa-fw fa-ban fa-1x"></i> <?= l('link.biolink.banned') ?></small>
+                            </div>
+                        </div>
+                    <?php endif ?>
+
                     <?php if($data->biolink_blocks): ?>
                         <?php
                         /* Detect the location */
@@ -112,6 +120,12 @@
                 <?php if($data->link->is_verified): ?>
                     <div id="link-verified-wrapper-bottom" class="my-<?= $data->link->settings->block_spacing ?? '2' ?>" style="<?= $data->link->settings->verified_location == 'bottom' ? null : 'display: none;' ?>">
                         <small class="link-verified" data-toggle="tooltip" title="<?= sprintf(l('link.biolink.verified_help'), settings()->main->title) ?>"><i class="fas fa-fw fa-check-circle fa-1x"></i> <?= l('link.biolink.verified') ?></small>
+                    </div>
+                <?php endif ?>
+
+                <?php if(!empty($data->link->is_banned)): ?>
+                    <div id="link-banned-wrapper-bottom" class="my-<?= $data->link->settings->block_spacing ?? '2' ?>">
+                        <small class="link-banned" data-toggle="tooltip" title="<?= sprintf(l('link.biolink.banned_help'), settings()->main->title) ?>"><i class="fas fa-fw fa-ban fa-1x"></i> <?= l('link.biolink.banned') ?></small>
                     </div>
                 <?php endif ?>
 
