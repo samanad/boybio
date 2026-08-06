@@ -100,9 +100,8 @@ return [
     ],
 
     'boy_bio' => [
-        'name' => 'Bb',
-        'icon' => 'footer-social-bb',
-        'icon_text' => 'Bb',
+        'name' => 'boy.bio',
+        'icon' => 'fas fa-blog',
         'format' => 'https://boy.bio/%s',
         'input_display_format' => true,
         'placeholder' => '',
