@@ -9,7 +9,7 @@
 
         <?php if(\Altum\Plugin::is_active('pwa') && isset(settings()->pwa->is_enabled) && settings()->pwa->is_enabled): ?>
             <?php if($this->user->plan_settings->custom_pwa_is_enabled && isset($this->link->settings->pwa_is_enabled) && $this->link->settings->pwa_is_enabled && !empty($this->link->settings->pwa_file_name)): ?>
-                <link rel="manifest" href="<?= SITE_URL . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . $this->link->settings->pwa_file_name . '.json?v=' . md5(($this->link->settings->pwa_theme_color ?? '') . ($this->link->settings->pwa_icon ?? '')) ?>" />
+                <link rel="manifest" href="<?= SITE_URL . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . $this->link->settings->pwa_file_name . '.json?v=' . md5(($this->link->settings->pwa_theme_color ?? '') . ($this->link->settings->pwa_icon ?? '') . ($this->link->url ?? '') . ($this->link->name ?? '') . ($this->link->settings->seo->title ?? '')) ?>" />
                 <meta name="theme-color" content="<?= $this->link->settings->pwa_theme_color ?? '' ?>"/>
             <?php else: ?>
                 <link rel="manifest" href="<?= SITE_URL . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json?v=' . (settings()->pwa->app_start_url ? md5(settings()->pwa->app_start_url) : time()) ?>" />

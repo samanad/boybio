@@ -1539,11 +1539,14 @@ class LinkAjax extends Controller {
         if(\Altum\Plugin::is_active('pwa') && settings()->pwa->is_enabled && $this->user->plan_settings->custom_pwa_is_enabled && $_POST['pwa_is_enabled']) {
             $pwa_file_name = $link->settings->pwa_file_name ?? 'biolinks-' . md5(time() . rand() . rand());
 
-            $start_url = $domain_id ? $domains[$_POST['domain_id']]->scheme . $domains[$_POST['domain_id']]->host . '/' . ($_POST['is_main_link'] ? null : $_POST['url']) : SITE_URL . $_POST['url'];
+            $start_url = $domain_id
+                ? $domains[$_POST['domain_id']]->scheme . $domains[$_POST['domain_id']]->host . '/' . ($_POST['is_main_link'] ? null : ltrim($_POST['url'], '/'))
+                : SITE_URL . ($_POST['is_main_link'] ? null : ltrim($_POST['url'], '/'));
             $scope_url = $start_url;
 
             /* Add UTM tracking params */
-            $start_url = $start_url . '?' . http_build_query([
+            $start_url_query_separator = parse_url($start_url, PHP_URL_QUERY) ? '&' : '?';
+            $start_url = $start_url . $start_url_query_separator . http_build_query([
                 'utm_source' => 'pwa',
                 'utm_medium' => 'web-app',
                 'utm_campaign' => 'install-or-pwa-launch',
@@ -1556,10 +1559,11 @@ class LinkAjax extends Controller {
             $app_icon_url = $pwa_icon ? \Altum\Uploads::get_full_url('app_icon') . $pwa_icon : (settings()->pwa->app_icon ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon : null);
             $app_icon_maskable_url = $pwa_icon ? \Altum\Uploads::get_full_url('app_icon') . $pwa_icon : (settings()->pwa->app_icon_maskable ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable : null);
             
+            $page_title = trim($_POST['name']) ?: ($_POST['seo_title'] ?: $_POST['url']);
             $manifest = pwa_generate_manifest([
-                'name' => $_POST['seo_title'] ?: $_POST['url'] . ' - ' . settings()->main->title,
-                'short_name' => $_POST['url'],
-                'description' => $_POST['seo_meta_description'] ?: $_POST['url'],
+                'name' => $page_title . ' - ' . settings()->main->title,
+                'short_name' => $page_title,
+                'description' => $_POST['seo_meta_description'] ?: ($_POST['description'] ?: $page_title),
                 'theme_color' => $_POST['pwa_theme_color'],
                 'app_icon_url' => $app_icon_url,
                 'app_icon_maskable_url' => $app_icon_maskable_url,
