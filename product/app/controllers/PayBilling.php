@@ -55,6 +55,7 @@ class PayBilling extends Controller {
             $_POST['billing_name'] = mb_substr(trim(query_clean($_POST['billing_name'])), 0, 128);
             $_POST['billing_address'] = mb_substr(trim(query_clean($_POST['billing_address'])), 0, 128);
             $_POST['billing_city'] = mb_substr(trim(query_clean($_POST['billing_city'])), 0, 64);
+            $_POST['billing_state'] = mb_substr(trim(query_clean($_POST['billing_state'])), 0, 64);
             $_POST['billing_county'] = mb_substr(trim(query_clean($_POST['billing_county'])), 0, 64);
             $_POST['billing_zip'] = mb_substr(trim(query_clean($_POST['billing_zip'])), 0, 32);
             $_POST['billing_country'] = array_key_exists($_POST['billing_country'], get_countries_array()) ? query_clean($_POST['billing_country']) : 'US';
@@ -65,6 +66,7 @@ class PayBilling extends Controller {
                 'name' => $_POST['billing_name'],
                 'address' => $_POST['billing_address'],
                 'city' => $_POST['billing_city'],
+                'state' => $_POST['billing_state'],
                 'county' => $_POST['billing_county'],
                 'zip' => $_POST['billing_zip'],
                 'country' => $_POST['billing_country'],
@@ -74,7 +76,7 @@ class PayBilling extends Controller {
 
             $required_fields = ['billing_name', 'billing_address', 'billing_city', 'billing_county', 'billing_zip'];
             foreach($required_fields as $field) {
-                if(!isset($_POST[$field]) || (isset($_POST[$field]) && empty($_POST[$field]) && $_POST[$field] != '0')) {
+                if(!isset($_POST[$field]) || trim($_POST[$field]) === '') {
                     Alerts::add_field_error($field, l('global.error_message.empty_field'));
                 }
             }

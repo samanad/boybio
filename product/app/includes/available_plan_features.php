@@ -207,5 +207,3 @@ if(\Altum\Plugin::is_active('pwa') && settings()->pwa->is_enabled) {
 $features[] = sprintf(l('global.plan_settings.export'), '');
 
 return $features;
-
-

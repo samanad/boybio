@@ -24,9 +24,22 @@ class WebhookPaddle extends Controller {
 
     public function index() {
 
-        if(empty($_POST)) {
-            die();
+        if(!in_array(settings()->license->type, ['Extended License', 'extended'])) {
+            redirect('not-found');
         }
+
+        if((strtoupper($_SERVER['REQUEST_METHOD']) != 'POST')) {
+            redirect('not-found');
+        }
+
+        /* Get the headers */
+        $headers = getallheaders();
+
+        /* Get the payload */
+        $payload = trim(@file_get_contents('php://input'));
+
+        /* Log for debugging purposes */
+        debug_log('[' . \Altum\Router::$controller . '] ' . print_r(['headers' => $headers, 'payload' => $payload], true));
 
         $public_key = openssl_get_publickey(settings()->paddle->public_key);
 

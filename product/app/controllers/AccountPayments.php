@@ -32,7 +32,7 @@ class AccountPayments extends Controller {
         $payment_processors = require APP_PATH . 'includes/payment_processors.php';
 
         /* Prepare the filtering system */
-        $filters = (new \Altum\Filters(['processor', 'type', 'frequency'], [], ['id', 'total_amount', 'datetime']));
+        $filters = (new \Altum\Filters(['processor', 'type', 'frequency', 'status'], [], ['id', 'total_amount', 'datetime']));
         $filters->set_default_order_by('id', $this->user->preferences->default_order_type ?? settings()->main->default_order_type);
         $filters->set_default_results_per_page($this->user->preferences->default_results_per_page ?? settings()->main->default_results_per_page);
 
@@ -49,8 +49,8 @@ class AccountPayments extends Controller {
         }
 
         /* Export handler */
-        process_export_json($payments, ['id', 'user_id', 'plan_id', 'payment_id', 'email', 'name', 'processor', 'type', 'frequency', 'billing', 'taxes_ids', 'base_amount', 'code', 'discount_amount', 'total_amount', 'currency', 'status', 'datetime']);
-        process_export_csv($payments, ['id', 'user_id', 'plan_id', 'payment_id', 'email', 'name', 'processor', 'type', 'frequency', 'base_amount', 'code', 'discount_amount', 'total_amount', 'currency', 'status', 'datetime']);
+        process_export_json($payments, ['id','user_id','plan_id','payment_id','email','name','processor','type','frequency','billing','taxes_ids','base_amount','code','discount_amount','total_amount','total_amount_default_currency','currency','status','plan','business','payment_proof','payment_proof_url','refunds','refunded_total','refunded_status','datetime']);
+        process_export_csv_new($payments, ['id','user_id','plan_id','payment_id','email','name','processor','type','frequency','billing','taxes_ids','base_amount','code','discount_amount','total_amount','total_amount_default_currency','currency','status','plan','business','payment_proof','payment_proof_url','refunds','refunded_total','refunded_status','datetime']);
 
         /* Prepare the pagination view */
         $pagination = (new \Altum\View('partials/pagination', (array) $this))->run(['paginator' => $paginator]);

@@ -31,17 +31,18 @@ class Invoice extends Controller {
 
         /* Make sure the campaign exists and is accessible to the user */
         if(!$payment = db()->where('id', $id)->getOne('payments')) {
-            redirect();
+            redirect('not-found');
         }
 
         if($payment->user_id != $this->user->user_id) {
-            redirect();
+            redirect('not-found');
         }
 
         /* Try to see if we get details from the billing */
         $payment->billing = json_decode($payment->billing ?? '');
         $payment->business = json_decode($payment->business ?? '');
         $payment->plan = json_decode($payment->plan ?? '');
+        $payment->refunds = (array) json_decode($payment->refunds ?? '[]');
 
         /* Get the plan details */
         $payment->plan_db = (new Plan())->get_plan_by_id($payment->plan_id);
@@ -73,7 +74,7 @@ class Invoice extends Controller {
 
                 $percentage_of_total_inclusive_tax = $row->value ? $row->value * 100 / $inclusive_taxes_total_percentage : 0;
 
-                $inclusive_tax = number_format($total_inclusive_tax * $percentage_of_total_inclusive_tax / 100, 2);
+                $inclusive_tax = number_format($total_inclusive_tax * $percentage_of_total_inclusive_tax / 100, 2, '.', '');
 
                 $payment_taxes[$key]->amount = $inclusive_tax;
             }
@@ -85,7 +86,7 @@ class Invoice extends Controller {
                     continue;
                 }
 
-                $exclusive_tax = number_format($row->value_type == 'percentage' ? $price_without_inclusive_taxes * ($row->value / 100) : $row->value, 2);
+                $exclusive_tax = number_format($row->value_type == 'percentage' ? $price_without_inclusive_taxes * ($row->value / 100) : $row->value, 2, '.', '');
 
                 $payment_taxes[$key]->amount = $exclusive_tax;
 
