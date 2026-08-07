@@ -26,6 +26,9 @@ fi
 echo "=== Pull selective product_stage files + this script ==="
 git checkout origin/backup -- pull-product-stage-test.sh product_stage/
 
+echo "=== Clear language cache ==="
+rm -f product_stage/app/languages/cache/*.php 2>/dev/null || true
+
 CFG="product_stage/config.php"
 if [ ! -f "$CFG" ]; then
   echo "ERROR: $CFG missing"

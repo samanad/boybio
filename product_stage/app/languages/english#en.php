@@ -4498,4 +4498,24 @@ return [
     'payment_processors.plisio_whitelabel.wallet' => '%s wallet address',
     'payment_processors.plisio_whitelabel.wallet_help' => 'Leave empty to not accept this cryptocurrency payment.',
 
+
+    /* Restored custom keys from live product */
+    'country_blocked.header' => 'Access unavailable',
+    'country_blocked.subheader' => 'This website is not available in your country.',
+
+    'country_blocked.title' => 'Access unavailable',
+    'link.biolink.banned' => 'Banned page',
+    'link.biolink.banned_help' => 'This page has been marked as banned by the %s team.',
+    'link.settings.description' => 'Description',
+    'link.settings.description_help' => 'Internal description. The list shows only the first 3 words.',
+    'link.settings.name' => 'Name',
+    'link.settings.name_help' => 'Internal name used to find this biolink in the list search. Not shown as a list column.',
+    'link.settings.tags' => 'Tags',
+    'link.settings.tags_header' => 'Tags',
+    'link.settings.tags_help' => 'Comma-separated tags. Shown in the Group column on your biolinks list.',
+    'link.settings.tags_placeholder' => 'work, personal, campaign',
+    'links.filters.name' => 'Name',
+    'links.table.description' => 'Description',
+    'links.table.group' => 'Group',
+
 ];

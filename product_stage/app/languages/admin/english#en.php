@@ -2193,4 +2193,16 @@ return [
     'admin_settings.revolut.webhook_id_help' => 'Once generated, do not modify the value, nor the mode - as they are directly associated with each other.',
     'admin_settings.revolut.webhook_id_generate' => 'Generate',
 
+
+    /* Restored custom keys from live product */
+    'admin_links.add_banned' => 'Add banned status',
+    'admin_links.filters.is_banned' => 'Banned biolink',
+    'admin_links.remove_banned' => 'Remove banned status',
+    'admin_settings.security.ip_list_placeholder' => "192.168.1.1\n203.0.113.10",
+    'admin_settings.users.country_access_mode' => 'Country access mode',
+    'admin_settings.users.country_access_mode.block' => 'Block — deny selected countries',
+    'admin_settings.users.country_access_mode.disabled' => 'Disabled (no country restriction)',
+    'admin_settings.users.country_access_mode.only_access' => 'Only access — allow only selected countries',
+    'admin_settings.users.country_access_mode_help' => 'Applies to the whole site: pages, login, registration, and biolinks. Detection is IP-based (MaxMind). Logged-in admins are not restricted. Choose the mode first, then select countries below.',
+
 ];
