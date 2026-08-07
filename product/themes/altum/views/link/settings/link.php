@@ -5,7 +5,7 @@
 <div class="card">
     <div class="card-body">
 
-        <form name="update_link" action="" method="post" role="form" enctype="multipart/form-data">
+        <form id="update_link" name="update_link" action="" method="post" role="form" enctype="multipart/form-data">
             <input type="hidden" name="token" value="<?= \Altum\Csrf::get() ?>" />
             <input type="hidden" name="request_type" value="update" />
             <input type="hidden" name="type" value="link" />
@@ -22,7 +22,7 @@
                 <label for="url"><i class="fas fa-fw fa-bolt fa-sm text-muted mr-1"></i> <?= l('link.settings.url') ?></label>
                 <div class="input-group">
                     <div class="input-group-prepend">
-                        <?php if(count($data->domains)): ?>
+                        <?php if (!empty($data->domains)): ?>
                             <select name="domain_id" class="appearance-none custom-select form-control input-group-text">
                                 <?php if(settings()->links->main_domain_is_enabled || \Altum\Authentication::is_admin()): ?>
                                     <option value=" " <?= $data->link->domain ? 'selected="selected"' : null ?> data-full-url="<?= SITE_URL ?>"><?= remove_url_protocol_from_url(SITE_URL) ?></option>
@@ -47,14 +47,14 @@
                             maxlength="<?= $this->user->plan_settings->url_maximum_characters ?? 64 ?>"
                             onchange="update_this_value(this, get_slug)"
                             onkeyup="update_this_value(this, get_slug)"
-                        <?= !$this->user->plan_settings->custom_url ? 'readonly="readonly"' : null ?>
-                        <?= $this->user->plan_settings->custom_url ? null : get_plan_feature_disabled_info() ?>
+                            <?= !$this->user->plan_settings->custom_url ? 'readonly="readonly"' : null ?>
+                            <?= $this->user->plan_settings->custom_url ? null : get_plan_feature_disabled_info() ?>
                     />
                 </div>
                 <small class="form-text text-muted"><?= l('link.settings.url_help') ?></small>
             </div>
 
-            <?php if(count($data->domains)): ?>
+            <?php if (!empty($data->domains)): ?>
                 <div id="is_main_link_wrapper" class="form-group custom-control custom-switch <?= $data->link->domain_id && $data->domains[$data->link->domain_id]->type == '0' ? null : 'd-none' ?>">
                     <input id="is_main_link" name="is_main_link" type="checkbox" class="custom-control-input" <?= $data->link->domain_id && $data->domains[$data->link->domain_id]->link_id == $data->link->link_id ? 'checked="checked"' : null ?>>
                     <label class="custom-control-label" for="is_main_link"><?= l('link.settings.is_main_link') ?></label>
@@ -62,11 +62,11 @@
                 </div>
             <?php endif ?>
 
-            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#app_linking_container" aria-expanded="false" aria-controls="app_linking_container">
+            <button class="btn btn-block btn-gray-200 font-size-little-small font-weight-450 my-4" type="button" data-toggle="collapse" data-target="#app_linking_container" aria-expanded="false" aria-controls="app_linking_container">
                 <i class="fas fa-fw fa-mobile-button fa-sm mr-1"></i> <?= l('link.settings.app_linking_header') ?>
             </button>
 
-            <div class="collapse" id="app_linking_container">
+            <div class="collapse" data-parent="#update_link" id="app_linking_container">
                 <div <?= $this->user->plan_settings->app_linking_is_enabled ? null : get_plan_feature_disabled_info() ?>>
                     <div class="<?= $this->user->plan_settings->app_linking_is_enabled ? null : 'container-disabled' ?>">
                         <div class="form-group custom-control custom-switch">
@@ -75,8 +75,8 @@
                                     name="app_linking_is_enabled"
                                     type="checkbox"
                                     class="custom-control-input"
-                                <?= $data->link->settings->app_linking_is_enabled ? 'checked="checked"' : null ?>
-                                <?= $this->user->plan_settings->app_linking_is_enabled ? null : 'disabled="disabled"' ?>
+                                    <?= $data->link->settings->app_linking_is_enabled ? 'checked="checked"' : null ?>
+                                    <?= $this->user->plan_settings->app_linking_is_enabled ? null : 'disabled="disabled"' ?>
                             >
                             <label class="custom-control-label" for="app_linking_is_enabled"><i class="fas fa-fw fa-mobile-screen-button fa-sm text-muted mr-1"></i> <?= l('link.settings.app_linking_is_enabled') ?></label>
                             <small class="form-text text-muted"><?= l('link.settings.app_linking_is_enabled_help') ?></small>
@@ -116,8 +116,8 @@
                         <?php foreach($supported_apps as $app_key => $app): ?>
                             <?php
                             $tooltip_title = '<div class=\'p-3 text-left\'><p class=\'my-1\'>' . implode('</p> <p class=\'my-1\'>', array_map(function($key) {
-                                    return $key;
-                                }, $app['display_formats'])) . '</p></div>';
+                                        return $key;
+                                    }, $app['display_formats'])) . '</p></div>';
                             ?>
 
                             <div id="<?= $app_key ?>" class="col-12 col-lg-6 mb-2">
@@ -139,11 +139,11 @@
             </div>
 
             <?php if(settings()->links->pixels_is_enabled): ?>
-                <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#pixels_container" aria-expanded="false" aria-controls="pixels_container">
+                <button class="btn btn-block btn-gray-200 font-size-little-small font-weight-450 my-4" type="button" data-toggle="collapse" data-target="#pixels_container" aria-expanded="false" aria-controls="pixels_container">
                     <i class="fas fa-fw fa-adjust fa-sm mr-1"></i> <?= l('link.settings.pixels_header') ?>
                 </button>
 
-                <div class="collapse" id="pixels_container">
+                <div class="collapse" data-parent="#update_link" id="pixels_container">
                     <div class="form-group">
                         <div class="d-flex flex-wrap flex-row justify-content-between">
                             <label><i class="fas fa-fw fa-sm fa-adjust text-muted mr-1"></i> <?= l('link.settings.pixels_ids') ?></label>
@@ -170,11 +170,11 @@
                 </div>
             <?php endif ?>
 
-            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#temporary_url_container" aria-expanded="false" aria-controls="temporary_url_container">
+            <button class="btn btn-block btn-gray-200 font-size-little-small font-weight-450 my-4" type="button" data-toggle="collapse" data-target="#temporary_url_container" aria-expanded="false" aria-controls="temporary_url_container">
                 <i class="fas fa-fw fa-clock fa-sm mr-1"></i> <?= l('link.settings.temporary_url_header') ?>
             </button>
 
-            <div class="collapse" id="temporary_url_container">
+            <div class="collapse" data-parent="#update_link" id="temporary_url_container">
                 <div <?= $this->user->plan_settings->temporary_url_is_enabled ? null : get_plan_feature_disabled_info() ?>>
                     <div class="<?= $this->user->plan_settings->temporary_url_is_enabled ? null : 'container-disabled' ?>">
                         <div class="form-group custom-control custom-switch">
@@ -183,8 +183,8 @@
                                     name="schedule"
                                     type="checkbox"
                                     class="custom-control-input"
-                                <?= $data->link->settings->schedule && !empty($data->link->start_date) && !empty($data->link->end_date) ? 'checked="checked"' : null ?>
-                                <?= $this->user->plan_settings->temporary_url_is_enabled ? null : 'disabled="disabled"' ?>
+                                    <?= $data->link->settings->schedule && !empty($data->link->start_date) && !empty($data->link->end_date) ? 'checked="checked"' : null ?>
+                                    <?= $this->user->plan_settings->temporary_url_is_enabled ? null : 'disabled="disabled"' ?>
                             >
                             <label class="custom-control-label" for="schedule"><?= l('link.settings.schedule') ?></label>
                             <small class="form-text text-muted"><?= l('link.settings.schedule_help') ?></small>
@@ -247,11 +247,11 @@
                 </div>
             </div>
 
-            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#utm_container" aria-expanded="false" aria-controls="utm_container">
+            <button class="btn btn-block btn-gray-200 font-size-little-small font-weight-450 my-4" type="button" data-toggle="collapse" data-target="#utm_container" aria-expanded="false" aria-controls="utm_container">
                 <i class="fas fa-fw fa-keyboard fa-sm mr-1"></i> <?= l('link.settings.utm_header') ?>
             </button>
 
-            <div class="collapse" id="utm_container">
+            <div class="collapse" data-parent="#update_link" id="utm_container">
                 <div <?= $this->user->plan_settings->utm ? null : get_plan_feature_disabled_info() ?>>
                     <div class="<?= $this->user->plan_settings->utm ? null : 'container-disabled' ?>">
                         <div class="form-group">
@@ -278,16 +278,16 @@
                 </div>
             </div>
 
-            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#protection_container" aria-expanded="false" aria-controls="protection_container">
+            <button class="btn btn-block btn-gray-200 font-size-little-small font-weight-450 my-4" type="button" data-toggle="collapse" data-target="#protection_container" aria-expanded="false" aria-controls="protection_container">
                 <i class="fas fa-fw fa-user-shield fa-sm mr-1"></i> <?= l('link.settings.protection_header') ?>
             </button>
 
-            <div class="collapse" id="protection_container">
+            <div class="collapse" data-parent="#update_link" id="protection_container">
                 <div <?= $this->user->plan_settings->password ? null : get_plan_feature_disabled_info() ?>>
                     <div class="<?= $this->user->plan_settings->password ? null : 'container-disabled' ?>">
                         <div class="form-group" data-password-toggle-view data-password-toggle-view-show="<?= l('global.show') ?>" data-password-toggle-view-hide="<?= l('global.hide') ?>">
                             <label for="qweasdzxc"><i class="fas fa-fw fa-key fa-sm text-muted mr-1"></i> <?= l('global.password') ?></label>
-                            <input id="qweasdzxc" type="password" class="form-control" name="qweasdzxc" value="<?= $data->link->settings->password ?>" autocomplete="new-password" <?= !$this->user->plan_settings->password ? 'disabled="disabled"': null ?> />
+                            <input id="qweasdzxc" type="password" class="form-control" name="qweasdzxc" maxlength="64" value="<?= $data->link->settings->password ?>" autocomplete="new-password" <?= !$this->user->plan_settings->password ? 'disabled="disabled"': null ?> />
                             <small class="form-text text-muted"><?= l('link.settings.password_help') ?></small>
                         </div>
                     </div>
@@ -301,8 +301,8 @@
                                     class="custom-control-input"
                                     id="sensitive_content"
                                     name="sensitive_content"
-                                <?= !$this->user->plan_settings->sensitive_content ? 'disabled="disabled"': null ?>
-                                <?= $data->link->settings->sensitive_content ? 'checked="checked"' : null ?>
+                                    <?= !$this->user->plan_settings->sensitive_content ? 'disabled="disabled"': null ?>
+                                    <?= $data->link->settings->sensitive_content ? 'checked="checked"' : null ?>
                             >
                             <label class="custom-control-label" for="sensitive_content"><?= l('link.settings.sensitive_content') ?></label>
                             <small class="form-text text-muted"><?= l('link.settings.sensitive_content_help') ?></small>
@@ -311,11 +311,27 @@
                 </div>
             </div>
 
-            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#targeting_container" aria-expanded="false" aria-controls="targeting_container">
+            <button class="btn btn-block btn-gray-200 font-size-little-small font-weight-450 my-4" type="button" data-toggle="collapse" data-target="#seo_container" aria-expanded="false" aria-controls="seo_container">
+                <i class="fas fa-fw fa-search-plus fa-sm mr-1"></i> <?= l('link.settings.seo_header') ?>
+            </button>
+
+            <div class="collapse" data-parent="#update_link" id="seo_container">
+                <div <?= $this->user->plan_settings->seo ? null : get_plan_feature_disabled_info() ?>>
+                    <div class="<?= $this->user->plan_settings->seo ? null : 'container-disabled' ?>">
+                        <div class="form-group custom-control custom-switch">
+                            <input id="seo_block" name="seo_block" type="checkbox" class="custom-control-input" <?= $data->link->settings->seo->block ? 'checked="checked"' : null ?>>
+                            <label class="custom-control-label" for="seo_block"><?= l('link.settings.seo_block') ?></label>
+                            <small class="form-text text-muted"><?= l('link.settings.seo_block_help') ?></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-block btn-gray-200 font-size-little-small font-weight-450 my-4" type="button" data-toggle="collapse" data-target="#targeting_container" aria-expanded="false" aria-controls="targeting_container">
                 <i class="fas fa-fw fa-bullseye fa-sm mr-1"></i> <?= l('link.settings.targeting_header') ?>
             </button>
 
-            <div class="collapse" id="targeting_container">
+            <div class="collapse" data-parent="#update_link" id="targeting_container">
                 <div <?= $this->user->plan_settings->targeting_is_enabled ? null : get_plan_feature_disabled_info() ?>>
                     <div class="<?= $this->user->plan_settings->targeting_is_enabled ? null : 'container-disabled' ?>">
                         <div class="form-group">
@@ -589,11 +605,11 @@
                 </div>
             </div>
 
-            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#cloaking_container" aria-expanded="false" aria-controls="cloaking_container">
+            <button class="btn btn-block btn-gray-200 font-size-little-small font-weight-450 my-4" type="button" data-toggle="collapse" data-target="#cloaking_container" aria-expanded="false" aria-controls="cloaking_container">
                 <i class="fas fa-fw fa-eye fa-sm mr-1"></i> <?= l('link.settings.cloaking_header') ?>
             </button>
 
-            <div class="collapse" id="cloaking_container">
+            <div class="collapse" data-parent="#update_link" id="cloaking_container">
                 <div <?= $this->user->plan_settings->cloaking_is_enabled ? null : get_plan_feature_disabled_info() ?>>
                     <div class="<?= $this->user->plan_settings->cloaking_is_enabled ? null : 'container-disabled' ?>">
                         <div class="form-group custom-control custom-switch">
@@ -602,8 +618,8 @@
                                     name="cloaking_is_enabled"
                                     type="checkbox"
                                     class="custom-control-input"
-                                <?= $data->link->settings->cloaking_is_enabled ? 'checked="checked"' : null ?>
-                                <?= $this->user->plan_settings->cloaking_is_enabled ? null : 'disabled="disabled"' ?>
+                                    <?= $data->link->settings->cloaking_is_enabled ? 'checked="checked"' : null ?>
+                                    <?= $this->user->plan_settings->cloaking_is_enabled ? null : 'disabled="disabled"' ?>
                             >
                             <label class="custom-control-label" for="cloaking_is_enabled"><i class="fas fa-fw fa-user-tie fa-sm text-muted mr-1"></i> <?= l('link.settings.cloaking_is_enabled') ?></label>
                             <small class="form-text text-muted"><?= l('link.settings.cloaking_is_enabled_help') ?></small>
@@ -647,11 +663,11 @@
                 </div>
             </div>
 
-            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#http_container" aria-expanded="false" aria-controls="http_container">
+            <button class="btn btn-block btn-gray-200 font-size-little-small font-weight-450 my-4" type="button" data-toggle="collapse" data-target="#http_container" aria-expanded="false" aria-controls="http_container">
                 <i class="fas fa-fw fa-laptop-code fa-sm mr-1"></i> <?= l('link.settings.http_header') ?>
             </button>
 
-            <div class="collapse" id="http_container">
+            <div class="collapse" data-parent="#update_link" id="http_container">
                 <div class="alert alert-info"><?= l('link.settings.http_header_help') ?></div>
 
                 <div class="form-group custom-control custom-radio">
@@ -675,12 +691,12 @@
                 </div>
             </div>
 
-            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#advanced_container" aria-expanded="false" aria-controls="advanced_container">
+            <button class="btn btn-block btn-gray-200 font-size-little-small font-weight-450 my-4" type="button" data-toggle="collapse" data-target="#advanced_container" aria-expanded="false" aria-controls="advanced_container">
                 <i class="fas fa-fw fa-user-tie fa-sm mr-1"></i> <?= l('link.settings.advanced_header') ?>
             </button>
 
-            <div class="collapse" id="advanced_container">
-                <?php if(settings()->links->email_reports_is_enabled): ?>
+            <div class="collapse" data-parent="#update_link" id="advanced_container">
+                <?php if(settings()->links->email_reports_is_enabled && settings()->notification_handlers->is_enabled): ?>
                     <div <?= $this->user->plan_settings->email_reports_is_enabled ? null : get_plan_feature_disabled_info() ?>>
                         <div class="form-group <?= $this->user->plan_settings->email_reports_is_enabled ? null : 'container-disabled' ?>">
                             <div class="d-flex flex-wrap flex-row justify-content-between">
@@ -710,18 +726,18 @@
 
 
                 <?php if(settings()->links->projects_is_enabled): ?>
-                <div class="form-group">
-                    <div class="d-flex flex-wrap flex-row justify-content-between">
-                        <label for="project_id"><i class="fas fa-fw fa-sm fa-project-diagram text-muted mr-1"></i> <?= l('projects.project_id') ?></label>
-                        <a href="<?= url('project-create') ?>" target="_blank" class="small mb-2"><i class="fas fa-fw fa-sm fa-plus mr-1"></i> <?= l('projects.create') ?></a>
+                    <div class="form-group">
+                        <div class="d-flex flex-wrap flex-row justify-content-between">
+                            <label for="project_id"><i class="fas fa-fw fa-sm fa-project-diagram text-muted mr-1"></i> <?= l('projects.project_id') ?></label>
+                            <a href="<?= url('project-create') ?>" target="_blank" class="small mb-2"><i class="fas fa-fw fa-sm fa-plus mr-1"></i> <?= l('projects.create') ?></a>
+                        </div>
+                        <select id="project_id" name="project_id" class="custom-select">
+                            <option value=" "><?= l('global.none') ?></option>
+                            <?php foreach($data->projects as $row): ?>
+                                <option value="<?= $row->project_id ?>" <?= $data->link->project_id == $row->project_id ? 'selected="selected"' : null?>><?= $row->name ?></option>
+                            <?php endforeach ?>
+                        </select>
                     </div>
-                    <select id="project_id" name="project_id" class="custom-select">
-                        <option value=" "><?= l('global.none') ?></option>
-                        <?php foreach($data->projects as $row): ?>
-                            <option value="<?= $row->project_id ?>" <?= $data->link->project_id == $row->project_id ? 'selected="selected"' : null?>><?= $row->name ?></option>
-                        <?php endforeach ?>
-                    </select>
-                </div>
                 <?php endif ?>
 
                 <?php if(settings()->links->splash_page_is_enabled): ?>
@@ -749,7 +765,7 @@
                             name="forward_query_parameters_is_enabled"
                             type="checkbox"
                             class="custom-control-input"
-                        <?= $data->link->settings->forward_query_parameters_is_enabled ? 'checked="checked"' : null ?>
+                            <?= $data->link->settings->forward_query_parameters_is_enabled ? 'checked="checked"' : null ?>
                     >
                     <label class="custom-control-label" for="forward_query_parameters_is_enabled"><i class="fas fa-fw fa-forward fa-sm text-muted mr-1"></i> <?= l('link.settings.forward_query_parameters_is_enabled') ?></label>
                     <small class="form-text text-muted"><?= l('link.settings.forward_query_parameters_is_enabled_help') ?></small>
@@ -945,9 +961,7 @@
     }
 
     document.querySelectorAll('input[name="utm_source"], input[name="utm_medium"], input[name="utm_campaign"]').forEach(element => {
-        ['change', 'paste', 'keyup'].forEach(event_type => {
-            element.addEventListener(event_type, process_utm);
-        });
+        element.addEventListener('input', process_utm);
     })
 
     process_utm();

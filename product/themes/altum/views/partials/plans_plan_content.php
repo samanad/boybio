@@ -133,8 +133,8 @@
     <?php $notification_handlers_icon = 'fa-times-circle text-muted'; ?>
     <div class='d-flex flex-column'>
         <?php foreach(array_keys(require APP_PATH . 'includes/notification_handlers.php') as $notification_handler): ?>
-            <?php $nh_limit = $data->plan_settings->{'notification_handlers_' . $notification_handler . '_limit'} ?? 0; if($nh_limit != 0) $notification_handlers_icon = 'fa-check-circle text-success'  ?>
-            <span class='my-1'><?= sprintf(l('global.plan_settings.notification_handlers_' . $notification_handler . '_limit'), '<strong>' . ($nh_limit == -1 ? l('global.unlimited') : nr($nh_limit)) . '</strong>') ?></span>
+            <?php if($data->plan_settings->{'notification_handlers_' . $notification_handler . '_limit'} != 0) $notification_handlers_icon = 'fa-check-circle text-success'  ?>
+            <span class='my-1'><?= sprintf(l('global.plan_settings.notification_handlers_' . $notification_handler . '_limit'), '<strong>' . ($data->plan_settings->{'notification_handlers_' . $notification_handler . '_limit'} == -1 ? l('global.unlimited') : nr($data->plan_settings->{'notification_handlers_' . $notification_handler . '_limit'})) . '</strong>') ?></span>
         <?php endforeach ?>
     </div>
     <?php $html = ob_get_clean() ?>
@@ -170,11 +170,11 @@
     </li>
     <?php endif ?>
 
-    <?php if(!empty(settings()->links->email_reports_is_enabled)): ?>
+    <?php if(settings()->links->email_reports_is_enabled): ?>
         <li class="pricing-feature d-flex justify-content-between align-items-center">
             <div><?= settings()->links->email_reports_is_enabled ? l('global.plan_settings.email_reports_is_enabled_' . settings()->links->email_reports_is_enabled) : l('global.plan_settings.email_reports_is_enabled') ?></div>
 
-            <i class="fas fa-fw fa-sm <?= !empty($data->plan_settings->email_reports_is_enabled ?? null) ? 'fa-check-circle text-success' : 'fa-times-circle text-muted' ?>"></i>
+            <i class="fas fa-fw fa-sm <?= $data->plan_settings->email_reports_is_enabled ? 'fa-check-circle text-success' : 'fa-times-circle text-muted' ?>"></i>
         </li>
     <?php endif ?>
 
@@ -316,15 +316,14 @@
         <?php endif ?>
 
         <?php foreach(require APP_PATH . 'includes/simple_user_plan_settings.php' as $plan_setting): ?>
-            <?php $plan_setting_val = $data->plan_settings->{$plan_setting} ?? null; ?>
             <li>
-                <div class="<?= $plan_setting_val ? null : 'text-muted' ?>">
+                <div class="<?= $data->plan_settings->{$plan_setting} ? null : 'text-muted' ?>">
                     <?= l('global.plan_settings.' . $plan_setting) ?>
 
                     <span class="ml-1" data-toggle="tooltip" title="<?= l('global.plan_settings.' . $plan_setting . '_help') ?>"><i class="fas fa-fw fa-xs fa-circle-question text-gray-500"></i></span>
                 </div>
 
-                <i class="fas fa-fw fa-sm <?= $plan_setting_val ? 'fa-check-circle text-success' : 'fa-times-circle text-muted' ?>"></i>
+                <i class="fas fa-fw fa-sm <?= $data->plan_settings->{$plan_setting} ? 'fa-check-circle text-success' : 'fa-times-circle text-muted' ?>"></i>
             </li>
         <?php endforeach ?>
 

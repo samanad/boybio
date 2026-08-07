@@ -227,9 +227,11 @@ class AdminSettings extends Controller {
                 'logo_email' => settings()->main->logo_email ?? '',
                 'opengraph' => settings()->main->opengraph ?? '',
                 'favicon' => settings()->main->favicon ?? '',
+                'broadcasts_is_enabled' => isset($_POST['broadcasts_is_enabled']),
                 'openai_api_key' => $_POST['openai_api_key'],
                 'openai_model' => $_POST['openai_model'],
                 'force_https_is_enabled' => $_POST['force_https_is_enabled'],
+                'referrer_policy' => $_POST['referrer_policy'],
                 'broadcasts_statistics_is_enabled' => isset($_POST['broadcasts_statistics_is_enabled']),
                 'breadcrumbs_is_enabled' => isset($_POST['breadcrumbs_is_enabled']),
                 'display_pagination_when_no_pages' => isset($_POST['display_pagination_when_no_pages']),
@@ -257,9 +259,6 @@ class AdminSettings extends Controller {
             /* :) */
             $_POST['blacklisted_domains'] = array_filter(array_map('trim', explode(',', $_POST['blacklisted_domains'])));
             $_POST['blacklisted_countries'] = $_POST['blacklisted_countries'] ?? [];
-            $_POST['country_access_mode'] = in_array($_POST['country_access_mode'] ?? 'disabled', ['disabled', 'only_access', 'block'], true)
-                ? $_POST['country_access_mode']
-                : 'disabled';
 
             $value = json_encode([
                 'email_aliases_is_enabled' => isset($_POST['email_aliases_is_enabled']),
@@ -276,7 +275,6 @@ class AdminSettings extends Controller {
                 'auto_delete_inactive_users' => (int) $_POST['auto_delete_inactive_users'],
                 'user_deletion_reminder' => (int) $_POST['user_deletion_reminder'],
                 'blacklisted_domains' => $_POST['blacklisted_domains'],
-                'country_access_mode' => $_POST['country_access_mode'],
                 'blacklisted_countries' => $_POST['blacklisted_countries'],
                 'login_lockout_is_enabled' => isset($_POST['login_lockout_is_enabled']),
                 'login_lockout_max_retries' => (int) $_POST['login_lockout_max_retries'] < 1 ? 1 : (int) $_POST['login_lockout_max_retries'],
@@ -323,32 +321,141 @@ class AdminSettings extends Controller {
         }
     }
 
+    public function github() {
+        $this->process();
+
+        if(!empty($_POST)) {
+            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
+
+            /* :) */
+            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
+
+            $value = json_encode([
+                'is_enabled' => $_POST['is_enabled'],
+                'client_id' => $_POST['client_id'],
+                'client_secret' => $_POST['client_secret'],
+            ]);
+
+            $this->update_settings('github', $value);
+        }
+    }
+
+    public function apple() {
+        $this->process();
+
+        if(!empty($_POST)) {
+            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
+
+            /* :) */
+            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
+
+            $value = json_encode([
+                'is_enabled' => $_POST['is_enabled'],
+                'client_id' => $_POST['client_id'],
+                'team_id' => $_POST['team_id'],
+                'key_id' => $_POST['key_id'],
+                'key_content' => trim($_POST['key_content']),
+            ]);
+
+            $this->update_settings('apple', $value);
+        }
+    }
+
+    public function chrome_extension() {
+        $this->process();
+
+        if(!empty($_POST)) {
+
+            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
+
+            if(!\Altum\Plugin::is_active('chrome-extension')) {
+                redirect('admin/settings/chrome_extension');
+            }
+
+            /* :) */
+            $_POST['chrome_web_store_url'] = input_clean($_POST['chrome_web_store_url']);
+
+            $value = [
+                'is_enabled' => isset($_POST['is_enabled']),
+                'chrome_web_store_url' => $_POST['chrome_web_store_url'],
+            ];
+
+            $this->update_settings('chrome_extension', json_encode($value));
+        }
+    }
+
+    public function digital_wallets() {
+        $this->process();
+
+        if(!empty($_POST)) {
+            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
+
+            /* :) */
+            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
+            $_POST['google_wallet_is_enabled'] = (int) isset($_POST['google_wallet_is_enabled']);
+            $_POST['google_wallet_issuer_id'] = trim($_POST['google_wallet_issuer_id']);
+            $_POST['google_wallet_class_suffix'] = trim($_POST['google_wallet_class_suffix']);
+            $_POST['google_wallet_origins'] = trim($_POST['google_wallet_origins']);
+            $_POST['apple_wallet_is_enabled'] = (int) isset($_POST['apple_wallet_is_enabled']);
+            $_POST['apple_wallet_pass_type_identifier'] = input_clean($_POST['apple_wallet_pass_type_identifier'] ?? '', 128);
+            $_POST['apple_wallet_team_identifier'] = input_clean($_POST['apple_wallet_team_identifier'] ?? '', 32);
+            $_POST['apple_wallet_organization_name'] = input_clean($_POST['apple_wallet_organization_name'] ?? '', 128);
+            $_POST['apple_wallet_certificate_password'] = $_POST['apple_wallet_certificate_password'] ?? '';
+            $_POST['logo_size_limit'] = $_POST['logo_size_limit'] ?? settings()->digital_wallets->logo_size_limit ?? get_max_upload();
+            $_POST['image_size_limit'] = $_POST['image_size_limit'] ?? settings()->digital_wallets->image_size_limit ?? get_max_upload();
+            $_POST['logo_size_limit'] = $_POST['logo_size_limit'] > get_max_upload() || $_POST['logo_size_limit'] < 0 ? get_max_upload() : (float) $_POST['logo_size_limit'];
+            $_POST['image_size_limit'] = $_POST['image_size_limit'] > get_max_upload() || $_POST['image_size_limit'] < 0 ? get_max_upload() : (float) $_POST['image_size_limit'];
+
+            settings()->digital_wallets->google_wallet_service_account = \Altum\Uploads::process_upload(settings()->digital_wallets->google_wallet_service_account, 'google_wallet_service_account', 'google_wallet_service_account', 'google_wallet_service_account_remove', null);
+
+            $apple_wallet_certificate_password = $_POST['apple_wallet_certificate_password'] !== ''
+                ? $_POST['apple_wallet_certificate_password']
+                : (settings()->digital_wallets->apple_wallet_certificate_password ?? '');
+
+            $apple_wallet_certificate = \Altum\Uploads::process_upload(settings()->digital_wallets->apple_wallet_certificate ?? null, 'apple_wallet_credentials', 'apple_wallet_certificate', 'apple_wallet_certificate_remove', null, force_local: true);
+            $apple_wallet_wwdr_certificate = \Altum\Uploads::process_upload(settings()->digital_wallets->apple_wallet_wwdr_certificate ?? null, 'apple_wallet_credentials', 'apple_wallet_wwdr_certificate', 'apple_wallet_wwdr_certificate_remove', null, force_local: true);
+
+            $value = json_encode([
+                'is_enabled' => $_POST['is_enabled'],
+
+                'google_wallet_is_enabled' => $_POST['google_wallet_is_enabled'],
+                'google_wallet_issuer_id' => $_POST['google_wallet_issuer_id'],
+                'google_wallet_class_suffix' => $_POST['google_wallet_class_suffix'] ?: 'digital_wallet',
+                'google_wallet_service_account' => settings()->digital_wallets->google_wallet_service_account,
+
+                'apple_wallet_is_enabled' => $_POST['apple_wallet_is_enabled'],
+                'apple_wallet_pass_type_identifier' => $_POST['apple_wallet_pass_type_identifier'],
+                'apple_wallet_team_identifier' => $_POST['apple_wallet_team_identifier'],
+                'apple_wallet_organization_name' => $_POST['apple_wallet_organization_name'],
+                'apple_wallet_certificate' => $apple_wallet_certificate,
+                'apple_wallet_wwdr_certificate' => $apple_wallet_wwdr_certificate,
+                'apple_wallet_certificate_password' => $apple_wallet_certificate_password,
+
+                'logo_size_limit' => $_POST['logo_size_limit'],
+                'image_size_limit' => $_POST['image_size_limit'],
+            ]);
+
+            $this->update_settings('digital_wallets', $value);
+        }
+    }
+
     public function security() {
         $this->process();
 
         if(!empty($_POST)) {
             //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
 
-            /* Accept multiple IPs (one per line, or comma/semicolon separated) */
-            $biolink_edit_allowed_ips = parse_settings_ip_list($_POST['biolink_edit_allowed_ip'] ?? '');
-            $google_login_persistent_ips = parse_settings_ip_list($_POST['google_login_persistent_ip'] ?? '');
+            $_POST['biolink_edit_allowed_ip'] = trim(input_clean($_POST['biolink_edit_allowed_ip'] ?? ''));
+            $_POST['google_login_persistent_ip'] = trim(input_clean($_POST['google_login_persistent_ip'] ?? ''));
 
-            foreach($biolink_edit_allowed_ips as $ip) {
-                if(!filter_var($ip, FILTER_VALIDATE_IP)) {
-                    Alerts::add_field_error('biolink_edit_allowed_ip', l('admin_settings.security.biolink_edit_allowed_ip_error'));
-                    break;
-                }
+            /* Validate IP if provided */
+            if(!empty($_POST['biolink_edit_allowed_ip']) && !filter_var($_POST['biolink_edit_allowed_ip'], FILTER_VALIDATE_IP)) {
+                Alerts::add_field_error('biolink_edit_allowed_ip', l('admin_settings.security.biolink_edit_allowed_ip_error'));
             }
 
-            foreach($google_login_persistent_ips as $ip) {
-                if(!filter_var($ip, FILTER_VALIDATE_IP)) {
-                    Alerts::add_field_error('google_login_persistent_ip', l('admin_settings.security.google_login_persistent_ip_error'));
-                    break;
-                }
+            if(!empty($_POST['google_login_persistent_ip']) && !filter_var($_POST['google_login_persistent_ip'], FILTER_VALIDATE_IP)) {
+                Alerts::add_field_error('google_login_persistent_ip', l('admin_settings.security.google_login_persistent_ip_error'));
             }
-
-            $_POST['biolink_edit_allowed_ip'] = implode(',', $biolink_edit_allowed_ips);
-            $_POST['google_login_persistent_ip'] = implode(',', $google_login_persistent_ips);
 
             if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
                 /* Get existing security settings to preserve mother password if not changed */
@@ -811,6 +918,148 @@ class AdminSettings extends Controller {
             ]);
 
             $this->update_settings('myfatoorah', $value);
+        }
+    }
+
+
+    public function paddle_billing() {
+        $this->process();
+
+        if(!empty($_POST)) {
+            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
+
+            /* :) */
+            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
+
+            $value = json_encode([
+                'is_enabled' => $_POST['is_enabled'],
+                'mode' => $_POST['mode'],
+                'api_key' => $_POST['api_key'],
+                'secret_key' => $_POST['secret_key'],
+                'client_side_token' => $_POST['client_side_token'],
+                'currencies' => $_POST['currencies'] ?? [],
+            ]);
+
+            $this->update_settings('paddle_billing', $value);
+        }
+    }
+
+    public function klarna() {
+        $this->process();
+
+        if(!empty($_POST)) {
+            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
+
+            /* :) */
+            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
+
+            $value = json_encode([
+                'is_enabled' => $_POST['is_enabled'],
+                'mode' => $_POST['mode'],
+                'username' => $_POST['username'],
+                'password' => $_POST['password'],
+                'currencies' => $_POST['currencies'] ?? [],
+            ]);
+
+            $this->update_settings('klarna', $value);
+        }
+    }
+
+    public function plisio() {
+        $this->process();
+
+        if(!empty($_POST)) {
+
+            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
+
+            /* :) */
+            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
+            $_POST['accepted_cryptocurrencies'] = array_filter(array_map('trim', $_POST['accepted_cryptocurrencies']));
+
+            $value = json_encode([
+                'is_enabled' => $_POST['is_enabled'],
+                'secret_key' => $_POST['secret_key'],
+                'accepted_cryptocurrencies' => $_POST['accepted_cryptocurrencies'],
+                'default_cryptocurrency' => $_POST['default_cryptocurrency'],
+                'currencies' => $_POST['currencies'] ?? [],
+            ]);
+
+            $this->update_settings('plisio', $value);
+        }
+    }
+
+    public function plisio_whitelabel() {
+        $this->process();
+
+        if(!empty($_POST)) {
+            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
+
+            /* :) */
+            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
+            $_POST['accepted_cryptocurrencies'] = array_filter(array_map('trim', $_POST['accepted_cryptocurrencies']));
+            $_POST['payment_blocks_fee'] = (float) max(0, min($_POST['payment_blocks_fee'], 100));
+
+            $value = json_encode([
+                'is_enabled' => $_POST['is_enabled'],
+                'secret_key' => $_POST['secret_key'],
+                'accepted_cryptocurrencies' => $_POST['accepted_cryptocurrencies'],
+                'default_cryptocurrency' => $_POST['default_cryptocurrency'],
+                'payment_blocks_fee' => $_POST['payment_blocks_fee'],
+                'currencies' => $_POST['currencies'] ?? [],
+            ]);
+
+            $this->update_settings('plisio_whitelabel', $value);
+        }
+    }
+
+    public function revolut() {
+        $this->process();
+
+        if(!empty($_POST)) {
+            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
+
+            /* :) */
+            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
+            $_POST['mode'] = in_array($_POST['mode'], ['live', 'sandbox']) ? input_clean($_POST['mode']) : 'live';
+
+            /* Generate webhook id */
+            if(empty($_POST['webhook_id']) && !empty($_POST['secret_key'])) {
+                try {
+                    $response = \Unirest\Request::post(
+                        ($_POST['mode'] == 'live' ? Revolut::$live_api_url : Revolut::$sandbox_api_url) . 'api/1.0/webhooks',
+                        [
+                            'Authorization' => 'Bearer ' . $_POST['secret_key'],
+                            'Content-Type' => 'application/json',
+                            'Accept' => 'application/json',
+                            'Revolut-Api-Version' => '2024-09-01',
+                        ],
+                        \Unirest\Request\Body::json([
+                            'url' => SITE_URL . 'webhook-revolut',
+                            'events' => [
+                                'ORDER_COMPLETED'
+                            ]
+                        ])
+                    );
+                } catch (\Exception $exception) {
+                    Alerts::add_error($exception->getCode() . ':' . $exception->getMessage());
+                }
+
+                if($response->code == 200) {
+                    $_POST['webhook_id'] = $response->body->id;
+                } else {
+                    Alerts::add_error($response->code . ':' . $response->raw_body);
+                }
+            }
+
+            $value = json_encode([
+                'is_enabled' => $_POST['is_enabled'],
+                'mode' => $_POST['mode'],
+                'secret_key' => $_POST['secret_key'],
+                'webhook_id' => $_POST['webhook_id'],
+                'currencies' => $_POST['currencies'] ?? [],
+            ]);
+
+            $this->update_settings('revolut', $value);
         }
     }
 

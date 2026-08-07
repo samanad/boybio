@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) 2025 AltumCode (https://altumcode.com/)
+ * Copyright (c) 2026 AltumCode (https://altumcode.com/)
  *
  * This software is licensed exclusively by AltumCode and is sold only via https://altumcode.com/.
  * Unauthorized distribution, modification, or use of this software without a valid license is not permitted and may be subject to applicable legal actions.
@@ -30,12 +30,12 @@ class QrCodeCreate extends Controller {
         \Altum\Authentication::guard();
 
         if(!settings()->codes->qr_codes_is_enabled) {
-            redirect('not-found');
+            throw_404();
         }
 
         /* Team checks */
         if(\Altum\Teams::is_delegated() && !\Altum\Teams::has_access('create.qr_codes')) {
-            Alerts::add_info(l('global.info_message.team_no_access'));
+            Alerts::add_error(l('global.info_message.team_no_access'));
             redirect('qr-codes');
         }
 
@@ -43,7 +43,7 @@ class QrCodeCreate extends Controller {
         $total_rows = database()->query("SELECT COUNT(*) AS `total` FROM `qr_codes` WHERE `user_id` = {$this->user->user_id}")->fetch_object()->total ?? 0;
 
         if($this->user->plan_settings->qr_codes_limit != -1 && $total_rows >= $this->user->plan_settings->qr_codes_limit) {
-            Alerts::add_info(l('global.info_message.plan_feature_limit'));
+            Alerts::add_error(l('global.info_message.plan_feature_limit') . (settings()->payment->is_enabled ? ' <a href="' . url('plan') . '" class="font-weight-bold text-reset">' . l('global.info_message.plan_upgrade') . '.</a>' : null));
             redirect('qr-codes');
         }
 
@@ -80,7 +80,7 @@ class QrCodeCreate extends Controller {
         if(!empty($_POST)) {
             $required_fields = ['name', 'type'];
 
-            $_POST['name'] = trim(query_clean($_POST['name']));
+            $_POST['name'] = input_clean($_POST['name'], 64);
             $_POST['project_id'] = !empty($_POST['project_id']) && array_key_exists($_POST['project_id'], $projects) ? (int) $_POST['project_id'] : null;
             $_POST['embedded_data'] = input_clean($_POST['embedded_data'], 10000);
             $_POST['type'] = isset($_POST['type']) && array_key_exists($_POST['type'], $available_qr_codes) ? $_POST['type'] : 'text';
@@ -147,7 +147,7 @@ class QrCodeCreate extends Controller {
                 'GBK',
                 'EUC-KR',
             ]) ? $_POST['encoding'] : 'UTF-8';
-            $settings['is_readable'] = $_POST['is_readable'] = (int) isset($_POST['is_readable']);
+            $settings['is_readable'] = $_POST['is_readable'] = (int) ($_POST['is_readable'] ?? 0);
             $_POST['is_bulk'] = (int) isset($_POST['is_bulk']);
 
             /* Frame */
@@ -170,17 +170,69 @@ class QrCodeCreate extends Controller {
                     break;
 
                 case 'url':
-                    $required_fields[] = 'url';
-                    $settings['url'] = $_POST['url'] = input_clean($_POST['url'], $available_qr_codes['url']['max_length']);
+                    $_POST['url_dynamic'] = (int) isset($_POST['url_dynamic']);
+                    $_POST['url_dynamic_existing_link'] = (int) isset($_POST['url_dynamic_existing_link']);
 
-                    if(isset($_POST['link_id']) && isset($_POST['url_dynamic'])) {
-                        $link = db()->where('link_id', $_POST['link_id'])->where('user_id', $this->user->user_id)->getOne('links', ['link_id']);
-                        if(!$link) {
-                            unset($_POST['link_id']);
+                    if($_POST['url_dynamic'] && $_POST['url_dynamic_existing_link']) {
+                        $required_fields[] = 'link_id';
+                        $settings['url_dynamic_existing_link'] = $_POST['url_dynamic_existing_link'];
+
+                        if(isset($_POST['link_id'])) {
+                            $link = db()->where('link_id', $_POST['link_id'])->where('user_id', $this->user->user_id)->getOne('links', ['link_id', 'domain_id', 'url']);
+
+                            if($link) {
+                                if($link->domain_id) {
+                                    $domain = (new \Altum\Models\Domain())->get_domain_by_domain_id($link->domain_id);
+                                    $settings['url'] = $_POST['url'] = $domain->scheme . $domain->host . '/' . ($domain->link_id == $link->link_id ? null : $link->url);
+                                } else {
+                                    $settings['url'] = $_POST['url'] = SITE_URL . $link->url;
+                                }
+                            } else {
+                                unset($_POST['link_id']);
+                            }
                         }
-                    } else {
+                    }
+
+                    elseif($_POST['url_dynamic']) {
+                        $required_fields[] = 'url';
+                        $_POST['url'] = get_url($_POST['url']);
+                        $settings['url'] = $_POST['url'] = input_clean($_POST['url'], $available_qr_codes['url']['max_length']);
+                        $settings['url_dynamic_existing_link'] = 0;
+                        unset($_POST['link_id']);
+
+                        $url_details = parse_url($_POST['url']);
+                        $domain = get_domain_from_url($_POST['url']);
+                        $total_links = database()->query("SELECT COUNT(*) AS `total` FROM `links` WHERE `user_id` = {$this->user->user_id}")->fetch_object()->total ?? 0;
+
+                        if(empty($_POST['url'])) {
+                            Alerts::add_field_error('url', l('global.error_message.empty_field'));
+                        }
+
+                        if(!isset($url_details['scheme'])) {
+                            Alerts::add_field_error('url', l('link.error_message.invalid_location_url'));
+                        }
+
+                        if($domain && in_array($domain, settings()->links->blacklisted_domains)) {
+                            Alerts::add_field_error('url', l('link.error_message.blacklisted_domain'));
+                        }
+
+                        if(settings()->links->google_safe_browsing_is_enabled) {
+                            if(google_safe_browsing_check($_POST['url'], settings()->links->google_safe_browsing_api_key)) {
+                                Alerts::add_field_error('url', l('link.error_message.blacklisted_location_url'));
+                            }
+                        }
+
+                        if($this->user->plan_settings->links_limit != -1 && $total_links >= $this->user->plan_settings->links_limit) {
+                            Alerts::add_field_error('url', l('global.info_message.plan_feature_limit'));
+                        }
+                    }
+
+                    else {
+                        $required_fields[] = 'url';
+                        $settings['url'] = $_POST['url'] = input_clean($_POST['url'], $available_qr_codes['url']['max_length']);
                         unset($_POST['link_id']);
                         unset($_POST['url_dynamic']);
+                        unset($_POST['url_dynamic_existing_link']);
                     }
                     break;
 
@@ -355,7 +407,7 @@ class QrCodeCreate extends Controller {
 
             /* Check for any errors */
             foreach($required_fields as $field) {
-                if(!isset($_POST[$field]) || (isset($_POST[$field]) && empty($_POST[$field]) && $_POST[$field] != '0')) {
+                if(!isset($_POST[$field]) || trim($_POST[$field]) === '') {
                     Alerts::add_field_error($field, l('global.error_message.empty_field'));
                 }
             }
@@ -437,6 +489,117 @@ class QrCodeCreate extends Controller {
                 $qr_code_foreground = \Altum\Uploads::process_upload(null, 'qr_code_foreground', 'qr_code_foreground', 'qr_code_foreground_remove', settings()->codes->background_size_limit);
 
                 if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
+                    if($_POST['type'] == 'url' && isset($_POST['url_dynamic']) && !$_POST['url_dynamic_existing_link']) {
+                        $location_url = $_POST['url'];
+                        $url = mb_strtolower(string_generate(settings()->links->random_url_length ?? 7));
+
+                        while(db()->where('url', $url)->where('domain_id', 0)->getValue('links', 'link_id')) {
+                            $url = mb_strtolower(string_generate(settings()->links->random_url_length ?? 7));
+                        }
+
+                        $app_linking = [
+                            'ios_location_url' => null,
+                            'android_location_url' => null,
+                            'app' => null,
+                        ];
+
+                        $link_settings = json_encode([
+                            'app_linking_is_enabled' => false,
+                            'app_linking' => $app_linking,
+                            'cloaking_is_enabled' => false,
+                            'cloaking_title' => null,
+                            'cloaking_meta_description' => null,
+                            'cloaking_custom_js' => null,
+                            'cloaking_favicon' => null,
+                            'cloaking_opengraph' => null,
+                            'http_status_code' => 301,
+                            'schedule' => false,
+                            'clicks_limit' => null,
+                            'expiration_url' => null,
+                            'password' => null,
+                            'sensitive_content' => false,
+                            'targeting_type' => 'false',
+                            'forward_query_parameters_is_enabled' => false,
+                            'utm' => [
+                                'source' => '',
+                                'medium' => '',
+                                'campaign' => '',
+                            ],
+                            'seo' => [
+                                'block' => false,
+                            ],
+                        ]);
+
+                        $token = bin2hex(random_bytes(16));
+
+                        $_POST['link_id'] = db()->insert('links', [
+                            'user_id' => $this->user->user_id,
+                            'domain_id' => 0,
+                            'project_id' => $_POST['project_id'],
+                            'token' => $token,
+                            'email_reports' => json_encode([]),
+                            'email_reports_count' => 0,
+                            'email_reports_last_datetime' => get_date(),
+                            'splash_page_id' => null,
+                            'pixels_ids' => json_encode([]),
+                            'type' => 'link',
+                            'url' => $url,
+                            'location_url' => $location_url,
+                            'settings' => $link_settings,
+                            'start_date' => null,
+                            'end_date' => null,
+                            'is_enabled' => 1,
+                            'datetime' => get_date(),
+                        ]);
+
+                        cache()->deleteItem('links?user_id=' . $this->user->user_id);
+                        cache()->deleteItem('links_total?user_id=' . $this->user->user_id);
+                        cache()->deleteItem('links_dashboard?user_id=' . $this->user->user_id);
+                        cache()->deleteItem('link_links_total?user_id=' . $this->user->user_id);
+
+                        if(settings()->webhooks->link_new) {
+                            fire_and_forget('post', settings()->webhooks->link_new, [
+                                'user_id' => $this->user->user_id,
+                                'link_id' => $_POST['link_id'],
+                                'domain_id' => 0,
+                                'url' => $url,
+                                'location_url' => $location_url,
+                                'full_url' => SITE_URL . $url,
+                                'type' => 'link',
+                                'datetime' => get_date(),
+                            ], signature: true);
+                        }
+
+                        $_POST['url_dynamic_existing_link'] = 1;
+                        $settings['url_dynamic_existing_link'] = 1;
+                        $settings['url'] = $_POST['url'] = SITE_URL . $url;
+                        $_POST['embedded_data'] = SITE_URL . $url;
+
+                        $request_data = array_merge([
+                            'api_key' => $this->user->api_key,
+                            'type' => $_POST['type'],
+                        ], $settings);
+
+                        if($qr_code_logo) $request_data['qr_code_logo'] = \Altum\Uploads::get_full_url('qr_code_logo') . $qr_code_logo;
+                        if($qr_code_background) $request_data['qr_code_background'] = \Altum\Uploads::get_full_url('qr_code_background') . $qr_code_background;
+                        if($qr_code_foreground) $request_data['qr_code_foreground'] = \Altum\Uploads::get_full_url('qr_code_foreground') . $qr_code_foreground;
+
+                        try {
+                            $response = Request::post(url('qr-code-generator'), [], Request\Body::multipart(['json' => json_encode($request_data)]));
+                        } catch (\Exception $exception) {
+                            Alerts::add_error($exception->getMessage());
+                        }
+
+                        if(isset($response->body->status) && $response->body->status == 'error') {
+                            Alerts::add_error($response->body->message);
+                        }
+
+                        if(isset($response->body->details->data)) {
+                            $_POST['qr_code'] = $response->body->details->data;
+                            $_POST['embedded_data'] = input_clean($response->body->details->embedded_data, 10000);
+                        }
+                    }
+
                     $qr_code = null;
 
                     /* QR Code image */
@@ -444,7 +607,7 @@ class QrCodeCreate extends Controller {
                         $_POST['qr_code'] = base64_decode(mb_substr($_POST['qr_code'], mb_strlen('data:image/svg+xml;base64,')));
 
                         /* Generate new name for image */
-                        $image_new_name = md5(time() . rand()) . '.svg';
+                        $image_new_name = md5(uniqid('', true) . random_bytes(16)) . '.svg';
 
                         /* Offload uploading */
                         if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
@@ -509,6 +672,7 @@ class QrCodeCreate extends Controller {
             'type' => $_POST['type'] ?? $_GET['type'] ?? array_key_first($available_qr_codes),
             'project_id' => $_POST['project_id'] ?? $_GET['project_id'] ?? '',
             'url_dynamic' => $_POST['url_dynamic'] ?? $_GET['url_dynamic'] ?? null,
+            'url_dynamic_existing_link' => $_POST['url_dynamic_existing_link'] ?? $_GET['url_dynamic_existing_link'] ?? null,
             'is_bulk' => $_POST['is_bulk'] ?? $_GET['is_bulk'] ?? null,
             'link_id' => $_POST['link_id'] ?? $_GET['link_id'] ?? '',
             'embedded_data' => $_POST['embedded_data'] ?? $_GET['embedded_data'] ?? '',

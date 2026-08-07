@@ -93,3 +93,10 @@ product_stage/uploads/*
 product_stage/uploads/cache/
 product_stage/config.php
 product_stage/config-*.php
+
+# Local pre-v69 overlay backup (do not push)
+product63.1/
+
+# Local build workspace (selective files already in product/)
+product69.5/
+product/app/includes/gsa.json

@@ -19,7 +19,7 @@ defined('ALTUMCODE') || die();
 $enabled_biolink_blocks = [];
 
 foreach(require APP_PATH . 'includes/biolink_blocks.php' as $type => $value) {
-    if(isset(settings()->links->available_biolink_blocks->{$type}) && settings()->links->available_biolink_blocks->{$type}) {
+    if(settings()->links->available_biolink_blocks->{$type} ?? true) {
         $enabled_biolink_blocks[$type] = $value;
     }
 }

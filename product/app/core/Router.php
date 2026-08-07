@@ -74,7 +74,7 @@ class Router {
                     'no_authentication_check' => true,
                     'has_view' => false,
                     'no_browser_language_detection' => true,
-					'allow_sessions' => false,
+                    'allow_sessions' => false,
                 ]
             ],
 
@@ -84,7 +84,7 @@ class Router {
                     'no_authentication_check' => true,
                     'has_view' => false,
                     'no_browser_language_detection' => true,
-					'allow_sessions' => false,
+                    'allow_sessions' => false,
                 ]
             ],
         ],
@@ -195,30 +195,6 @@ class Router {
 
             'guests-payments' => [
                 'controller' => 'GuestsPayments',
-                'settings' => [
-                    'wrapper' => 'app_wrapper',
-                    'ads' => true,
-                ]
-            ],
-
-            'payment-processors' => [
-                'controller' => 'PaymentProcessors',
-                'settings' => [
-                    'wrapper' => 'app_wrapper',
-                    'ads' => true,
-                ]
-            ],
-
-            'payment-processor-create' => [
-                'controller' => 'PaymentProcessorCreate',
-                'settings' => [
-                    'wrapper' => 'app_wrapper',
-                    'ads' => true,
-                ]
-            ],
-
-            'payment-processor-update' => [
-                'controller' => 'PaymentProcessorUpdate',
                 'settings' => [
                     'wrapper' => 'app_wrapper',
                     'ads' => true,
@@ -665,13 +641,6 @@ class Router {
                 ]
             ],
 
-            'country-blocked' => [
-                'controller' => 'CountryBlocked',
-                'settings' => [
-                    'wrapper' => 'basic_wrapper',
-                ]
-            ],
-
             'account' => [
                 'controller' => 'Account',
                 'settings' => [
@@ -912,6 +881,78 @@ class Router {
                 ]
             ],
 
+            'favicon' => [
+                'controller' => 'Favicon',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_sessions' => false,
+                    'allow_indexing' => false,
+                ]
+            ],
+
+            'unsubscribe' => [
+                'controller' => 'Unsubscribe',
+                'settings' => [
+                    'wrapper' => 'basic_wrapper',
+                ]
+            ],
+
+            'sent-activation' => [
+                'controller' => 'SentActivation',
+                'settings' => [
+                    'wrapper' => 'basic_wrapper',
+                ]
+            ],
+
+            'view' => [
+                'controller' => 'View',
+                'settings' => [
+                    'no_authentication_check' => false,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_sessions' => true,
+                ]
+            ],
+
+            'chrome-extension' => [
+                'controller' => 'ChromeExtension',
+            ],
+
+            'digital-wallets' => [
+                'controller' => 'DigitalWallets',
+                'settings' => [
+                    'wrapper' => 'app_wrapper',
+                    'ads' => true,
+                ]
+            ],
+
+            'digital-wallet-create' => [
+                'controller' => 'DigitalWalletCreate',
+                'settings' => [
+                    'wrapper' => 'app_wrapper',
+                    'ads' => true,
+                ]
+            ],
+
+            'digital-wallet-update' => [
+                'controller' => 'DigitalWalletUpdate',
+                'settings' => [
+                    'wrapper' => 'app_wrapper',
+                    'ads' => true,
+                ]
+            ],
+
+            'digital-wallet-add' => [
+                'controller' => 'DigitalWalletAdd',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                ]
+            ],
+
             'spotlight' => [
                 'controller' => 'Spotlight',
                 'settings' => [
@@ -1050,17 +1091,6 @@ class Router {
                 ]
             ],
 
-            'webhook-paddle-billing' => [
-                'controller' => 'WebhookPaddleBilling',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-					'allow_sessions' => false,
-                ]
-            ],
-
             'webhook-mercadopago' => [
                 'controller' => 'WebhookMercadopago',
                 'settings' => [
@@ -1098,51 +1128,6 @@ class Router {
                     'has_view' => false,
                     'no_browser_language_detection' => true,
                     'allow_indexing' => false,
-					'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-klarna' => [
-                'controller' => 'WebhookKlarna',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-					'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-plisio' => [
-                'controller' => 'WebhookPlisio',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-					'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-plisio-whitelabel' => [
-                'controller' => 'WebhookPlisioWhitelabel',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-					'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-revolut' => [
-                'controller' => 'WebhookRevolut',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-					'allow_sessions' => false,
                 ]
             ],
 
@@ -1155,6 +1140,63 @@ class Router {
                     'allow_indexing' => false,
                 ]
             ],
+
+
+            'webhook-paddle-billing' => [
+                'controller' => 'WebhookPaddleBilling',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+                    'allow_sessions' => false,
+                ]
+            ],
+
+            'webhook-klarna' => [
+                'controller' => 'WebhookKlarna',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+                    'allow_sessions' => false,
+                ]
+            ],
+
+            'webhook-plisio' => [
+                'controller' => 'WebhookPlisio',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+                    'allow_sessions' => false,
+                ]
+            ],
+
+            'webhook-plisio-whitelabel' => [
+                'controller' => 'WebhookPlisioWhitelabel',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+                    'allow_sessions' => false,
+                ]
+            ],
+
+            'webhook-revolut' => [
+                'controller' => 'WebhookRevolut',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+                    'allow_sessions' => false,
+                ]
+            ],
+
 
             /* Others */
             'cookie-consent' => [
@@ -1201,6 +1243,16 @@ class Router {
                     'no_authentication_check' => true,
                     'has_view' => false,
                     'allow_indexing' => false,
+                ]
+            ],
+
+            'digital-wallets' => [
+                'controller' => 'ApiDigitalWallets',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'allow_indexing' => false,
+					'allow_sessions' => false,
                 ]
             ],
 
@@ -1471,6 +1523,10 @@ class Router {
                 'controller' => 'AdminIndex'
             ],
 
+            'digital-wallets' => [
+                'controller' => 'AdminDigitalWallets'
+            ],
+
             'users' => [
                 'controller' => 'AdminUsers'
             ],
@@ -1571,6 +1627,10 @@ class Router {
                 'controller' => 'AdminTaxes'
             ],
 
+            'taxes-import' => [
+                'controller' => 'AdminTaxesImport'
+            ],
+
             'tax-create' => [
                 'controller' => 'AdminTaxCreate'
             ],
@@ -1585,6 +1645,10 @@ class Router {
 
             'payments' => [
                 'controller' => 'AdminPayments'
+            ],
+
+            'payment-create' => [
+                'controller' => 'AdminPaymentCreate',
             ],
 
             'statistics' => [

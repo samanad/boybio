@@ -20,6 +20,43 @@ defined('ALTUMCODE') || die();
 
 class CustomHooks {
 
+    public static function return_default_user_preferences() {
+        return [
+            'white_label_title' => '',
+            'white_label_footer_description' => '',
+            'white_label_remove_socials' => false,
+            'white_label_remove_footer_links' => false,
+            'white_label_logo_light' => '',
+            'white_label_logo_dark' => '',
+            'white_label_favicon' => '',
+            'default_results_per_page' => settings()->main->default_results_per_page,
+            'default_order_type' => settings()->main->default_order_type,
+            'links_default_order_by' => 'link_id',
+            'qr_codes_default_order_by' => 'qr_code_id',
+            'projects_default_order_by' => 'project_id',
+            'pixels_default_order_by' => 'pixel_id',
+            'domains_default_order_by' => 'domain_id',
+            'signatures_default_order_by' => 'signature_id',
+            'digital_wallets_default_order_by' => 'digital_wallet_id',
+            'splash_pages_default_order_by' => 'splash_page_id',
+            'data_default_order_by' => 'datum_id',
+            'payment_processors_default_order_by' => 'payment_processor_id',
+            'guests_payments_default_order_by' => 'guest_payment_id',
+            'documents_default_order_by' => 'document_id',
+            'images_default_order_by' => 'image_id',
+            'transcriptions_default_order_by' => 'transcription_id',
+            'syntheses_default_order_by' => 'synthesis_id',
+            'chats_default_order_by' => 'chat_id',
+            'openai_api_key' => '',
+            'links_auto_copy_link' => false,
+            'links_autosave_settings' => false,
+            'excluded_ips' => [],
+            'claim_url' => '',
+            'domain_id' => null,
+        ];
+    }
+
+
     public static function user_initiate_registration($data = []) {
 
         /* Update the account preference if needed */
@@ -27,8 +64,8 @@ class CustomHooks {
             $claim_url = get_slug($_GET['claim-url'], '-', false);
             $domain_id = isset($_GET['domain-id']) ? (int) $_GET['domain-id'] : null;
 
-            $_SESSION['claim_url'] = $claim_url;
-            if($domain_id) $_SESSION['domain_id'] = $domain_id;
+            session_set('claim_url', $claim_url);
+            if($domain_id) session_set('domain_id', $domain_id);
         }
 
     }
@@ -36,9 +73,9 @@ class CustomHooks {
     public static function user_finished_registration($data = []) {
 
         /* Update the account preference if needed */
-        if(isset($_GET['claim-url']) || isset($_SESSION['claim_url']) && settings()->links->claim_url_is_enabled) {
-            $claim_url = isset($_GET['claim-url']) ? get_slug($_GET['claim-url'], '-', false) : get_slug($_SESSION['claim_url'], '-', false);
-            $domain_id = isset($_GET['domain-id']) ? (int) $_GET['domain-id'] : (isset($_SESSION['domain_id']) ? (int) $_SESSION['domain_id'] : null);
+        if(isset($_GET['claim-url']) || session_has('claim_url') && settings()->links->claim_url_is_enabled) {
+            $claim_url = isset($_GET['claim-url']) ? get_slug($_GET['claim-url'], '-', false) : get_slug(session_get('claim_url'), '-', false);
+            $domain_id = isset($_GET['domain-id']) ? (int) $_GET['domain-id'] : (session_has('domain_id') ? (int) session_get('domain_id') : null);
 
             if($domain_id) {
                 db()->rawQuery("UPDATE `users` SET `preferences` = JSON_SET(`preferences`, '$.claim_url', ?, '$.domain_id', ?) WHERE `user_id` = ?", [$claim_url, $domain_id, $data['user_id']]);

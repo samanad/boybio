@@ -76,6 +76,10 @@ class App {
             header("Strict-Transport-Security: max-age=31536000; preload");
         }
 
+        /* Referrer policy */
+        $referrer_policy = settings()->main->referrer_policy ?? 'strict-origin-when-cross-origin';
+        header('Referrer-Policy: ' . $referrer_policy);
+
         /* Check for Preflight requests for the tracking of submissions from biolink pages */
         if(in_array(\Altum\Router::$controller, ['Link'])) {
             header('Access-Control-Allow-Origin: *');
@@ -101,7 +105,7 @@ class App {
         Date::$date = Date::get();
 
         /* Check if the team is set and do not allow access for certain routes */
-        if(isset($_SESSION['team_id']) && \Altum\Plugin::is_active('teams') && !is_null(\Altum\Router::$controller_settings['allow_team_access'])) {
+        if(!is_null(\Altum\Router::$controller_settings['allow_team_access']) && \Altum\Plugin::is_active('teams') && session_has('team_id')) {
             if(!\Altum\Router::$controller_settings['allow_team_access']) {
                 Alerts::add_info(l('global.info_message.team_limit'));
                 redirect();
@@ -152,30 +156,21 @@ class App {
                 /* Clear the cache */
                 cache()->deleteItemsByTag('user_id=' .  \Altum\Authentication::$user_id);
 
-                /* Sync in-memory plan after expiry so free-gate below applies on this request */
-                $user->plan_id = 'free';
-            }
-
-            /* Free users: no Cloub access (incl. dashboard) until they buy on Linkdooni */
-            if(
-                $user->plan_id == 'free'
-                && (int) $user->type !== 1
-                && \Altum\Router::$path != 'admin'
-                && !in_array(\Altum\Router::$controller_key, ['login', 'register', 'logout', 'lost-password', 'reset-password', 'activate-user'], true)
-            ) {
-                header('Location: https://linkdooni.com/plan', true, 302);
-                die();
+                /* Make sure to redirect the person to the payment page and only let the person access the following pages */
+                if(!in_array(\Altum\Router::$controller_key, ['index', 'blog', 'affiliate', 'contact', 'page', 'pages', 'plan', 'pay', 'pay-billing', 'pay-thank-you', 'account', 'account-plan', 'account-payments', 'invoice', 'account-logs', 'account-preferences',  'account-delete', 'referrals', 'account-api', 'account-redeem-code', 'logout', 'register', 'teams-system', 'teams-member', 'teams-members']) && \Altum\Router::$path != 'admin') {
+                    redirect('plan/new');
+                }
             }
 
             /* Update last activity */
             /* Do not update if user is impersonated by an admin */
-            if(!$user->last_activity || (new \DateTime($user->last_activity))->modify('+15 minutes') < (new \DateTime()) && !isset($_SESSION['admin_user_id'])) {
+            if(!$user->last_activity || (new \DateTime($user->last_activity))->modify('+15 minutes') < (new \DateTime()) && !session_has('admin_user_id')) {
                 (new User())->update_last_activity(\Altum\Authentication::$user_id);
             }
 
             if(!isset($_COOKIE['set_language'])) {
                 /* Update the language of the site for next page use if the current language (default) is different than the one the user has */
-                if(Language::$name != $user->language) {
+                if($_COOKIE['set_language'] != $user->language) {
                     /* Make sure the language of the user still exists & is active */
                     if(array_key_exists($user->language, Language::$active_languages)) {
                         //Language::set_by_name($user->language);
@@ -251,23 +246,6 @@ class App {
             exit();
         }
 
-        /* Country access gate (whole site: pages, login, biolinks) — admins bypass when logged in */
-        $country_access_admin_ip_bypass = is_ip_in_settings_list(
-            (isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip))
-                ? settings()->security->biolink_edit_allowed_ip
-                : ''
-        );
-        if(
-            \Altum\Router::$controller_key != 'country-blocked'
-            && !$country_access_admin_ip_bypass
-            && (!is_logged_in() || (isset($user) && $user->type != 1))
-            && is_country_access_denied()
-        ) {
-            header('HTTP/1.1 403 Forbidden');
-            header('Location: ' . url('country-blocked'));
-            exit();
-        }
-
         /* Initiate the Title system */
         Title::initialize(settings()->main->title, settings()->main->title_separator ?? '-');
         Meta::initialize();
@@ -285,8 +263,9 @@ class App {
         /* Skip this redirect if accessing a custom domain to avoid breaking custom domain routing */
         if(!\Altum\Router::$language_code && !is_logged_in() && !isset(\Altum\Router::$data['domain'])) {
             $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
+            $current_ip = get_ip();
             
-            if(is_ip_in_settings_list($google_persistent_ip)) {
+            if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip) {
                 /* Check if Persian language is available */
                 $persian_language_code = 'fa'; // Persian language code
                 $persian_language_name = 'persian'; // Persian language name
@@ -340,8 +319,36 @@ class App {
             $controller->user = \Altum\Authentication::$user;
         }
 
-        /* Call the controller method */
-        call_user_func_array([ $controller, $method ], []);
+        try {
+
+            /* Call the controller method */
+            call_user_func_array([ $controller, $method ], []);
+
+        } catch (\Altum\NotFoundException $exception) {
+
+            /* Proper 404 without redirect (v64) */
+            \Altum\Router::$controller_settings = [
+                'wrapper' => 'wrapper',
+                'no_authentication_check' => false,
+                'no_browser_language_detection' => false,
+                'allow_indexing' => true,
+                'has_view' => true,
+                'currency_switcher' => false,
+                'ads' => false,
+                'authentication' => null,
+                'allow_team_access' => null,
+                'allow_sessions' => true,
+            ];
+            \Altum\Router::$controller_key = 'not-found';
+            \Altum\Router::$controller = 'NotFound';
+            \Altum\Router::$path = '';
+            Title::set(l('not_found.title'));
+            require_once APP_PATH . 'controllers/NotFound.php';
+            $controller = new \Altum\Controllers\NotFound();
+            $controller->add_params(['params' => $params, 'user' => \Altum\Authentication::$user]);
+            $controller->index();
+
+        }
 
         /* Render and output everything */
         $controller->run();

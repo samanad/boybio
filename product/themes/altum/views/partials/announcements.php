@@ -1,15 +1,10 @@
 <?php defined('ALTUMCODE') || die() ?>
 <?php $has_announcements = false ?>
-<?php $announcements = settings()->announcements ?? null; ?>
 <?php foreach(['guests', 'users'] as $type): ?>
-    <?php
-    $type_enabled = $announcements && property_exists($announcements, $type . '_is_enabled') && $announcements->{$type . '_is_enabled'};
-    $type_content = $announcements && property_exists($announcements, $type . '_content') && $announcements->{$type . '_content'};
-    $type_id = $announcements && property_exists($announcements, $type . '_id') ? $announcements->{$type . '_id'} : null;
-    if(
-        $type_enabled
-        && $type_content
-        && (!isset($_COOKIE['announcement_' . $type . '_id']) || (isset($_COOKIE['announcement_' . $type . '_id']) && $_COOKIE['announcement_' . $type . '_id'] != $type_id))
+    <?php if(
+        settings()->announcements->{$type . '_is_enabled'}
+        && settings()->announcements->{$type . '_content'}
+        && (!isset($_COOKIE['announcement_' . $type . '_id']) || (isset($_COOKIE['announcement_' . $type . '_id']) && $_COOKIE['announcement_' . $type . '_id'] != settings()->announcements->{$type . '_id'}))
         && (
             ($type == 'guests' && !is_logged_in())
             || ($type == 'users' && is_logged_in())
@@ -20,12 +15,15 @@
 
         // Safely get translated content or fallback to default
         $announcement_content = null;
-        $lang_name = \Altum\Language::$name;
-        $trans_for_lang = ($announcements && isset($announcements->translations) && isset($announcements->translations->{$lang_name})) ? $announcements->translations->{$lang_name} : null;
-        if($trans_for_lang && isset($trans_for_lang->{$type . '_content'}) && !empty($trans_for_lang->{$type . '_content'})) {
-            $announcement_content = $trans_for_lang->{$type . '_content'};
+        if(
+            isset(settings()->announcements->translations)
+            && isset(settings()->announcements->translations->{\Altum\Language::$name})
+            && isset(settings()->announcements->translations->{\Altum\Language::$name}->{$type . '_content'})
+            && !empty(settings()->announcements->translations->{\Altum\Language::$name}->{$type . '_content'})
+        ) {
+            $announcement_content = settings()->announcements->translations->{\Altum\Language::$name}->{$type . '_content'};
         } else {
-            $announcement_content = $announcements->{$type . '_content'} ?? '';
+            $announcement_content = settings()->announcements->{$type . '_content'} ?? '';
         }
 
         /* Dynamic variables processing */

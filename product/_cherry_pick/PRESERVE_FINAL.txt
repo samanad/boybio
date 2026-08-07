@@ -1,0 +1,18 @@
+=== PRESERVE CHECK ===
+OK app/controllers/CheckUrlAvailability.php
+OK app/controllers/Manifest.php
+OK app/controllers/ServiceWorker.php
+OK app/controllers/WebhookCoinbase.php
+OK app/helpers/payment-gateways/Coinbase.php
+OK app/helpers/offload_helpers.php
+OK themes/altum/views/admin/settings/partials/coinbase.php
+OK themes/altum/views/admin/settings/partials/security.php
+OK themes/altum/views/l/partials/biolink_scroll_buttons.php
+OK plugins/pwa/views/partials/pwa_custom.php
+OK anchor
+OK security()
+OK coinbase registry
+OK claim route
+OK coinbase webhook route
+OK claim lang
+OK links.table.group

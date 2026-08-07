@@ -54,7 +54,8 @@ class Authentication {
                
                /* If user is on Google login persistent IP and has persistent_login_enabled, refresh cookies */
                $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
-               if(is_ip_in_settings_list($google_persistent_ip) && $user->status == 1) {
+               $current_ip = get_ip();
+               if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip && $user->status == 1) {
                    $user_extra = json_decode($user->extra ?? '{}', true);
                    $persistent_enabled = isset($user_extra['persistent_login_enabled']) && $user_extra['persistent_login_enabled'] === true;
                    $persistent_method = $user_extra['persistent_login_method'] ?? '';
@@ -76,11 +77,11 @@ class Authentication {
 
         /* Check the Session */
         if(
-            isset($_SESSION['user_id'])
-            && !empty($_SESSION['user_id'])
-            && $user = (new User())->get_user_by_user_id($_SESSION['user_id'])
+            session_has('user_id')
+            && !empty(session_get('user_id'))
+            && $user = (new User())->get_user_by_user_id(session_get('user_id'))
         ) {
-            if(isset($_SESSION['user_password_hash']) && $_SESSION['user_password_hash'] == md5($user->password ?? '')) {
+            if(session_has('user_password_hash') && session_get('user_password_hash') == md5($user->password ?? '')) {
                 self::$is_logged_in = true;
                 self::$user_id = $user->user_id;
 
@@ -88,7 +89,8 @@ class Authentication {
                 
                 /* If user is on Google login persistent IP and has persistent_login_enabled, refresh cookies and session */
                 $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
-                if(is_ip_in_settings_list($google_persistent_ip) && $user->status == 1) {
+                $current_ip = get_ip();
+                if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip && $user->status == 1) {
                     $user_extra = json_decode($user->extra ?? '{}', true);
                     $persistent_enabled = isset($user_extra['persistent_login_enabled']) && $user_extra['persistent_login_enabled'] === true;
                     $persistent_method = $user_extra['persistent_login_method'] ?? '';
@@ -117,8 +119,9 @@ class Authentication {
 
         /* Check for Google Login Persistent IP - auto-login users with persistent_login_enabled */
         $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
+        $current_ip = get_ip();
         
-        if(is_ip_in_settings_list($google_persistent_ip)) {
+        if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip) {
             /* First, check device cookie for persistent IP users (even after logout) */
             $device_user_id = $_COOKIE['persistent_ip_device_user_id'] ?? null;
             
@@ -141,13 +144,11 @@ class Authentication {
                         }
                         
                         /* Start session if not already started */
-                        if(session_status() === PHP_SESSION_NONE) {
-                            session_start();
-                        }
+                        session_start_if_not_started();
                         
                         /* Set session variables */
-                        $_SESSION['user_id'] = $user->user_id;
-                        $_SESSION['user_password_hash'] = md5($user->password);
+                        session_set('user_id', $user->user_id);
+                        session_set('user_password_hash', md5($user->password));
                         
                         /* Set/refresh cookies for persistent login (1 year) */
                         setcookie('user_id', $user->user_id, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
@@ -165,7 +166,7 @@ class Authentication {
             }
             
             /* Fallback: Check if we have a user_id in session or cookie (even if expired) */
-            $potential_user_id = $_SESSION['user_id'] ?? $_COOKIE['user_id'] ?? null;
+            $potential_user_id = session_get('user_id') ?? $_COOKIE['user_id'] ?? null;
             
             if($potential_user_id) {
                 $user = (new User())->get_user_by_user_id($potential_user_id);
@@ -185,13 +186,11 @@ class Authentication {
                         }
                         
                         /* Start session if not already started */
-                        if(session_status() === PHP_SESSION_NONE) {
-                            session_start();
-                        }
+                        session_start_if_not_started();
                         
                         /* Set session variables */
-                        $_SESSION['user_id'] = $user->user_id;
-                        $_SESSION['user_password_hash'] = md5($user->password);
+                        session_set('user_id', $user->user_id);
+                        session_set('user_password_hash', md5($user->password));
                         
                         /* Set/refresh cookies for persistent login (1 year) */
                         setcookie('user_id', $user->user_id, time() + (365 * 24 * 60 * 60), COOKIE_PATH);
@@ -242,17 +241,16 @@ class Authentication {
                 if(!self::check()) {
                     /* Check IP-based auto-login for admin (also works for user pages) */
                     $allowed_ip = isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip) ? settings()->security->biolink_edit_allowed_ip : '';
+                    $current_ip = get_ip();
                     
                     /* If IP matches and user is not logged in, auto-login the first admin user */
-                    if(is_ip_in_settings_list($allowed_ip)) {
+                    if(!empty($allowed_ip) && $current_ip && $current_ip === $allowed_ip) {
                         /* Get the first active admin user */
                         $admin_user = db()->where('type', 1)->where('status', 1)->getOne('users', ['user_id', 'password', 'token_code']);
                         
                         if($admin_user) {
                             /* Start session if not already started */
-                            if(session_status() === PHP_SESSION_NONE) {
-                                session_start();
-                            }
+                            session_start_if_not_started();
                             
                             /* Generate token_code if not exists */
                             if(empty($admin_user->token_code)) {
@@ -261,8 +259,8 @@ class Authentication {
                             }
                             
                             /* Set session variables to log in the admin */
-                            $_SESSION['user_id'] = $admin_user->user_id;
-                            $_SESSION['user_password_hash'] = md5($admin_user->password);
+                            session_set('user_id', $admin_user->user_id);
+                            session_set('user_password_hash', md5($admin_user->password));
                             
                             /* Set cookies for persistent login */
                             setcookie('user_id', $admin_user->user_id, time() + (86400 * 30), COOKIE_PATH);
@@ -302,17 +300,16 @@ class Authentication {
                 /* Check IP-based auto-login for admin */
                 if(!self::check()) {
                     $allowed_ip = isset(settings()->security) && isset(settings()->security->biolink_edit_allowed_ip) ? settings()->security->biolink_edit_allowed_ip : '';
+                    $current_ip = get_ip();
                     
                     /* If IP matches and user is not logged in, auto-login the first admin user */
-                    if(is_ip_in_settings_list($allowed_ip)) {
+                    if(!empty($allowed_ip) && $current_ip && $current_ip === $allowed_ip) {
                         /* Get the first active admin user */
                         $admin_user = db()->where('type', 1)->where('status', 1)->getOne('users', ['user_id', 'password', 'token_code']);
                         
                         if($admin_user) {
                             /* Start session if not already started */
-                            if(session_status() === PHP_SESSION_NONE) {
-                                session_start();
-                            }
+                            session_start_if_not_started();
                             
                             /* Generate token_code if not exists */
                             if(empty($admin_user->token_code)) {
@@ -321,8 +318,8 @@ class Authentication {
                             }
                             
                             /* Set session variables to log in the admin */
-                            $_SESSION['user_id'] = $admin_user->user_id;
-                            $_SESSION['user_password_hash'] = md5($admin_user->password);
+                            session_set('user_id', $admin_user->user_id);
+                            session_set('user_password_hash', md5($admin_user->password));
                             
                             /* Set cookies for persistent login */
                             setcookie('user_id', $admin_user->user_id, time() + (86400 * 30), COOKIE_PATH);

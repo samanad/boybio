@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) 2025 AltumCode (https://altumcode.com/)
+ * Copyright (c) 2026 AltumCode (https://altumcode.com/)
  *
  * This software is licensed exclusively by AltumCode and is sold only via https://altumcode.com/.
  * Unauthorized distribution, modification, or use of this software without a valid license is not permitted and may be subject to applicable legal actions.
@@ -30,11 +30,21 @@ class Register extends Controller {
         \Altum\Authentication::guard('guest');
 
         /* Check for a special registration identifier */
-        $unique_registration_identifier = isset($_GET['unique_registration_identifier'], $_GET['email']) && $_GET['unique_registration_identifier'] == md5($_GET['email'] . $_GET['email']) ? query_clean($_GET['unique_registration_identifier']) : null;
+        $unique_registration_identifier = isset($_GET['unique_registration_identifier'], $_GET['email']) ? input_clean($_GET['unique_registration_identifier']) : null;
 
         /* Check if Registration is enabled first */
-        if(!settings()->users->register_is_enabled && (!\Altum\Plugin::is_active('teams') || (\Altum\Plugin::is_active('teams') && !$unique_registration_identifier))) {
-            redirect('not-found');
+        if(!settings()->users->register_is_enabled) {
+
+            /* Check against a team invite */
+            if(
+                \Altum\Plugin::is_active('teams')
+                && $unique_registration_identifier
+                && db()->where('token', $unique_registration_identifier)->where('user_email', $_GET['email'])->where('status', '0')->has('teams_members')
+            ) {
+                // Team invitation allowed
+            } else {
+                throw_404();
+            }
         }
 
         \Altum\CustomHooks::user_initiate_registration();
@@ -67,9 +77,13 @@ class Register extends Controller {
             /* Check for any errors */
             $required_fields = ['name', 'email' ,'password'];
             foreach($required_fields as $field) {
-                if(!isset($_POST[$field]) || (isset($_POST[$field]) && empty($_POST[$field]) && $_POST[$field] != '0')) {
+                if(!isset($_POST[$field]) || trim($_POST[$field]) === '') {
                     Alerts::add_field_error($field, l('global.error_message.empty_field'));
                 }
+            }
+
+            if(!\Altum\Csrf::check()) {
+                Alerts::add_error(l('global.error_message.invalid_csrf_token'));
             }
 
             if(settings()->captcha->register_is_enabled && !$captcha->is_valid()) {
@@ -99,8 +113,8 @@ class Register extends Controller {
 
             /* Email shield plugin */
             if(
-                \Altum\Plugin::is_active('email-shield')
-                && settings()->email_shield->is_enabled
+                \Altum\Plugin::is_active('email-shield') 
+                && settings()->email_shield->is_enabled 
                 && !in_array($email_domain, settings()->email_shield->whitelisted_domains ?? [])
                 && !\Altum\Plugin\EmailShield::validate($email_domain)
             ) {
@@ -113,11 +127,15 @@ class Register extends Controller {
             } catch(\Exception $exception) { /* :) */ }
             $country = isset($maxmind) && isset($maxmind['country']) ? $maxmind['country']['iso_code'] : null;
 
-            /* Country access mode (same rules as site-wide gate) */
-            if(is_country_access_denied($country)) {
+            /* Make sure the country is not blacklisted */
+            if($country && in_array($country, settings()->users->blacklisted_countries ?? [])) {
                 Alerts::add_error(l('register.error_message.blacklisted_country'));
             }
 
+            /* Make sure the IP is not blacklisted */
+            if(in_array(get_ip(), settings()->users->blacklisted_ips ?? [])) {
+                Alerts::add_error(l('register.error_message.blacklisted_country'));
+            }
             /* Make sure to check against the limiter */
             if(settings()->users->register_lockout_is_enabled) {
                 $days_ago_datetime = (new \DateTime())->modify('-' . settings()->users->register_lockout_time . ' days')->format('Y-m-d H:i:s');
@@ -141,7 +159,7 @@ class Register extends Controller {
 
                 /* Define some needed variables */
                 $active 	                = (int) !settings()->users->email_confirmation;
-                $email_code                 = md5($_POST['email'] . microtime());
+                $email_code                 = md5(uniqid('', true) . random_bytes(16));
 
                 /* Determine what plan is set by default */
                 $plan_id                    = 'free';
@@ -165,9 +183,6 @@ class Register extends Controller {
 
                 /* Log the action */
                 Logger::users($registered_user['user_id'], 'register.success');
-
-                /* Run potential hooks */
-                \Altum\CustomHooks::user_finished_registration(['user_id' => $registered_user['user_id']]);
 
                 /* If active = 1 then login the user, else send the user an activation email */
                 if($active == '1') {
@@ -223,7 +238,7 @@ class Register extends Controller {
                             'source' => 'direct',
                             'is_newsletter_subscribed' => $_POST['is_newsletter_subscribed'],
                             'datetime' => get_date(),
-                        ]);
+                        ], signature: true);
                     }
 
                     /* Send internal notification if needed */
@@ -255,12 +270,16 @@ class Register extends Controller {
                     /* Set a nice success message */
                     Alerts::add_success(l('register.success_message.login'));
 
-                    $_SESSION['user_id'] = $registered_user['user_id'];
-                    $_SESSION['user_password_hash'] = md5($registered_user['password']);
+                    session_regenerate_id(true);
+                session_set('user_id', $registered_user['user_id']);
+                    session_set('user_password_hash', md5($registered_user['password']));
 
                     Logger::users($registered_user['user_id'], 'login.success');
 
-                    redirect($redirect . '&welcome=' . $registered_user['user_id']);
+                    $redirect = append_query_param($redirect, 'welcome=' . $registered_user['user_id']);
+                    session_unset_key('redirect');
+
+                    redirect($redirect);
                 } else {
 
                     /* Prepare the email */
@@ -278,8 +297,9 @@ class Register extends Controller {
 
                     send_mail($_POST['email'], $email_template->subject, $email_template->body);
 
-                    /* Set a nice success message */
-                    Alerts::add_success(l('register.success_message.registration'));
+                    /* Redirect to email verify */
+                    session_set('sent_activation_email', $_POST['email']);
+                    redirect('sent-activation?email=' . $_POST['email']);
                 }
 
             }

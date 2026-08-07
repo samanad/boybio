@@ -89,7 +89,7 @@ if (settings()->internal_notifications->users_is_enabled) {
     $available_notification_handlers['internal_notification'] = [
         'icon' => 'fas fa-bell',
         'emoji' => '🔔',
-        'color' => '#2800ff',
+        'color' => '#5500ff',
         'background_color' => '#000000',
     ];
 }
@@ -100,6 +100,25 @@ if(\Altum\Plugin::is_active('push-notifications') && settings()->push_notificati
         'emoji' => '📌',
         'color' => '#24ba7f',
         'background_color' => '#24ba7f',
+    ];
+}
+
+//66text integration
+if (1 == 1) {
+    $available_notification_handlers['sixsixtext_send_sms'] = [
+        'icon' => 'fas fa-comment',
+        'emoji' => '💬',
+        'color' => '#112cd3',
+        'background_color' => '#cdd5f9',
+    ];
+}
+
+if (1 == 1) {
+    $available_notification_handlers['sixsixtext_save_contact'] = [
+        'icon' => 'fas fa-comment',
+        'emoji' => '💬',
+        'color' => '#112cd3',
+        'background_color' => '#cdd5f9',
     ];
 }
 

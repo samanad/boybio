@@ -30,4 +30,6 @@ return [
     'aix',
     'dynamic-og-images',
     'email-shield',
+    'digital-wallets',
+    'chrome-extension',
 ];

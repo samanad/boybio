@@ -11,12 +11,15 @@ class WebhookPlisioWhitelabel extends Controller {
 
 	public function index() {
 
+        /* Make sure no cache is being used on the endpoint */
+		header('Cache-Control: no-store');
+
         if(!in_array(settings()->license->type, ['Extended License', 'extended'])) {
-            redirect('not-found');
+            throw_404();
         }
 
         if((strtoupper($_SERVER['REQUEST_METHOD']) != 'POST')) {
-            redirect('not-found');
+            throw_404();
         }
 
         /* Get the headers */

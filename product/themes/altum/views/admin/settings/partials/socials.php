@@ -8,14 +8,7 @@
     <div class="collapse" id="footer_container">
         <?php foreach(require APP_PATH . 'includes/admin_socials.php' AS $key => $value): ?>
             <div class="form-group">
-                <label for="<?= $key ?>">
-                    <?php if(!empty($value['icon_text'])): ?>
-                        <span class="footer-social-text-icon <?= $value['icon'] ?? '' ?> mr-1"><?= $value['icon_text'] ?></span>
-                    <?php else: ?>
-                        <i class="<?= $value['icon'] ?> fa-fw fa-sm mr-1 text-muted"></i>
-                    <?php endif ?>
-                    <?= $value['name'] ?>
-                </label>
+                <label for="<?= $key ?>"><i class="<?= $value['icon'] ?> fa-fw fa-sm mr-1 text-muted"></i> <?= $value['name'] ?></label>
                 <div class="input-group">
                     <?php if($value['input_display_format']): ?>
                         <div class="input-group-prepend">

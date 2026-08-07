@@ -21,18 +21,33 @@ defined('ALTUMCODE') || die();
 class Captcha {
 
     /* Configuration Variables */
-    private $image_width = 120;
-    private $image_height = 30;
+    private $image_width = 160;
+    private $image_height = 50;
     private $text_length = 6;
-    private $lines = 6;
-    private $background_color = [255, 255, 255];
-    private $text_color = [0, 0, 0];
-    private $lines_color = [63, 63, 63];
+    private $lines = 8;
+    private $font_size = 20;
+    private $font_path = ASSETS_PATH . 'fonts/Inter-Bold.ttf';
+    private $charset = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+    private $honeypot_names = [
+        'website',
+        'company_website',
+        'middle_name',
+        'nickname',
+        'secondary_email',
+        'contact_time',
+        'fax_number',
+        'address_line_2',
+        'company_name',
+    ];
 
     public function __construct() {
         /* :) */
     }
 
+    private function generate_honeypot_name() {
+        return $this->honeypot_names[random_int(0, count($this->honeypot_names) - 1)];
+    }
 
     /* Custom valid function for both the normal captcha and the recaptcha */
     public function is_valid() {
@@ -71,7 +86,34 @@ class Captcha {
 
         else {
 
-            return ($_POST['captcha'] == $_SESSION['captcha']);
+            $captcha = session_get('captcha');
+
+            if(!$captcha || $captcha['expires'] < time()) {
+                return false;
+            }
+
+            $honeypot_name = $captcha['honeypot_name'] ?? null;
+
+            if(!$honeypot_name) {
+                session_unset_key('captcha');
+                return false;
+            }
+
+            if(trim($_POST[$honeypot_name] ?? '') !== '') {
+                session_unset_key('captcha');
+                return false;
+            }
+
+            if($captcha['ua'] !== hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '')) {
+                session_unset_key('captcha');
+                return false;
+            }
+
+            $input = hash('sha256', strtolower(trim($_POST['captcha'] ?? '')));
+
+            session_unset_key('captcha');
+
+            return hash_equals($captcha['value'], $input);
 
         }
     }
@@ -143,6 +185,18 @@ class Captcha {
         }
 
         else {
+
+            /* Display a honeypot */
+            $captcha = session_get('captcha');
+            $honeypot_name = $captcha['honeypot_name'] ?? null;
+
+            if($honeypot_name) {
+                echo '<div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true">
+                    <label for="' . $honeypot_name . '">Leave this field empty</label>
+                    <input type="text" id="' . $honeypot_name . '" name="' . $honeypot_name . '" tabindex="-1" autocomplete="off" />
+                </div>';
+            }
+
             echo '
             <img src="data:image/png;base64,' . base64_encode($this->create_simple_captcha()) . '" class="mb-2 rounded" id="captcha" alt="' . l('global.accessibility.captcha_alt') . '" />
             <input type="text" name="captcha" class="form-control ' . (\Altum\Alerts::has_field_errors('captcha') ? 'is-invalid' : null) . '" placeholder="' . l('global.captcha_placeholder') . '" aria-label="' . l('global.accessibility.captcha_input') . '" required="required" autocomplete="off" />
@@ -155,36 +209,75 @@ class Captcha {
     /* Generating the captcha image */
     public function create_simple_captcha() {
 
-        /* Generate the text */
         $text = null;
 
-        for($i = 1; $i <= $this->text_length; $i++) $text .= mt_rand(1, 9) . ' ';
+        for($i = 0; $i < $this->text_length; $i++) {
+            $text .= $this->charset[random_int(0, strlen($this->charset) - 1)];
+        }
 
-        /* Store the generated text in Sessions */
-        $_SESSION['captcha'] = str_replace(' ', '', $text);
+        /* Honeypot */
+        $honeypot_name = $this->generate_honeypot_name();
 
-        /* Create the image */
-        $image = imagecreate($this->image_width, $this->image_height);
+        session_set('captcha', [
+            'value' => hash('sha256', strtolower($text)),
+            'expires' => time() + 300,
+            'ua' => hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? ''),
+            'honeypot_name' => $honeypot_name,
+        ]);
 
-        /* Define the background color */
-        imagecolorallocate($image, $this->background_color[0], $this->background_color[1], $this->background_color[2]);
+        $image = imagecreatetruecolor($this->image_width, $this->image_height);
 
-        /* Start writing the text */
-        imagestring($image, 5, 7, 7, $text, imagecolorallocate($image, $this->text_color[0], $this->text_color[1], $this->text_color[2]));
+        imageantialias($image, true);
 
-        /* Generate lines */
-        for($i = 1; $i <= $this->lines; $i++) imageline($image, mt_rand(1, $this->image_width), mt_rand(1, $this->image_height), mt_rand(1, $this->image_width), mt_rand(1, $this->image_height), imagecolorallocate($image, $this->lines_color[0], $this->lines_color[1], $this->lines_color[2]));
+        $bg_color = imagecolorallocate($image, 245, 247, 250);
+        imagefill($image, 0, 0, $bg_color);
 
-        /* Output the image */
+        /* Noise dots */
+        for($i = 0; $i < 150; $i++) {
+            imagesetpixel(
+                $image,
+                random_int(0, $this->image_width),
+                random_int(0, $this->image_height),
+                imagecolorallocate($image, random_int(150, 200), random_int(150, 200), random_int(150, 200))
+            );
+        }
+
+        /* Curved / random lines */
+        for($i = 0; $i < $this->lines; $i++) {
+            imageline(
+                $image,
+                random_int(0, $this->image_width),
+                random_int(0, $this->image_height),
+                random_int(0, $this->image_width),
+                random_int(0, $this->image_height),
+                imagecolorallocate($image, random_int(80, 120), random_int(80, 120), random_int(80, 120))
+            );
+        }
+
+        /* Draw text */
+        $x = 15;
+        for($i = 0; $i < strlen($text); $i++) {
+            $angle = random_int(-25, 25);
+            $y = random_int(32, 40);
+
+            imagettftext(
+                $image,
+                $this->font_size,
+                $angle,
+                $x,
+                $y,
+                imagecolorallocate($image, 40, 40, 40),
+                $this->font_path,
+                $text[$i]
+            );
+
+            $x += random_int(20, 24);
+        }
+
         ob_start();
+        imagepng($image);
 
-        imagepng($image, null, 9);
-
-        $image_data = ob_get_clean();
-
-        return $image_data;
-
+        return ob_get_clean();
     }
-
 
 }

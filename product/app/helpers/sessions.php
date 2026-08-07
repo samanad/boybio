@@ -65,5 +65,3 @@ function session_has($key) {
 	session_start_if_not_started();
 	return isset($_SESSION[$key]);
 }
-
-

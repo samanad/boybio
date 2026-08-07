@@ -41,15 +41,26 @@ return [
         'color' => '#fc295d',
 
         'display_formats' => [
+            'tiktok.com/@{username}',
             'tiktok.com/@{username}/video/{video_id}',
             'tiktok.com/@{username}/photo/{video_id}',
         ],
 
         'formats' => [
+            'tiktok.com/@%s/video/%s' => [
+                'regex' => 'tiktok\.com\/@([a-zA-Z0-9_.]+)\/video\/([0-9]+)/*(?:[?#].*)?',
+                'iOS' => 'snssdk1233://aweme/detail/%2$s',
+                'Android' => 'intent://aweme/detail/%2$s#Intent;package=com.zhiliaoapp.musically;scheme=snssdk1233;end',
+            ],
+            'tiktok.com/@%s/photo/%s' => [
+                'regex' => 'tiktok\.com\/@([a-zA-Z0-9_.]+)\/photo\/([0-9]+)/*(?:[?#].*)?',
+                'iOS' => 'snssdk1233://aweme/detail/%2$s',
+                'Android' => 'intent://aweme/detail/%2$s#Intent;package=com.zhiliaoapp.musically;scheme=snssdk1233;end',
+            ],
             'tiktok.com/@%s' => [
-                'regex' => 'tiktok\.com\/@[a-zA-Z0-9_]+\/(?:video|photo)\/([0-9]+)',
-                'iOS' => 'intent://aweme/detail/%s#Intent;package=com.zhiliaoapp.musically;scheme=snssdk1233;end',
-                'Android' => 'intent://aweme/detail/%s#Intent;package=com.zhiliaoapp.musically;scheme=snssdk1233;end',
+                'regex' => 'tiktok\.com\/@([a-zA-Z0-9_.]+)/*(?:[?#].*)?',
+                'iOS' => 'snssdk1233://user/profile/%s',
+                'Android' => 'intent://user/profile/%s#Intent;package=com.zhiliaoapp.musically;scheme=snssdk1233;end',
             ],
         ],
     ],
@@ -61,11 +72,23 @@ return [
 
         'display_formats' => [
             'reddit.com/r/{subreddit}',
+            'reddit.com/user/{username}',
+            'reddit.com/r/{subreddit}/comments/{post_id}/{slug}',
         ],
 
         'formats' => [
+            'reddit.com/r/%s/comments/%s/%s' => [
+                'regex' => 'reddit\.com\/r\/([a-zA-Z0-9_]+)\/comments\/([a-zA-Z0-9]+)\/([^\/?#]+)/*(?:[?#].*)?',
+                'iOS' => 'reddit://reddit.com/r/%s/comments/%s/%s',
+                'Android' => 'intent://reddit.com/r/%s/comments/%s/%s#Intent;package=com.reddit.frontpage;scheme=https;end',
+            ],
+            'reddit.com/user/%s' => [
+                'regex' => 'reddit\.com\/user\/([a-zA-Z0-9_-]+)/*(?:[?#].*)?',
+                'iOS' => 'reddit://reddit.com/user/%s',
+                'Android' => 'intent://reddit.com/user/%s#Intent;package=com.reddit.frontpage;scheme=https;end',
+            ],
             'reddit.com/r/%s' => [
-                'regex' => 'reddit\.com\/r\/([a-zA-Z0-9_]+)',
+                'regex' => 'reddit\.com\/r\/([a-zA-Z0-9_]+)/*(?:[?#].*)?',
                 'iOS' => 'reddit://reddit.com/r/%s',
                 'Android' => 'intent://reddit.com/r/%s#Intent;package=com.reddit.frontpage;scheme=https;end',
             ],
@@ -79,11 +102,29 @@ return [
 
         'display_formats' => [
             'x.com/{username}',
+            'x.com/{username}/status/{post_id}',
+            'twitter.com/{username}',
+            'twitter.com/{username}/status/{post_id}',
         ],
 
         'formats' => [
+            'x.com/%s/status/%s' => [
+                'regex' => 'x\.com\/([a-zA-Z0-9_]{1,15})\/status\/([0-9]+)/*(?:[?#].*)?',
+                'iOS' => 'twitter://status?id=%2$s',
+                'Android' => 'intent://twitter.com/%s/status/%s#Intent;package=com.twitter.android;scheme=https;end',
+            ],
+            'twitter.com/%s/status/%s' => [
+                'regex' => 'twitter\.com\/([a-zA-Z0-9_]{1,15})\/status\/([0-9]+)/*(?:[?#].*)?',
+                'iOS' => 'twitter://status?id=%2$s',
+                'Android' => 'intent://twitter.com/%s/status/%s#Intent;package=com.twitter.android;scheme=https;end',
+            ],
             'x.com/%s' => [
-                'regex' => 'x\.com\/([a-zA-Z0-9_]+)',
+                'regex' => 'x\.com\/([a-zA-Z0-9_]{1,15})/*(?:[?#].*)?',
+                'iOS' => 'twitter://user?screen_name=%s',
+                'Android' => 'intent://twitter.com/%s#Intent;package=com.twitter.android;scheme=https;end',
+            ],
+            'twitter.com/%s' => [
+                'regex' => 'twitter\.com\/([a-zA-Z0-9_]{1,15})/*(?:[?#].*)?',
                 'iOS' => 'twitter://user?screen_name=%s',
                 'Android' => 'intent://twitter.com/%s#Intent;package=com.twitter.android;scheme=https;end',
             ],
@@ -99,6 +140,7 @@ return [
             'youtube.com/watch?v={video}',
             'youtu.be/{video}',
             'youtube.com/live/{video}',
+            'youtube.com/shorts/{video}',
             'youtube.com/embed/{video}',
             'youtube.com/playlist?list={playlist}',
             'youtube.com/user/{user}',
@@ -108,42 +150,47 @@ return [
 
         'formats' => [
             'youtube.com/watch?v=%s' => [
-                'regex' => 'youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)',
+                'regex' => 'youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)(?:&.*)?',
                 'iOS' => 'vnd.youtube://www.youtube.com/watch?v=%s',
                 'Android' => 'intent://www.youtube.com/watch?v=%s#Intent;package=com.google.android.youtube;scheme=https;end',
             ],
             'youtu.be/%s' => [
-                'regex' => 'youtu\.be\/([a-zA-Z0-9_-]+)',
+                'regex' => 'youtu\.be\/([a-zA-Z0-9_-]+)/*(?:[?#].*)?',
                 'iOS' => 'vnd.youtube://www.youtube.com/watch?v=%s',
                 'Android' => 'intent://www.youtube.com/watch?v=%s#Intent;package=com.google.android.youtube;scheme=https;end',
             ],
             'youtube.com/live/%s' => [
-                'regex' => 'youtube\.com\/live\/([a-zA-Z0-9_-]+)',
+                'regex' => 'youtube\.com\/live\/([a-zA-Z0-9_-]+)/*(?:[?#].*)?',
                 'iOS' => 'vnd.youtube://www.youtube.com/live/%s',
                 'Android' => 'intent://www.youtube.com/live/%s#Intent;package=com.google.android.youtube;scheme=https;end',
             ],
+            'youtube.com/shorts/%s' => [
+                'regex' => 'youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/*(?:[?#].*)?',
+                'iOS' => 'vnd.youtube://www.youtube.com/shorts/%s',
+                'Android' => 'intent://www.youtube.com/shorts/%s#Intent;package=com.google.android.youtube;scheme=https;end',
+            ],
             'youtube.com/embed/%s' => [
-                'regex' => 'youtube\.com\/embed\/([a-zA-Z0-9_-]+)',
+                'regex' => 'youtube\.com\/embed\/([a-zA-Z0-9_-]+)/*(?:[?#].*)?',
                 'iOS' => 'vnd.youtube://www.youtube.com/watch?v=%s',
                 'Android' => 'intent://www.youtube.com/watch?v=%s#Intent;package=com.google.android.youtube;scheme=https;end',
             ],
             'youtube.com/playlist?list=%s' => [
-                'regex' => 'youtube\.com\/playlist\?list=([a-zA-Z0-9_-]+)',
-                'iOS' => 'vnd.youtube://www.youtube.com/watch?v=%s',
-                'Android' => 'intent://www.youtube.com/watch?v=%s#Intent;package=com.google.android.youtube;scheme=https;end',
+                'regex' => 'youtube\.com\/playlist\?list=([a-zA-Z0-9_-]+)(?:&.*)?',
+                'iOS' => 'vnd.youtube://www.youtube.com/playlist?list=%s',
+                'Android' => 'intent://www.youtube.com/playlist?list=%s#Intent;package=com.google.android.youtube;scheme=https;end',
             ],
             'youtube.com/user/%s' => [
-                'regex' => 'youtube\.com\/user\/([a-zA-Z0-9_-]+)',
+                'regex' => 'youtube\.com\/user\/([a-zA-Z0-9_-]+)/*(?:[?#].*)?',
                 'iOS' => 'vnd.youtube://user/%s',
                 'Android' => 'intent://www.youtube.com/user/%s#Intent;package=com.google.android.youtube;scheme=https;end',
             ],
             'youtube.com/channel/%s' => [
-                'regex' => 'youtube\.com\/channel\/([a-zA-Z0-9_-]+)',
+                'regex' => 'youtube\.com\/channel\/([a-zA-Z0-9_-]+)/*(?:[?#].*)?',
                 'iOS' => 'vnd.youtube://www.youtube.com/channel/%s',
                 'Android' => 'intent://www.youtube.com/channel/%s#Intent;package=com.google.android.youtube;scheme=https;end',
             ],
             'youtube.com/@%s' => [
-                'regex' => 'youtube\.com\/@([a-zA-Z0-9_-]+)',
+                'regex' => 'youtube\.com\/@([a-zA-Z0-9_.-]+)/*(?:[?#].*)?',
                 'iOS' => 'vnd.youtube://www.youtube.com/@%s',
                 'Android' => 'intent://www.youtube.com/@%s#Intent;package=com.google.android.youtube;scheme=https;end',
             ],
@@ -157,11 +204,29 @@ return [
 
         'display_formats' => [
             'instagram.com/{username}',
+            'instagram.com/p/{post_id}',
+            'instagram.com/reel/{reel_id}',
+            'instagram.com/stories/{username}/{story_id}',
         ],
 
         'formats' => [
+            'instagram.com/p/%s' => [
+                'regex' => 'instagram\.com\/p\/([^\/?#]+)/*(?:[?#].*)?',
+                'iOS' => 'https://www.instagram.com/p/%s',
+                'Android' => 'intent://www.instagram.com/p/%s/#Intent;package=com.instagram.android;scheme=https;end',
+            ],
+            'instagram.com/reel/%s' => [
+                'regex' => 'instagram\.com\/reel\/([^\/?#]+)/*(?:[?#].*)?',
+                'iOS' => 'https://www.instagram.com/reel/%s',
+                'Android' => 'intent://www.instagram.com/reel/%s/#Intent;package=com.instagram.android;scheme=https;end',
+            ],
+            'instagram.com/stories/%s/%s' => [
+                'regex' => 'instagram\.com\/stories\/([a-zA-Z0-9_.]+)\/([0-9]+)/*(?:[?#].*)?',
+                'iOS' => 'https://www.instagram.com/stories/%s/%s',
+                'Android' => 'intent://www.instagram.com/stories/%s/%s/#Intent;package=com.instagram.android;scheme=https;end',
+            ],
             'instagram.com/%s' => [
-                'regex' => 'instagram\.com\/([a-zA-Z0-9_.]+)',
+                'regex' => 'instagram\.com\/([a-zA-Z0-9_.]+)/*(?:[?#].*)?',
                 'iOS' => 'instagram://user?username=%s',
                 'Android' => 'intent://www.instagram.com/%s/#Intent;package=com.instagram.android;scheme=https;end',
             ],
@@ -169,17 +234,17 @@ return [
     ],
 
     'whatsapp' => [
-        'name' => 'Whatsapp',
+        'name' => 'WhatsApp',
         'icon' => 'fab fa-whatsapp',
         'color' => '#128c7e',
 
         'display_formats' => [
-            'wa.me/{phone-number}',
+            'wa.me/{phone_number}',
         ],
 
         'formats' => [
             'wa.me/%s' => [
-                'regex' => 'wa\.me\/(.+)',
+                'regex' => 'wa\.me\/([0-9]+)/*(?:[?#].*)?',
                 'iOS' => 'whatsapp://send?phone=%s',
                 'Android' => 'intent://send?phone=%s#Intent;package=com.whatsapp;scheme=whatsapp;end',
             ],
@@ -247,11 +312,17 @@ return [
 
         'display_formats' => [
             't.me/{username}',
+            't.me/+{invite_code}',
         ],
 
         'formats' => [
+            't.me/+%s' => [
+                'regex' => 't\.me\/\+([a-zA-Z0-9_-]+)/*(?:[?#].*)?',
+                'iOS' => 'https://t.me/+%s',
+                'Android' => 'intent://t.me/+%s#Intent;package=org.telegram.messenger;scheme=https;end',
+            ],
             't.me/%s' => [
-                'regex' => 't\.me\/(.+)',
+                'regex' => 't\.me\/([a-zA-Z0-9_]{5,32})/*(?:[?#].*)?',
                 'iOS' => 'tg://resolve?domain=%s',
                 'Android' => 'intent://resolve?domain=%s#Intent;package=org.telegram.messenger;scheme=tg;end',
             ],
@@ -274,37 +345,32 @@ return [
 
         'formats' => [
             'open.spotify.com/track/%s' => [
-                'regex' => 'open\.spotify\.com\/track\/(.+)',
+                'regex' => 'open\.spotify\.com\/track\/([a-zA-Z0-9]+)/*(?:[?#].*)?',
                 'iOS' => 'spotify://track/%s',
                 'Android' => 'spotify://track/%s',
             ],
-
             'open.spotify.com/artist/%s' => [
-                'regex' => 'open\.spotify\.com\/artist\/(.+)',
+                'regex' => 'open\.spotify\.com\/artist\/([a-zA-Z0-9]+)/*(?:[?#].*)?',
                 'iOS' => 'spotify://artist/%s',
                 'Android' => 'spotify://artist/%s',
             ],
-
             'open.spotify.com/album/%s' => [
-                'regex' => 'open\.spotify\.com\/album\/(.+)',
+                'regex' => 'open\.spotify\.com\/album\/([a-zA-Z0-9]+)/*(?:[?#].*)?',
                 'iOS' => 'spotify://album/%s',
                 'Android' => 'spotify://album/%s',
             ],
-
             'open.spotify.com/episode/%s' => [
-                'regex' => 'open\.spotify\.com\/episode\/(.+)',
+                'regex' => 'open\.spotify\.com\/episode\/([a-zA-Z0-9]+)/*(?:[?#].*)?',
                 'iOS' => 'spotify://episode/%s',
                 'Android' => 'spotify://episode/%s',
             ],
-
             'open.spotify.com/playlist/%s' => [
-                'regex' => 'open\.spotify\.com\/playlist\/(.+)',
+                'regex' => 'open\.spotify\.com\/playlist\/([a-zA-Z0-9]+)/*(?:[?#].*)?',
                 'iOS' => 'spotify://playlist/%s',
                 'Android' => 'spotify://playlist/%s',
             ],
-
             'open.spotify.com/show/%s' => [
-                'regex' => 'open\.spotify\.com\/show\/(.+)',
+                'regex' => 'open\.spotify\.com\/show\/([a-zA-Z0-9]+)/*(?:[?#].*)?',
                 'iOS' => 'spotify://show/%s',
                 'Android' => 'spotify://show/%s',
             ],
@@ -703,6 +769,43 @@ return [
                 'regex' => 'booking\.com\/hotel\/(.+)',
                 'iOS' => 'https://www.booking.com/hotel/%s',
                 'Android' => 'intent://www.booking.com/hotel/%s#Intent;package=com.booking;scheme=https;end',
+            ],
+        ],
+    ],
+
+    'waze' => [
+        'name' => 'Waze',
+        'icon' => 'fas fa-car',
+        'color' => '#33ccff',
+
+        'display_formats' => [
+            'waze.com/ul/{place_id}',
+            'waze.com/ul?ll={lat},{lng}',
+            'ul.waze.com/ul?ll={lat},{lng}',
+            'waze.com/ul?q={query}',
+            'ul.waze.com/ul?q={query}',
+        ],
+
+        'formats' => [
+            'ul.waze.com/ul?ll=%s,%s' => [
+                'regex' => 'ul\.waze\.com\/ul\?ll=(-?[0-9.]+)(?:,|%2C)(-?[0-9.]+)(?:&.*)?',
+                'iOS' => 'waze://?ll=%s,%s&navigate=yes',
+                'Android' => 'intent://?ll=%s,%s&navigate=yes#Intent;package=com.waze;scheme=waze;end',
+            ],
+            'waze.com/ul?ll=%s,%s' => [
+                'regex' => 'waze\.com\/ul\?ll=(-?[0-9.]+)(?:,|%2C)(-?[0-9.]+)(?:&.*)?',
+                'iOS' => 'waze://?ll=%s,%s&navigate=yes',
+                'Android' => 'intent://?ll=%s,%s&navigate=yes#Intent;package=com.waze;scheme=waze;end',
+            ],
+            'ul.waze.com/ul?q=%s' => [
+                'regex' => 'ul\.waze\.com\/ul\?q=([^&#]+)(?:&.*)?',
+                'iOS' => 'waze://?q=%s&navigate=yes',
+                'Android' => 'intent://?q=%s&navigate=yes#Intent;package=com.waze;scheme=waze;end',
+            ],
+            'waze.com/ul?q=%s' => [
+                'regex' => 'waze\.com\/ul\?q=([^&#]+)(?:&.*)?',
+                'iOS' => 'waze://?q=%s&navigate=yes',
+                'Android' => 'intent://?q=%s&navigate=yes#Intent;package=com.waze;scheme=waze;end',
             ],
         ],
     ],

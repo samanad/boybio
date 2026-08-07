@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) 2025 AltumCode (https://altumcode.com/)
+ * Copyright (c) 2026 AltumCode (https://altumcode.com/)
  *
  * This software is licensed exclusively by AltumCode and is sold only via https://altumcode.com/.
  * Unauthorized distribution, modification, or use of this software without a valid license is not permitted and may be subject to applicable legal actions.
@@ -24,11 +24,25 @@ class WebhookRazorpay extends Controller {
 
     public function index() {
 
+        /* Make sure no cache is being used on the endpoint */
+		header('Cache-Control: no-store');
+
+        if(!in_array(settings()->license->type, ['Extended License', 'extended'])) {
+            throw_404();
+        }
+
         if((strtoupper($_SERVER['REQUEST_METHOD']) != 'POST') || !isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE'])) {
             die();
         }
 
+        /* Get the headers */
+        $headers = getallheaders();
+
+        /* Get the payload */
         $payload = trim(@file_get_contents('php://input'));
+
+        /* Log for debugging purposes */
+        debug_log('[' . \Altum\Router::$controller . '] ' . print_r(['headers' => $headers, 'payload' => $payload], true));
 
         if($_SERVER['HTTP_X_RAZORPAY_SIGNATURE'] !== hash_hmac('sha256', $payload, settings()->razorpay->webhook_secret)) {
             die();
@@ -63,23 +77,25 @@ class WebhookRazorpay extends Controller {
             $base_amount = isset($metadata->base_amount) ? $metadata->base_amount : 0;
             $taxes_ids = isset($metadata->taxes_ids) ? $metadata->taxes_ids : null;
 
-            (new Payments())->webhook_process_payment(
-                'razorpay',
-                $external_payment_id,
-                $payment_total,
-                $payment_currency,
-                $user_id,
-                $plan_id,
-                $payment_frequency,
-                $code,
-                $discount_amount,
-                $base_amount,
-                $taxes_ids,
-                $payment_type,
-                $payment_subscription_id,
-                $payer_email,
-                $payer_name
-            );
+			if(isset($metadata->webhook_identifier) && settings()->razorpay->webhook_identifier == $metadata->webhook_identifier) {
+				(new Payments())->webhook_process_payment(
+					'razorpay',
+					$external_payment_id,
+					$payment_total,
+					$payment_currency,
+					$user_id,
+					$plan_id,
+					$payment_frequency,
+					$code,
+					$discount_amount,
+					$base_amount,
+					$taxes_ids,
+					$payment_type,
+					$payment_subscription_id,
+					$payer_email,
+					$payer_name
+				);
+			}
 
             die();
         }
@@ -107,23 +123,25 @@ class WebhookRazorpay extends Controller {
             $base_amount = isset($metadata->base_amount) ? $metadata->base_amount : 0;
             $taxes_ids = isset($metadata->taxes_ids) ? $metadata->taxes_ids : null;
 
-            (new Payments())->webhook_process_payment(
-                'razorpay',
-                $external_payment_id,
-                $payment_total,
-                $payment_currency,
-                $user_id,
-                $plan_id,
-                $payment_frequency,
-                $code,
-                $discount_amount,
-                $base_amount,
-                $taxes_ids,
-                $payment_type,
-                $payment_subscription_id,
-                $payer_email,
-                $payer_name
-            );
+			if(isset($metadata->webhook_identifier) && settings()->razorpay->webhook_identifier == $metadata->webhook_identifier) {
+				(new Payments())->webhook_process_payment(
+					'razorpay',
+					$external_payment_id,
+					$payment_total,
+					$payment_currency,
+					$user_id,
+					$plan_id,
+					$payment_frequency,
+					$code,
+					$discount_amount,
+					$base_amount,
+					$taxes_ids,
+					$payment_type,
+					$payment_subscription_id,
+					$payer_email,
+					$payer_name
+				);
+			}
 
             die('successful');
         }

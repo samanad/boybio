@@ -361,6 +361,466 @@ class Login extends Controller {
             }
         }
 
+        /* GitHub Login / Register */
+        if(settings()->github->is_enabled && in_array($method, ['github-initiate', 'github'])) {
+            $github_config = [
+                'callback' => SITE_URL . 'login/github',
+                'keys' => [
+                    'key' => settings()->github->client_id,
+                    'secret' => settings()->github->client_secret,
+                ],
+                'scope' => 'user:email',
+            ];
+
+            if($method == 'github-initiate') {
+                session_set('register_language', \Altum\Language::$name);
+
+                try {
+                    $github = new \Hybridauth\Provider\GitHub($github_config);
+                    $github->disconnect();
+                    $github->authenticate();
+                } catch (\Exception $exception) {
+                    if(isset($github)) $github->disconnect();
+                    session_unset_key('register_language');
+                    error_log('[Social login][GitHub] ' . (string) $exception);
+                    Alerts::add_error(l('login.error_message.social_authentication'));
+                    redirect('login' . $redirect_append);
+                }
+            }
+
+            if($method == 'github' && isset($_GET['code'])) {
+                try {
+                    $github = new \Hybridauth\Provider\GitHub($github_config);
+                    $github->authenticate();
+                    $github_account_info = $github->getUserProfile();
+                    $name = $github_account_info->displayName;
+                    $email = $github_account_info->emailVerified;
+                    $id = $github_account_info->identifier;
+
+                    /* Public profile emails are not marked as verified, so verify them through the emails endpoint */
+                    if(is_null($email)) {
+                        $github_emails = $github->apiRequest('user/emails');
+                        foreach($github_emails as $github_email) {
+                            if($github_email->primary && $github_email->verified) {
+                                $email = $github_email->email;
+                                break;
+                            }
+                        }
+                    }
+
+                    /* Clear out the provider access token from the session */
+                    $github->disconnect();
+
+                    if(is_null($email)) {
+                        session_unset_key('register_language');
+                        error_log('[Social login][GitHub] The provider did not return a verified email address.');
+                        Alerts::add_error(l('login.error_message.social_authentication'));
+                        redirect('login' . $redirect_append);
+                    }
+
+                    $this->process_social_login($email, $name, $redirect, $method, $id);
+                } catch (\Exception $exception) {
+                    if(isset($github)) $github->disconnect();
+                    session_unset_key('register_language');
+                    error_log('[Social login][GitHub] ' . (string) $exception);
+                    Alerts::add_error(l('login.error_message.social_authentication'));
+                    redirect('login' . $redirect_append);
+                }
+            }
+
+            elseif($method == 'github') {
+                try {
+                    (new \Hybridauth\Provider\GitHub($github_config))->disconnect();
+                } catch (\Exception $exception) {
+                    error_log('[Social login][GitHub] ' . (string) $exception);
+                }
+                session_unset_key('register_language');
+                error_log('[Social login][GitHub] Callback error: ' . json_encode(['error' => $_GET['error'] ?? null, 'error_description' => $_GET['error_description'] ?? null]));
+                Alerts::add_error(l('login.error_message.social_authentication'));
+                redirect('login' . $redirect_append);
+            }
+        }
+
+        /* Apple Login / Register */
+        if(settings()->apple->is_enabled && in_array($method, ['apple-initiate', 'apple'])) {
+            if($method == 'apple-initiate') {
+                session_set('register_language', \Altum\Language::$name);
+                session_set('apple_nonce', bin2hex(random_bytes(32)));
+
+                /* Apple returns with a cross-site POST, so this session cookie must be sent with it */
+                $session_cookie_params = session_get_cookie_params();
+                setcookie(session_name(), session_id(), [
+                    'expires' => $session_cookie_params['lifetime'] ? time() + $session_cookie_params['lifetime'] : 0,
+                    'path' => $session_cookie_params['path'],
+                    'domain' => $session_cookie_params['domain'],
+                    'secure' => true,
+                    'httponly' => $session_cookie_params['httponly'],
+                    'samesite' => 'None',
+                ]);
+            }
+
+            /* Restore the default session cookie policy after the Apple callback */
+            if($method == 'apple') {
+                $session_cookie_params = session_get_cookie_params();
+                setcookie(session_name(), session_id(), [
+                    'expires' => $session_cookie_params['lifetime'] ? time() + $session_cookie_params['lifetime'] : 0,
+                    'path' => $session_cookie_params['path'],
+                    'domain' => $session_cookie_params['domain'],
+                    'secure' => $session_cookie_params['secure'],
+                    'httponly' => $session_cookie_params['httponly'],
+                    'samesite' => 'Lax',
+                ]);
+            }
+
+            $apple_config = [
+                'callback' => SITE_URL . 'login/apple',
+                'keys' => [
+                    'id' => settings()->apple->client_id,
+                    'team_id' => settings()->apple->team_id,
+                    'key_id' => settings()->apple->key_id,
+                    'key_content' => settings()->apple->key_content,
+                ],
+                'scope' => 'name email',
+                'authorize_url_parameters' => [
+                    'nonce' => session_get('apple_nonce'),
+                ],
+            ];
+
+            if($method == 'apple-initiate') {
+                try {
+                    $apple = new \Hybridauth\Provider\Apple($apple_config);
+                    $apple->disconnect();
+                    $apple->authenticate();
+                } catch (\Exception $exception) {
+                    if(isset($apple)) $apple->disconnect();
+                    session_unset_key('apple_nonce');
+                    session_unset_key('register_language');
+                    error_log('[Social login][Apple] ' . (string) $exception);
+                    Alerts::add_error(l('login.error_message.social_authentication'));
+                    redirect('login' . $redirect_append);
+                }
+            }
+
+            if($method == 'apple' && isset($_POST['error'])) {
+                try {
+                    (new \Hybridauth\Provider\Apple($apple_config))->disconnect();
+                } catch (\Exception $exception) {
+                    error_log('[Social login][Apple] ' . (string) $exception);
+                }
+                session_unset_key('apple_nonce');
+                session_unset_key('register_language');
+                error_log('[Social login][Apple] Callback error: ' . json_encode(['error' => $_POST['error'] ?? null, 'error_description' => $_POST['error_description'] ?? null]));
+                Alerts::add_error(l('login.error_message.social_authentication'));
+                redirect('login' . $redirect_append);
+            }
+
+            if($method == 'apple' && isset($_POST['code'])) {
+                try {
+                    $apple = new \Hybridauth\Provider\Apple($apple_config);
+                    $apple->authenticate();
+                    $apple_account_info = $apple->getUserProfile();
+                    $email = $apple_account_info->email;
+                    $id = $apple_account_info->identifier;
+
+                    /* Validate the identity token claims after Hybridauth validates its signature */
+                    $apple_tokens = $apple->getAccessToken();
+
+                    /* Clear out the provider access token from the session */
+                    $apple->disconnect();
+
+                    if(is_null($email)) {
+                        session_unset_key('apple_nonce');
+                        session_unset_key('register_language');
+                        error_log('[Social login][Apple] The provider did not return an email address.');
+                        Alerts::add_error(l('login.error_message.social_authentication'));
+                        redirect('login' . $redirect_append);
+                    }
+
+                    $apple_id_token_parts = explode('.', $apple_tokens['id_token'] ?? '');
+
+                    if(count($apple_id_token_parts) != 3) {
+                        throw new \Exception(l('login.error_message.social_authentication'));
+                    }
+
+                    $apple_id_token_payload = $apple_id_token_parts[1];
+                    $apple_id_token_payload .= str_repeat('=', (4 - strlen($apple_id_token_payload) % 4) % 4);
+                    $apple_id_token_payload = json_decode(base64_decode(strtr($apple_id_token_payload, '-_', '+/'), true));
+                    $apple_audience_is_valid = isset($apple_id_token_payload->aud) && (
+                        $apple_id_token_payload->aud === settings()->apple->client_id
+                        || (is_array($apple_id_token_payload->aud) && in_array(settings()->apple->client_id, $apple_id_token_payload->aud, true))
+                    );
+
+                    if(
+                        !$apple_id_token_payload
+                        || ($apple_id_token_payload->iss ?? null) !== 'https://appleid.apple.com'
+                        || !$apple_audience_is_valid
+                        || ($apple_id_token_payload->sub ?? null) !== $id
+                        || ($apple_id_token_payload->email ?? null) !== $email
+                        || !filter_var($apple_id_token_payload->email_verified ?? false, FILTER_VALIDATE_BOOLEAN)
+                        || !hash_equals(session_get('apple_nonce') ?? '', $apple_id_token_payload->nonce ?? '')
+                    ) {
+                        throw new \Exception(l('login.error_message.social_authentication'));
+                    }
+
+                    $name = $apple_account_info->displayName ?: strtok($email, '@');
+                    session_unset_key('apple_nonce');
+
+                    $this->process_social_login($email, $name, $redirect, $method, $id);
+                } catch (\Exception $exception) {
+                    if(isset($apple)) $apple->disconnect();
+                    session_unset_key('apple_nonce');
+                    session_unset_key('register_language');
+                    error_log('[Social login][Apple] ' . (string) $exception);
+                    Alerts::add_error(l('login.error_message.social_authentication'));
+                    redirect('login' . $redirect_append);
+                }
+            }
+
+            if($method == 'apple' && !isset($_POST['code'], $_POST['error'])) {
+                try {
+                    (new \Hybridauth\Provider\Apple($apple_config))->disconnect();
+                } catch (\Exception $exception) {
+                    error_log('[Social login][Apple] ' . (string) $exception);
+                }
+                session_unset_key('apple_nonce');
+                session_unset_key('register_language');
+                error_log('[Social login][Apple] The callback did not return an authorization code.');
+                Alerts::add_error(l('login.error_message.social_authentication'));
+                redirect('login' . $redirect_append);
+            }
+        }
+
+
+        /* GitHub Login / Register */
+        if(settings()->github->is_enabled && in_array($method, ['github-initiate', 'github'])) {
+            $github_config = [
+                'callback' => SITE_URL . 'login/github',
+                'keys' => [
+                    'key' => settings()->github->client_id,
+                    'secret' => settings()->github->client_secret,
+                ],
+                'scope' => 'user:email',
+            ];
+
+            if($method == 'github-initiate') {
+                session_set('register_language', \Altum\Language::$name);
+
+                try {
+                    $github = new \Hybridauth\Provider\GitHub($github_config);
+                    $github->disconnect();
+                    $github->authenticate();
+                } catch (\Exception $exception) {
+                    if(isset($github)) $github->disconnect();
+                    session_unset_key('register_language');
+                    error_log('[Social login][GitHub] ' . (string) $exception);
+                    Alerts::add_error(l('login.error_message.social_authentication'));
+                    redirect('login' . $redirect_append);
+                }
+            }
+
+            if($method == 'github' && isset($_GET['code'])) {
+                try {
+                    $github = new \Hybridauth\Provider\GitHub($github_config);
+                    $github->authenticate();
+                    $github_account_info = $github->getUserProfile();
+                    $name = $github_account_info->displayName;
+                    $email = $github_account_info->emailVerified;
+                    $id = $github_account_info->identifier;
+
+                    /* Public profile emails are not marked as verified, so verify them through the emails endpoint */
+                    if(is_null($email)) {
+                        $github_emails = $github->apiRequest('user/emails');
+                        foreach($github_emails as $github_email) {
+                            if($github_email->primary && $github_email->verified) {
+                                $email = $github_email->email;
+                                break;
+                            }
+                        }
+                    }
+
+                    /* Clear out the provider access token from the session */
+                    $github->disconnect();
+
+                    if(is_null($email)) {
+                        session_unset_key('register_language');
+                        error_log('[Social login][GitHub] The provider did not return a verified email address.');
+                        Alerts::add_error(l('login.error_message.social_authentication'));
+                        redirect('login' . $redirect_append);
+                    }
+
+                    $this->process_social_login($email, $name, $redirect, $method, $id);
+                } catch (\Exception $exception) {
+                    if(isset($github)) $github->disconnect();
+                    session_unset_key('register_language');
+                    error_log('[Social login][GitHub] ' . (string) $exception);
+                    Alerts::add_error(l('login.error_message.social_authentication'));
+                    redirect('login' . $redirect_append);
+                }
+            }
+
+            elseif($method == 'github') {
+                try {
+                    (new \Hybridauth\Provider\GitHub($github_config))->disconnect();
+                } catch (\Exception $exception) {
+                    error_log('[Social login][GitHub] ' . (string) $exception);
+                }
+                session_unset_key('register_language');
+                error_log('[Social login][GitHub] Callback error: ' . json_encode(['error' => $_GET['error'] ?? null, 'error_description' => $_GET['error_description'] ?? null]));
+                Alerts::add_error(l('login.error_message.social_authentication'));
+                redirect('login' . $redirect_append);
+            }
+        }
+
+        /* Apple Login / Register */
+        if(settings()->apple->is_enabled && in_array($method, ['apple-initiate', 'apple'])) {
+            if($method == 'apple-initiate') {
+                session_set('register_language', \Altum\Language::$name);
+                session_set('apple_nonce', bin2hex(random_bytes(32)));
+
+                /* Apple returns with a cross-site POST, so this session cookie must be sent with it */
+                $session_cookie_params = session_get_cookie_params();
+                setcookie(session_name(), session_id(), [
+                    'expires' => $session_cookie_params['lifetime'] ? time() + $session_cookie_params['lifetime'] : 0,
+                    'path' => $session_cookie_params['path'],
+                    'domain' => $session_cookie_params['domain'],
+                    'secure' => true,
+                    'httponly' => $session_cookie_params['httponly'],
+                    'samesite' => 'None',
+                ]);
+            }
+
+            /* Restore the default session cookie policy after the Apple callback */
+            if($method == 'apple') {
+                $session_cookie_params = session_get_cookie_params();
+                setcookie(session_name(), session_id(), [
+                    'expires' => $session_cookie_params['lifetime'] ? time() + $session_cookie_params['lifetime'] : 0,
+                    'path' => $session_cookie_params['path'],
+                    'domain' => $session_cookie_params['domain'],
+                    'secure' => $session_cookie_params['secure'],
+                    'httponly' => $session_cookie_params['httponly'],
+                    'samesite' => 'Lax',
+                ]);
+            }
+
+            $apple_config = [
+                'callback' => SITE_URL . 'login/apple',
+                'keys' => [
+                    'id' => settings()->apple->client_id,
+                    'team_id' => settings()->apple->team_id,
+                    'key_id' => settings()->apple->key_id,
+                    'key_content' => settings()->apple->key_content,
+                ],
+                'scope' => 'name email',
+                'authorize_url_parameters' => [
+                    'nonce' => session_get('apple_nonce'),
+                ],
+            ];
+
+            if($method == 'apple-initiate') {
+                try {
+                    $apple = new \Hybridauth\Provider\Apple($apple_config);
+                    $apple->disconnect();
+                    $apple->authenticate();
+                } catch (\Exception $exception) {
+                    if(isset($apple)) $apple->disconnect();
+                    session_unset_key('apple_nonce');
+                    session_unset_key('register_language');
+                    error_log('[Social login][Apple] ' . (string) $exception);
+                    Alerts::add_error(l('login.error_message.social_authentication'));
+                    redirect('login' . $redirect_append);
+                }
+            }
+
+            if($method == 'apple' && isset($_POST['error'])) {
+                try {
+                    (new \Hybridauth\Provider\Apple($apple_config))->disconnect();
+                } catch (\Exception $exception) {
+                    error_log('[Social login][Apple] ' . (string) $exception);
+                }
+                session_unset_key('apple_nonce');
+                session_unset_key('register_language');
+                error_log('[Social login][Apple] Callback error: ' . json_encode(['error' => $_POST['error'] ?? null, 'error_description' => $_POST['error_description'] ?? null]));
+                Alerts::add_error(l('login.error_message.social_authentication'));
+                redirect('login' . $redirect_append);
+            }
+
+            if($method == 'apple' && isset($_POST['code'])) {
+                try {
+                    $apple = new \Hybridauth\Provider\Apple($apple_config);
+                    $apple->authenticate();
+                    $apple_account_info = $apple->getUserProfile();
+                    $email = $apple_account_info->email;
+                    $id = $apple_account_info->identifier;
+
+                    /* Validate the identity token claims after Hybridauth validates its signature */
+                    $apple_tokens = $apple->getAccessToken();
+
+                    /* Clear out the provider access token from the session */
+                    $apple->disconnect();
+
+                    if(is_null($email)) {
+                        session_unset_key('apple_nonce');
+                        session_unset_key('register_language');
+                        error_log('[Social login][Apple] The provider did not return an email address.');
+                        Alerts::add_error(l('login.error_message.social_authentication'));
+                        redirect('login' . $redirect_append);
+                    }
+
+                    $apple_id_token_parts = explode('.', $apple_tokens['id_token'] ?? '');
+
+                    if(count($apple_id_token_parts) != 3) {
+                        throw new \Exception(l('login.error_message.social_authentication'));
+                    }
+
+                    $apple_id_token_payload = $apple_id_token_parts[1];
+                    $apple_id_token_payload .= str_repeat('=', (4 - strlen($apple_id_token_payload) % 4) % 4);
+                    $apple_id_token_payload = json_decode(base64_decode(strtr($apple_id_token_payload, '-_', '+/'), true));
+                    $apple_audience_is_valid = isset($apple_id_token_payload->aud) && (
+                        $apple_id_token_payload->aud === settings()->apple->client_id
+                        || (is_array($apple_id_token_payload->aud) && in_array(settings()->apple->client_id, $apple_id_token_payload->aud, true))
+                    );
+
+                    if(
+                        !$apple_id_token_payload
+                        || ($apple_id_token_payload->iss ?? null) !== 'https://appleid.apple.com'
+                        || !$apple_audience_is_valid
+                        || ($apple_id_token_payload->sub ?? null) !== $id
+                        || ($apple_id_token_payload->email ?? null) !== $email
+                        || !filter_var($apple_id_token_payload->email_verified ?? false, FILTER_VALIDATE_BOOLEAN)
+                        || !hash_equals(session_get('apple_nonce') ?? '', $apple_id_token_payload->nonce ?? '')
+                    ) {
+                        throw new \Exception(l('login.error_message.social_authentication'));
+                    }
+
+                    $name = $apple_account_info->displayName ?: strtok($email, '@');
+                    session_unset_key('apple_nonce');
+
+                    $this->process_social_login($email, $name, $redirect, $method, $id);
+                } catch (\Exception $exception) {
+                    if(isset($apple)) $apple->disconnect();
+                    session_unset_key('apple_nonce');
+                    session_unset_key('register_language');
+                    error_log('[Social login][Apple] ' . (string) $exception);
+                    Alerts::add_error(l('login.error_message.social_authentication'));
+                    redirect('login' . $redirect_append);
+                }
+            }
+
+            if($method == 'apple' && !isset($_POST['code'], $_POST['error'])) {
+                try {
+                    (new \Hybridauth\Provider\Apple($apple_config))->disconnect();
+                } catch (\Exception $exception) {
+                    error_log('[Social login][Apple] ' . (string) $exception);
+                }
+                session_unset_key('apple_nonce');
+                session_unset_key('register_language');
+                error_log('[Social login][Apple] The callback did not return an authorization code.');
+                Alerts::add_error(l('login.error_message.social_authentication'));
+                redirect('login' . $redirect_append);
+            }
+        }
+
+
         if(!empty($_POST)) {
             /* Clean email and encrypt the password */
             $_POST['email'] = input_clean_email($_POST['email'] ?? '');
@@ -516,7 +976,7 @@ setcookie('user_password_hash', md5($user->password), time()+60*60*24* (settings
                 $persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
                 $current_ip = get_ip();
                 
-                if(is_ip_in_settings_list($persistent_ip, $current_ip)) {
+                if(!empty($persistent_ip) && $current_ip && $current_ip === $persistent_ip) {
                     /* Set persistent login flag in user's extra field */
                     $user_extra = json_decode($user->extra ?? '{}', true);
                     $user_extra['persistent_login_enabled'] = true;
@@ -553,7 +1013,8 @@ setcookie('user_password_hash', md5($user->password), time()+60*60*24* (settings
                 
                 /* Set device cookie for persistent IP users (10 years) - allows auto-login even after logout */
                 $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
-                if(is_ip_in_settings_list($google_persistent_ip)) {
+                $current_ip = get_ip();
+                if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip) {
                     setcookie('persistent_ip_device_user_id', $user->user_id, time() + (365 * 10 * 24 * 60 * 60), COOKIE_PATH);
                 }
             }
@@ -679,7 +1140,7 @@ setcookie('user_password_hash', md5($user->password), time()+60*60*24* (settings
                         $persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
                         $current_ip = get_ip();
                         
-                        if(is_ip_in_settings_list($persistent_ip, $current_ip)) {
+                        if(!empty($persistent_ip) && $current_ip && $current_ip === $persistent_ip) {
                             /* Set persistent login flag in user's extra field */
                             $user_extra = [
                                 'initial_social_method' => $method,

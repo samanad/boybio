@@ -19,6 +19,7 @@ defined('ALTUMCODE') || die();
 $pro_blocks = \Altum\Plugin::is_active('pro-blocks') && file_exists(\Altum\Plugin::get('pro-blocks')->path . 'pro_blocks.php') ? include \Altum\Plugin::get('pro-blocks')->path . 'pro_blocks.php' : [];
 $ultimate_blocks = \Altum\Plugin::is_active('ultimate-blocks') && file_exists(\Altum\Plugin::get('ultimate-blocks')->path . 'ultimate_blocks.php') ? include \Altum\Plugin::get('ultimate-blocks')->path . 'ultimate_blocks.php' : [];
 $payment_blocks = \Altum\Plugin::is_active('payment-blocks') && file_exists(\Altum\Plugin::get('payment-blocks')->path . 'payment_blocks.php') ? include \Altum\Plugin::get('payment-blocks')->path . 'payment_blocks.php' : [];
+$digital_wallets_blocks = \Altum\Plugin::is_active('digital-wallets') && (settings()->digital_wallets->is_enabled ?? false) && file_exists(\Altum\Plugin::get('digital-wallets')->path . 'digital_wallets_blocks.php') ? include \Altum\Plugin::get('digital-wallets')->path . 'digital_wallets_blocks.php' : [];
 
 $default_blocks = [
     'link' => [
@@ -64,7 +65,7 @@ $default_blocks = [
         'icon' => 'fas fa-fw fa-image',
         'color' => '#0682FF',
         'has_statistics' => true,
-        'themable' => false,
+        'themable' => true,
         'display_dynamic_name' => 'image_alt',
         'whitelisted_image_extensions' => ['jpg', 'jpeg', 'png', 'svg', 'gif', 'webp', 'avif'],
         'category' => 'standard',
@@ -144,22 +145,22 @@ $default_blocks = [
         'category' => 'standard',
     ],
 
-    'threads' => [
-        'type' => 'default',
-        'icon' => 'fab fa-threads',
-        'color' => '#f54640',
-        'has_statistics' => false,
-        'themable' => false,
-        'display_dynamic_name' => false,
-        'whitelisted_hosts' => ['threads.com', 'www.threads.com'],
-        'category' => 'embeds',
-    ],
+//    'threads' => [
+//        'type' => 'default',
+//        'icon' => 'fab fa-threads',
+//        'color' => '#f54640',
+//        'has_statistics' => false,
+//        'themable' => false,
+//        'display_dynamic_name' => false,
+//        'whitelisted_hosts' => ['threads.com', 'www.threads.com'],
+//        'category' => 'embeds',
+//    ],
     'soundcloud' => [
         'type' => 'default',
         'icon' => 'fab fa-soundcloud',
         'color' => '#ff8800',
         'has_statistics' => false,
-        'themable' => false,
+        'themable' => true,
         'display_dynamic_name' => false,
         'whitelisted_hosts' => ['soundcloud.com'],
         'category' => 'embeds',
@@ -169,7 +170,7 @@ $default_blocks = [
         'icon' => 'fab fa-spotify',
         'color' => '#1db954',
         'has_statistics' => false,
-        'themable' => false,
+        'themable' => true,
         'display_dynamic_name' => false,
         'whitelisted_hosts' => ['open.spotify.com'],
         'category' => 'embeds',
@@ -179,7 +180,7 @@ $default_blocks = [
         'icon' => 'fab fa-youtube',
         'color' => '#ff0000',
         'has_statistics' => false,
-        'themable' => false,
+        'themable' => true,
         'display_dynamic_name' => false,
         'whitelisted_hosts' => ['www.youtube.com', 'youtu.be'],
         'category' => 'embeds',
@@ -189,7 +190,7 @@ $default_blocks = [
         'icon' => 'fab fa-twitch',
         'color' => '#6441a5',
         'has_statistics' => false,
-        'themable' => false,
+        'themable' => true,
         'display_dynamic_name' => false,
         'whitelisted_hosts' => ['www.twitch.tv'],
         'category' => 'embeds',
@@ -199,7 +200,7 @@ $default_blocks = [
         'icon' => 'fab fa-vimeo',
         'color' => '#1ab7ea',
         'has_statistics' => false,
-        'themable' => false,
+        'themable' => true,
         'display_dynamic_name' => false,
         'whitelisted_hosts' => ['vimeo.com'],
         'category' => 'embeds',
@@ -209,7 +210,7 @@ $default_blocks = [
         'icon' => 'fab fa-tiktok',
         'color' => '#FD3E3E',
         'has_statistics' => false,
-        'themable' => false,
+        'themable' => true,
         'display_dynamic_name' => false,
         'whitelisted_hosts' => ['www.tiktok.com'],
         'category' => 'embeds',
@@ -222,7 +223,7 @@ if(settings()->links->google_static_maps_is_enabled) {
         'icon' => 'fas fa-fw fa-map',
         'color' => '#31A952',
         'has_statistics' => true,
-        'themable' => false,
+        'themable' => true,
         'display_dynamic_name' => 'address',
         'category' => 'advanced',
     ];
@@ -233,5 +234,5 @@ return array_merge(
     $pro_blocks,
     $ultimate_blocks,
     $payment_blocks,
+    $digital_wallets_blocks,
 );
-

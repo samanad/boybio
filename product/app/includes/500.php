@@ -23,18 +23,6 @@ function altumcode_shutdown_handler() {
     $last_error = error_get_last();
 
     if($last_error && ($last_error['type'] === E_ERROR || $last_error['type'] === E_CORE_ERROR || $last_error['type'] === E_PARSE || $last_error['type'] === E_COMPILE_ERROR)) {
-        /* Log the actual error so you can fix it (e.g. in uploads/logs/fatal_YYYY-MM-DD.log) */
-        if (defined('ROOT_PATH')) {
-            $log_dir = ROOT_PATH . 'uploads/logs';
-            if (!is_dir($log_dir)) {
-                @mkdir($log_dir, 0777, true);
-            }
-            if (is_dir($log_dir) && is_writable($log_dir)) {
-                $log_file = $log_dir . '/fatal_' . date('Y-m-d') . '.log';
-                $line = date('Y-m-d H:i:s') . ' ' . $last_error['type'] . ' ' . $last_error['message'] . ' in ' . $last_error['file'] . ' on line ' . $last_error['line'] . "\n";
-                @file_put_contents($log_file, $line, FILE_APPEND | LOCK_EX);
-            }
-        }
         echo <<<ALTUM
 
 <style>
