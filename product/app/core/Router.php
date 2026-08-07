@@ -50,6 +50,9 @@ class Router {
 
         /* Teams */
         'allow_team_access' => null,
+
+		/* Sessions */
+		'allow_sessions' => true,
     ];
     public static $method = 'index';
     public static $data = [];
@@ -71,6 +74,7 @@ class Router {
                     'no_authentication_check' => true,
                     'has_view' => false,
                     'no_browser_language_detection' => true,
+					'allow_sessions' => false,
                 ]
             ],
 
@@ -80,6 +84,7 @@ class Router {
                     'no_authentication_check' => true,
                     'has_view' => false,
                     'no_browser_language_detection' => true,
+					'allow_sessions' => false,
                 ]
             ],
         ],
@@ -190,6 +195,30 @@ class Router {
 
             'guests-payments' => [
                 'controller' => 'GuestsPayments',
+                'settings' => [
+                    'wrapper' => 'app_wrapper',
+                    'ads' => true,
+                ]
+            ],
+
+            'payment-processors' => [
+                'controller' => 'PaymentProcessors',
+                'settings' => [
+                    'wrapper' => 'app_wrapper',
+                    'ads' => true,
+                ]
+            ],
+
+            'payment-processor-create' => [
+                'controller' => 'PaymentProcessorCreate',
+                'settings' => [
+                    'wrapper' => 'app_wrapper',
+                    'ads' => true,
+                ]
+            ],
+
+            'payment-processor-update' => [
+                'controller' => 'PaymentProcessorUpdate',
                 'settings' => [
                     'wrapper' => 'app_wrapper',
                     'ads' => true,
@@ -636,6 +665,13 @@ class Router {
                 ]
             ],
 
+            'country-blocked' => [
+                'controller' => 'CountryBlocked',
+                'settings' => [
+                    'wrapper' => 'basic_wrapper',
+                ]
+            ],
+
             'account' => [
                 'controller' => 'Account',
                 'settings' => [
@@ -1014,6 +1050,17 @@ class Router {
                 ]
             ],
 
+            'webhook-paddle-billing' => [
+                'controller' => 'WebhookPaddleBilling',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+					'allow_sessions' => false,
+                ]
+            ],
+
             'webhook-mercadopago' => [
                 'controller' => 'WebhookMercadopago',
                 'settings' => [
@@ -1051,6 +1098,51 @@ class Router {
                     'has_view' => false,
                     'no_browser_language_detection' => true,
                     'allow_indexing' => false,
+					'allow_sessions' => false,
+                ]
+            ],
+
+            'webhook-klarna' => [
+                'controller' => 'WebhookKlarna',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+					'allow_sessions' => false,
+                ]
+            ],
+
+            'webhook-plisio' => [
+                'controller' => 'WebhookPlisio',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+					'allow_sessions' => false,
+                ]
+            ],
+
+            'webhook-plisio-whitelabel' => [
+                'controller' => 'WebhookPlisioWhitelabel',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+					'allow_sessions' => false,
+                ]
+            ],
+
+            'webhook-revolut' => [
+                'controller' => 'WebhookRevolut',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+					'allow_sessions' => false,
                 ]
             ],
 
@@ -1063,63 +1155,6 @@ class Router {
                     'allow_indexing' => false,
                 ]
             ],
-
-
-            'webhook-paddle-billing' => [
-                'controller' => 'WebhookPaddleBilling',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-                    'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-klarna' => [
-                'controller' => 'WebhookKlarna',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-                    'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-plisio' => [
-                'controller' => 'WebhookPlisio',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-                    'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-plisio-whitelabel' => [
-                'controller' => 'WebhookPlisioWhitelabel',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-                    'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-revolut' => [
-                'controller' => 'WebhookRevolut',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-                    'allow_sessions' => false,
-                ]
-            ],
-
 
             /* Others */
             'cookie-consent' => [
@@ -1536,10 +1571,6 @@ class Router {
                 'controller' => 'AdminTaxes'
             ],
 
-            'taxes-import' => [
-                'controller' => 'AdminTaxesImport'
-            ],
-
             'tax-create' => [
                 'controller' => 'AdminTaxCreate'
             ],
@@ -1554,10 +1585,6 @@ class Router {
 
             'payments' => [
                 'controller' => 'AdminPayments'
-            ],
-
-            'payment-create' => [
-                'controller' => 'AdminPaymentCreate',
             ],
 
             'statistics' => [

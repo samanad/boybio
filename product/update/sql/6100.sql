@@ -1,4 +1,4 @@
-UPDATE `settings` SET `value` = '{"version":"60.1.0","code":"6100"}' WHERE `key` = 'product_info';
+UPDATE `settings` SET `value` = '{\"version\":\"61.0.0\", \"code\":\"6100\"}' WHERE `key` = 'product_info';
 
 -- SEPARATOR --
 
@@ -12,50 +12,26 @@ CREATE TABLE IF NOT EXISTS `payment_processors` (
   `datetime` datetime DEFAULT NULL,
   `last_datetime` datetime DEFAULT NULL,
   PRIMARY KEY (`payment_processor_id`),
-  KEY `user_id` (`user_id`)
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `payment_processors_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- SEPARATOR --
 
--- X -- ALTER TABLE `codes` ADD COLUMN `start_date` datetime NULL;
+ALTER TABLE `codes` 
+ADD COLUMN `start_date` datetime NULL AFTER `datetime`,
+ADD COLUMN `end_date` datetime NULL AFTER `start_date`;
 
 -- SEPARATOR --
 
--- X -- ALTER TABLE `codes` ADD COLUMN `end_date` datetime NULL;
+ALTER TABLE `payments` 
+ADD COLUMN `status` varchar(32) DEFAULT 'completed' AFTER `type`,
+ADD COLUMN `refunds` text NULL AFTER `business`;
 
 -- SEPARATOR --
 
--- X -- ALTER TABLE `payments` ADD COLUMN `status` varchar(32) NOT NULL DEFAULT 'completed';
+UPDATE `payments` SET `refunds` = '[]' WHERE `refunds` IS NULL;
 
 -- SEPARATOR --
 
--- X -- ALTER TABLE `payments` ADD COLUMN `refunds` longtext NULL;
-
--- SEPARATOR --
-
--- X -- ALTER TABLE `payments` ADD COLUMN `refunded_total` decimal(12,2) NOT NULL DEFAULT '0.00';
-
--- SEPARATOR --
-
--- X -- ALTER TABLE `payments` ADD COLUMN `refunded_status` varchar(32) NULL;
-
--- SEPARATOR --
-
-UPDATE `payments` SET `refunds` = '[]' WHERE `refunds` IS NULL OR `refunds` = '';
-
--- SEPARATOR --
-
-UPDATE `payments` SET `status` = 'completed' WHERE `status` IS NULL OR `status` = '';
-
--- SEPARATOR --
-
--- X -- ALTER TABLE `links` ADD COLUMN `is_explore_things` tinyint DEFAULT 0 NULL;
-
--- SEPARATOR --
-
-INSERT IGNORE INTO `settings` (`key`, `value`) VALUES
-('paddle_billing', '{"is_enabled":false,"mode":"sandbox","api_key":"","secret_key":"","client_side_token":"","currencies":["USD"]}'),
-('klarna', '{"is_enabled":false,"mode":"https://api.klarna.com","username":"","password":"","currencies":["USD"]}'),
-('plisio', '{"is_enabled":false,"secret_key":"","accepted_cryptocurrencies":[],"default_cryptocurrency":"BTC","currencies":["USD"]}'),
-('plisio_whitelabel', '{"is_enabled":false,"secret_key":"","accepted_cryptocurrencies":[],"default_cryptocurrency":"BTC","payment_blocks_fee":0,"currencies":["USD"]}'),
-('revolut', '{"is_enabled":false,"mode":"sandbox","secret_key":"","webhook_id":"","currencies":["USD"]}');
+-- X -- ALTER TABLE `links` ADD COLUMN `is_explore_things` tinyint DEFAULT 0 NULL AFTER `directory_is_enabled`;

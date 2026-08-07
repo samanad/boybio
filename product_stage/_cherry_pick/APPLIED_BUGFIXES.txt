@@ -1,0 +1,17 @@
+APPLIED app/controllers/PaymentProcessorCreate.php
+APPLIED app/controllers/PaymentProcessorUpdate.php
+APPLIED app/controllers/AccountPayments.php
+APPLIED app/controllers/PayBilling.php
+APPLIED app/controllers/Invoice.php
+SKIP_CUSTOM app/controllers/admin/AdminPayments.php
+SKIP_CUSTOM app/controllers/admin/AdminPaymentProcessors.php
+APPLIED app/controllers/admin/AdminUserUpdate.php
+APPLIED app/controllers/admin/AdminTaxes.php
+APPLIED app/models/PaymentProcessor.php
+
+# INTENTIONALLY SKIPPED (risky / needs sessions.php cascade or customs)
+# app/init.php - session rewrite + duplicate sessions.php require in stock v63
+# app/helpers/sessions.php - deferred; customs use $_SESSION
+# app/controllers/Account.php - needs session_get/session_set
+# app/core/Alerts.php Authentication.php Csrf.php - need session helpers
+# Redis/Docker/PHP8.5 infra

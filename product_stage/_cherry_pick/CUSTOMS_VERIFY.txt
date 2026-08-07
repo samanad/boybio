@@ -1,0 +1,32 @@
+Customs verification 2026-08-07T02:44:45+03:00
+
+FILE_OK app/core/CustomHooks.php
+FILE_OK app/controllers/CheckUrlAvailability.php
+FILE_OK app/controllers/Manifest.php
+FILE_OK app/controllers/ServiceWorker.php
+FILE_OK app/helpers/offload_helpers.php
+
+Router customs:
+ROUTE_OK check-url-availability
+ROUTE_OK sw.js
+ROUTE_OK manifest
+
+Hook integrations:
+40:        \Altum\CustomHooks::user_initiate_registration();
+111:        \Altum\CustomHooks::user_delete(['user' => $user]);
+238:        \Altum\CustomHooks::user_finished_registration(['user_id' => $registered_user_id, 'email' => $email, 'plan_settings' => $plan_settings]);
+157:        \Altum\CustomHooks::user_payment_finished(['user' => $user, 'plan' => $plan]);
+127:                        $prefixes_to_skip = \Altum\CustomHooks::generate_language_prefixes_to_skip();
+
+is_explore_things in SQL:
+/media/sam/debian/previous rosalinux then win and now again/altum/product_stage/update/sql/6100.sql:5:alter table links add is_explore_things tinyint default 0 null after directory_is_enabled;
+
+AdminSettings customs still present:
+19
+
+Payment routes still present:
+PAY_ROUTE_OK webhook-plisio
+PAY_ROUTE_OK webhook-revolut
+PAY_ROUTE_OK webhook-klarna
+PAY_ROUTE_OK webhook-paddle-billing
+PAY_ROUTE_OK credit-notes

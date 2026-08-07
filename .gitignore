@@ -83,3 +83,13 @@ product/install/installed
 # LinkDooni custom landing page (git-ignored)
 linkdoo/
 
+
+# product_stage test root (same rules as product)
+product_stage/vendor/
+product_stage/uploads/*
+!product_stage/uploads/main/
+!product_stage/uploads/pwa/
+!product_stage/uploads/favicons/
+product_stage/uploads/cache/
+product_stage/config.php
+product_stage/config-*.php

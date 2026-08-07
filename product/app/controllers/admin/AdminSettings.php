@@ -257,6 +257,9 @@ class AdminSettings extends Controller {
             /* :) */
             $_POST['blacklisted_domains'] = array_filter(array_map('trim', explode(',', $_POST['blacklisted_domains'])));
             $_POST['blacklisted_countries'] = $_POST['blacklisted_countries'] ?? [];
+            $_POST['country_access_mode'] = in_array($_POST['country_access_mode'] ?? 'disabled', ['disabled', 'only_access', 'block'], true)
+                ? $_POST['country_access_mode']
+                : 'disabled';
 
             $value = json_encode([
                 'email_aliases_is_enabled' => isset($_POST['email_aliases_is_enabled']),
@@ -273,6 +276,7 @@ class AdminSettings extends Controller {
                 'auto_delete_inactive_users' => (int) $_POST['auto_delete_inactive_users'],
                 'user_deletion_reminder' => (int) $_POST['user_deletion_reminder'],
                 'blacklisted_domains' => $_POST['blacklisted_domains'],
+                'country_access_mode' => $_POST['country_access_mode'],
                 'blacklisted_countries' => $_POST['blacklisted_countries'],
                 'login_lockout_is_enabled' => isset($_POST['login_lockout_is_enabled']),
                 'login_lockout_max_retries' => (int) $_POST['login_lockout_max_retries'] < 1 ? 1 : (int) $_POST['login_lockout_max_retries'],
@@ -325,17 +329,26 @@ class AdminSettings extends Controller {
         if(!empty($_POST)) {
             //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
 
-            $_POST['biolink_edit_allowed_ip'] = trim(input_clean($_POST['biolink_edit_allowed_ip'] ?? ''));
-            $_POST['google_login_persistent_ip'] = trim(input_clean($_POST['google_login_persistent_ip'] ?? ''));
+            /* Accept multiple IPs (one per line, or comma/semicolon separated) */
+            $biolink_edit_allowed_ips = parse_settings_ip_list($_POST['biolink_edit_allowed_ip'] ?? '');
+            $google_login_persistent_ips = parse_settings_ip_list($_POST['google_login_persistent_ip'] ?? '');
 
-            /* Validate IP if provided */
-            if(!empty($_POST['biolink_edit_allowed_ip']) && !filter_var($_POST['biolink_edit_allowed_ip'], FILTER_VALIDATE_IP)) {
-                Alerts::add_field_error('biolink_edit_allowed_ip', l('admin_settings.security.biolink_edit_allowed_ip_error'));
+            foreach($biolink_edit_allowed_ips as $ip) {
+                if(!filter_var($ip, FILTER_VALIDATE_IP)) {
+                    Alerts::add_field_error('biolink_edit_allowed_ip', l('admin_settings.security.biolink_edit_allowed_ip_error'));
+                    break;
+                }
             }
 
-            if(!empty($_POST['google_login_persistent_ip']) && !filter_var($_POST['google_login_persistent_ip'], FILTER_VALIDATE_IP)) {
-                Alerts::add_field_error('google_login_persistent_ip', l('admin_settings.security.google_login_persistent_ip_error'));
+            foreach($google_login_persistent_ips as $ip) {
+                if(!filter_var($ip, FILTER_VALIDATE_IP)) {
+                    Alerts::add_field_error('google_login_persistent_ip', l('admin_settings.security.google_login_persistent_ip_error'));
+                    break;
+                }
             }
+
+            $_POST['biolink_edit_allowed_ip'] = implode(',', $biolink_edit_allowed_ips);
+            $_POST['google_login_persistent_ip'] = implode(',', $google_login_persistent_ips);
 
             if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
                 /* Get existing security settings to preserve mother password if not changed */
@@ -798,148 +811,6 @@ class AdminSettings extends Controller {
             ]);
 
             $this->update_settings('myfatoorah', $value);
-        }
-    }
-
-
-    public function paddle_billing() {
-        $this->process();
-
-        if(!empty($_POST)) {
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'mode' => $_POST['mode'],
-                'api_key' => $_POST['api_key'],
-                'secret_key' => $_POST['secret_key'],
-                'client_side_token' => $_POST['client_side_token'],
-                'currencies' => $_POST['currencies'] ?? [],
-            ]);
-
-            $this->update_settings('paddle_billing', $value);
-        }
-    }
-
-    public function klarna() {
-        $this->process();
-
-        if(!empty($_POST)) {
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'mode' => $_POST['mode'],
-                'username' => $_POST['username'],
-                'password' => $_POST['password'],
-                'currencies' => $_POST['currencies'] ?? [],
-            ]);
-
-            $this->update_settings('klarna', $value);
-        }
-    }
-
-    public function plisio() {
-        $this->process();
-
-        if(!empty($_POST)) {
-
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-            $_POST['accepted_cryptocurrencies'] = array_filter(array_map('trim', $_POST['accepted_cryptocurrencies']));
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'secret_key' => $_POST['secret_key'],
-                'accepted_cryptocurrencies' => $_POST['accepted_cryptocurrencies'],
-                'default_cryptocurrency' => $_POST['default_cryptocurrency'],
-                'currencies' => $_POST['currencies'] ?? [],
-            ]);
-
-            $this->update_settings('plisio', $value);
-        }
-    }
-
-    public function plisio_whitelabel() {
-        $this->process();
-
-        if(!empty($_POST)) {
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-            $_POST['accepted_cryptocurrencies'] = array_filter(array_map('trim', $_POST['accepted_cryptocurrencies']));
-            $_POST['payment_blocks_fee'] = (float) max(0, min($_POST['payment_blocks_fee'], 100));
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'secret_key' => $_POST['secret_key'],
-                'accepted_cryptocurrencies' => $_POST['accepted_cryptocurrencies'],
-                'default_cryptocurrency' => $_POST['default_cryptocurrency'],
-                'payment_blocks_fee' => $_POST['payment_blocks_fee'],
-                'currencies' => $_POST['currencies'] ?? [],
-            ]);
-
-            $this->update_settings('plisio_whitelabel', $value);
-        }
-    }
-
-    public function revolut() {
-        $this->process();
-
-        if(!empty($_POST)) {
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-            $_POST['mode'] = in_array($_POST['mode'], ['live', 'sandbox']) ? input_clean($_POST['mode']) : 'live';
-
-            /* Generate webhook id */
-            if(empty($_POST['webhook_id']) && !empty($_POST['secret_key'])) {
-                try {
-                    $response = \Unirest\Request::post(
-                        ($_POST['mode'] == 'live' ? Revolut::$live_api_url : Revolut::$sandbox_api_url) . 'api/1.0/webhooks',
-                        [
-                            'Authorization' => 'Bearer ' . $_POST['secret_key'],
-                            'Content-Type' => 'application/json',
-                            'Accept' => 'application/json',
-                            'Revolut-Api-Version' => '2024-09-01',
-                        ],
-                        \Unirest\Request\Body::json([
-                            'url' => SITE_URL . 'webhook-revolut',
-                            'events' => [
-                                'ORDER_COMPLETED'
-                            ]
-                        ])
-                    );
-                } catch (\Exception $exception) {
-                    Alerts::add_error($exception->getCode() . ':' . $exception->getMessage());
-                }
-
-                if($response->code == 200) {
-                    $_POST['webhook_id'] = $response->body->id;
-                } else {
-                    Alerts::add_error($response->code . ':' . $response->raw_body);
-                }
-            }
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'mode' => $_POST['mode'],
-                'secret_key' => $_POST['secret_key'],
-                'webhook_id' => $_POST['webhook_id'],
-                'currencies' => $_POST['currencies'] ?? [],
-            ]);
-
-            $this->update_settings('revolut', $value);
         }
     }
 

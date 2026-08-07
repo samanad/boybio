@@ -214,3 +214,5 @@ return [
         'icon' => 'usdc.svg',
     ],
 ];
+
+

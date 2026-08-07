@@ -1,0 +1,9 @@
+2026-08-07T02:41:03+03:00 Payments model step done
+2026-08-07T02:41:21+03:00 language merge done
+2026-08-07T02:41:39+03:00 language verify done
+2026-08-07T02:42:53+03:00 admin language merge done
+2026-08-07T02:44:27+03:00 curated bugfix/payment controller apply done
+2026-08-07T02:44:45+03:00 customs verify done
+2026-08-07T02:45:36+03:00 staging SQL written
+2026-08-07T02:45:59+03:00 ALL STEPS COMPLETE - handoff ready
+2026-08-07T03:13:22+03:00 FINAL SQL + update/6100 wired for live
