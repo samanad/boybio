@@ -33,20 +33,13 @@ if [ ! -f "$CFG" ]; then
 fi
 
 echo "=== Reset product_info to 6000 (so /update/ does not restart from 801) ==="
-DB_LINE="$(php -r '
-$c = file_get_contents($argv[1]);
-foreach (["DATABASE_SERVER","DATABASE_USERNAME","DATABASE_PASSWORD","DATABASE_NAME"] as $k) {
-  if (!preg_match("/define\(\s*'\''".$k."'\''\s*,\s*'\''((?:\\\\'|[^'\''])*)'\''/s", $c, $m)) {
-    fwrite(STDERR, "Missing $k\n");
-    exit(1);
-  }
-  echo str_replace(["\\'", "\\\\"], ["'", "\\"], $m[1]), "\t";
-}
-' "$CFG")"
+mapfile -t DB_CREDS < <(php -r 'require $argv[1]; echo DATABASE_SERVER, PHP_EOL, DATABASE_USERNAME, PHP_EOL, DATABASE_PASSWORD, PHP_EOL, DATABASE_NAME, PHP_EOL;' "$CFG")
+DB_HOST="${DB_CREDS[0]:-}"
+DB_USER="${DB_CREDS[1]:-}"
+DB_PASS="${DB_CREDS[2]:-}"
+DB_NAME="${DB_CREDS[3]:-}"
 
-IFS=$'\t' read -r DB_HOST DB_USER DB_PASS DB_NAME <<<"$DB_LINE"
-
-if [ -z "${DB_NAME:-}" ]; then
+if [ -z "$DB_NAME" ]; then
   echo "ERROR: Could not read DATABASE_* from $CFG"
   exit 1
 fi
