@@ -41,11 +41,11 @@ CREATE TABLE IF NOT EXISTS `payment_processors` (
 
 -- SEPARATOR --
 
-UPDATE `payments` SET `refunds` = '[]' WHERE `refunds` IS NULL OR `refunds` = '';
+-- X -- UPDATE `payments` SET `refunds` = '[]' WHERE `refunds` IS NULL OR `refunds` = '';
 
 -- SEPARATOR --
 
-UPDATE `payments` SET `status` = 'completed' WHERE `status` IS NULL OR `status` = '';
+-- X -- UPDATE `payments` SET `status` = 'completed' WHERE `status` IS NULL OR `status` = '';
 
 -- SEPARATOR --
 
@@ -53,9 +53,20 @@ UPDATE `payments` SET `status` = 'completed' WHERE `status` IS NULL OR `status` 
 
 -- SEPARATOR --
 
-INSERT IGNORE INTO `settings` (`key`, `value`) VALUES
-('paddle_billing', '{"is_enabled":false,"mode":"sandbox","api_key":"","secret_key":"","client_side_token":"","currencies":["USD"]}'),
-('klarna', '{"is_enabled":false,"mode":"https://api.klarna.com","username":"","password":"","currencies":["USD"]}'),
-('plisio', '{"is_enabled":false,"secret_key":"","accepted_cryptocurrencies":[],"default_cryptocurrency":"BTC","currencies":["USD"]}'),
-('plisio_whitelabel', '{"is_enabled":false,"secret_key":"","accepted_cryptocurrencies":[],"default_cryptocurrency":"BTC","payment_blocks_fee":0,"currencies":["USD"]}'),
-('revolut', '{"is_enabled":false,"mode":"sandbox","secret_key":"","webhook_id":"","currencies":["USD"]}');
+-- X -- INSERT INTO `settings` (`key`, `value`) VALUES ('paddle_billing', '{"is_enabled":false,"mode":"sandbox","api_key":"","secret_key":"","client_side_token":"","currencies":["USD"]}') ON DUPLICATE KEY UPDATE `key` = `key`;
+
+-- SEPARATOR --
+
+-- X -- INSERT INTO `settings` (`key`, `value`) VALUES ('klarna', '{"is_enabled":false,"mode":"https://api.klarna.com","username":"","password":"","currencies":["USD"]}') ON DUPLICATE KEY UPDATE `key` = `key`;
+
+-- SEPARATOR --
+
+-- X -- INSERT INTO `settings` (`key`, `value`) VALUES ('plisio', '{"is_enabled":false,"secret_key":"","accepted_cryptocurrencies":[],"default_cryptocurrency":"BTC","currencies":["USD"]}') ON DUPLICATE KEY UPDATE `key` = `key`;
+
+-- SEPARATOR --
+
+-- X -- INSERT INTO `settings` (`key`, `value`) VALUES ('plisio_whitelabel', '{"is_enabled":false,"secret_key":"","accepted_cryptocurrencies":[],"default_cryptocurrency":"BTC","payment_blocks_fee":0,"currencies":["USD"]}') ON DUPLICATE KEY UPDATE `key` = `key`;
+
+-- SEPARATOR --
+
+-- X -- INSERT INTO `settings` (`key`, `value`) VALUES ('revolut', '{"is_enabled":false,"mode":"sandbox","secret_key":"","webhook_id":"","currencies":["USD"]}') ON DUPLICATE KEY UPDATE `key` = `key`;
