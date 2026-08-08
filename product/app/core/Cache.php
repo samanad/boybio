@@ -22,75 +22,74 @@ defined('ALTUMCODE') || die();
 
 class Cache {
     public static $adapter;
-    public static $driver = 'Devnull';
 
     public static function initialize($force_enable = false) {
 
-        $driver = self::$driver;
-        if($force_enable || CACHE) {
-            $driver = defined('REDIS_IS_ENABLED') && REDIS_IS_ENABLED ? 'redis' : 'files';
+        $driver = $force_enable ? 'Files' : (CACHE ? 'Files' : 'Devnull');
 
-            if(defined('CACHE_DRIVER') && in_array(CACHE_DRIVER, ['files', 'redis', 'apcu'])) {
-                $driver = CACHE_DRIVER;
+        /* Cache adapter for phpFastCache */
+        if($driver == 'Files') {
+            $cache_path = UPLOADS_PATH . 'cache';
+            
+            /* Ensure cache directory exists and is writable */
+            if(!is_dir($cache_path)) {
+                @mkdir($cache_path, 0777, true);
             }
-        }
-
-        /* Prepare cache adapter configuration for phpFastCache based on the need */
-
-        /* Local files */
-        if($driver == 'files') {
+            
+            /* Try to make cache directory writable if it's not */
+            if(is_dir($cache_path) && !is_writable($cache_path)) {
+                @chmod($cache_path, 0777);
+            }
+            
+            /* Pre-create the subdirectory structure that phpfastcache will use */
+            /* phpfastcache creates: cache/{securityKey}/Files/ */
+            $security_key = PRODUCT_KEY;
+            $subdirectory = $cache_path . '/' . $security_key . '/Files';
+            
+            if(!is_dir($subdirectory)) {
+                @mkdir($subdirectory, 0777, true);
+            }
+            
+            /* Ensure subdirectory is writable */
+            if(is_dir($subdirectory) && !is_writable($subdirectory)) {
+                @chmod($subdirectory, 0777);
+            }
+            
+            /* Also ensure parent subdirectory is writable */
+            $parent_subdirectory = $cache_path . '/' . $security_key;
+            if(is_dir($parent_subdirectory) && !is_writable($parent_subdirectory)) {
+                @chmod($parent_subdirectory, 0777);
+            }
+            
             $config = new \Phpfastcache\Drivers\Files\Config([
-                'securityKey' => PRODUCT_KEY,
-                'path' => UPLOADS_PATH . 'cache',
+                'securityKey' => $security_key,
+                'path' => $cache_path,
                 'preventCacheSlams' => true,
                 'cacheSlamsTimeout' => 20,
                 'secureFileManipulation' => true
             ]);
-        }
-
-        /* Redis server */
-        elseif($driver == 'redis') {
-            $redis_config = [
-                'database' => REDIS_DATABASE,
-                'timeout'  => REDIS_TIMEOUT,
-                'password' => REDIS_PASSWORD,
-            ];
-
-            if(defined('REDIS_SOCKET_PATH') && is_string(REDIS_SOCKET_PATH)) {
-                $redis_config = $redis_config + [
-                        'path' => REDIS_SOCKET_PATH,
-                    ];
-            } else {
-                $redis_config = $redis_config + [
-                        'host' => REDIS_HOST,
-                        'port' => REDIS_PORT,
-                    ];
-            }
-
-            if(defined('REDIS_PREFIX') && is_string(REDIS_PREFIX)) {
-                $redis_config = $redis_config + [
-                        'optPrefix' => REDIS_PREFIX,
-                    ];
-            }
-
-            $config = new \Phpfastcache\Drivers\Redis\Config($redis_config);
-        }
-
-        elseif($driver == 'apcu') {
-            $config = new \Phpfastcache\Drivers\Apcu\Config([
-                'optPrefix' => md5(SITE_URL) . ':',
-            ]);
-        }
-
-        /* Cache disabled */
-        elseif($driver == 'Devnull') {
-            $config = new \Phpfastcache\Config\ConfigurationOption([
+        } else {
+            $config = new \Phpfastcache\Config\Config([
                 'path' => UPLOADS_PATH . 'cache',
             ]);
         }
 
-        self::$adapter = \Phpfastcache\CacheManager::getInstance($driver, $config);
-        self::$driver = $driver;
+        \Phpfastcache\CacheManager::setDefaultConfig($config);
+
+        try {
+            self::$adapter = \Phpfastcache\CacheManager::getInstance($driver);
+        } catch(\Exception $e) {
+            /* If cache initialization fails, fall back to Devnull driver */
+            if($driver == 'Files') {
+                $config = new \Phpfastcache\Config\Config([
+                    'path' => UPLOADS_PATH . 'cache',
+                ]);
+                \Phpfastcache\CacheManager::setDefaultConfig($config);
+                self::$adapter = \Phpfastcache\CacheManager::getInstance('Devnull');
+            } else {
+                throw $e;
+            }
+        }
     }
 
     public static function cache_function_result($key, $tag, $function_to_cache, $cached_seconds = CACHE_DEFAULT_SECONDS) {
@@ -100,7 +99,7 @@ class Cache {
         $cache_instance = cache()->getItem($key);
 
         /* Set cache if not existing */
-        if(!$cache_instance->isHit()) {
+        if(is_null($cache_instance->get())) {
 
             $result = $function_to_cache();
 

@@ -26,6 +26,13 @@ const UPLOADS_PATH = ROOT_PATH . 'uploads/';
 const UPLOADS_URL_PATH = 'uploads/';
 const CACHE_DEFAULT_SECONDS = 2592000;
 
+/* PHP 7/8.0 compatibility: str_starts_with exists from PHP 8.0 */
+if(!function_exists('str_starts_with')) {
+    function str_starts_with($haystack, $needle) {
+        return $needle === '' || strncmp((string) $haystack, (string) $needle, strlen((string) $needle)) === 0;
+    }
+}
+
 /* Starting to include the required files */
 require_once APP_PATH . 'includes/debug.php';
 if(!DEBUG) require_once APP_PATH . 'includes/500.php';
@@ -45,6 +52,37 @@ session_set_cookie_params([
     'secure' => str_starts_with(SITE_URL, 'https://'),
 ]);
 
+/* Autoloader — required for Altum\* classes (Composer does not map them) */
+spl_autoload_register(function ($class) {
+    $namespace_prefix = 'Altum';
+    $split = explode('\\', $class);
+
+    if($split[0] !== $namespace_prefix) {
+        return;
+    }
+
+    /* Altum core */
+    if(isset($split[1]) && !isset($split[2])) {
+        require_once APP_PATH . 'core/' . $split[1] . '.php';
+    }
+
+    /* Traits, Models, Helpers */
+    if(isset($split[1], $split[2]) && in_array($split[1], ['Traits', 'Models', 'Helpers'])) {
+        $folder = function_exists('mb_strtolower') ? mb_strtolower($split[1]) : strtolower($split[1]);
+        require_once APP_PATH . $folder . '/' . $split[2] . '.php';
+    }
+
+    /* Payment Gateways helpers */
+    if(isset($split[1], $split[2]) && $split[1] == 'PaymentGateways') {
+        require_once APP_PATH . 'helpers/payment-gateways/' . $split[2] . '.php';
+    }
+
+    /* Qr codes helpers */
+    if(isset($split[1], $split[2]) && $split[1] == 'QrCodes') {
+        require_once APP_PATH . 'helpers/qr-codes/' . $split[2] . '.php';
+    }
+});
+
 /* Require files */
 require_once APP_PATH . 'core/Controller.php';
 require_once APP_PATH . 'core/Model.php';
@@ -63,4 +101,3 @@ require_once APP_PATH . 'helpers/66text.php';
 
 /* Autoload for vendor */
 require_once ROOT_PATH . 'vendor/autoload.php';
-

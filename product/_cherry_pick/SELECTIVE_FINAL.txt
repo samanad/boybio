@@ -46,7 +46,6 @@ app/includes/plisio_cryptocurrencies.php
 app/includes/plugins.php
 app/includes/simple_user_plan_settings.php
 app/includes/notification_handlers_dynamic_data.php
-app/includes/gsa.json
 app/languages/english#en.php
 app/languages/admin/english#en.php
 app/models/DigitalWallets.php
@@ -146,3 +145,5 @@ themes/altum/views/link/settings/vcard.php
 plugins/digital-wallets/config.php
 plugins/chrome-extension/config.php
 plugins/aix/config.php
+themes/altum/assets/fonts/Inter-Bold.ttf
+_cherry_pick/DEPLOY_SAFE.md
