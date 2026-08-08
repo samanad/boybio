@@ -43,7 +43,7 @@
                     <li class="nav-item"><a class="nav-link" href="<?= url('tools') ?>"><?= l('tools.menu') ?></a></li>
                 <?php endif ?>
 
-                <?php if(settings()->links->biolinks_is_enabled && settings()->links->directory_is_enabled): ?>
+                <?php if(settings()->links->biolinks_is_enabled && settings()->links->directory_is_enabled && (!biolinks_discovery_is_prevented() || (is_logged_in() && ($this->user->type ?? null) == 1))): ?>
                     <li class="nav-item"><a class="nav-link" href="<?= url('directory') ?>"><?= l('directory.menu') ?></a></li>
                 <?php endif ?>
 

@@ -24,6 +24,11 @@ class CheckUrlAvailability extends Controller {
 
     public function index() {
 
+        /* Private biolinks: do not reveal whether a slug is used / available */
+        if(biolinks_discovery_is_prevented()) {
+            Response::json(l('global.error_message.basic'), 'error');
+        }
+
         if(!empty($_POST) && isset($_POST['url'])) {
             
             /* Check CSRF */

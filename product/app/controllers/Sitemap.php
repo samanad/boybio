@@ -129,7 +129,7 @@ class Sitemap extends Controller {
     }
 
     public function links() {
-        if(!settings()->links->biolinks_is_enabled) {
+        if(!settings()->links->biolinks_is_enabled || biolinks_discovery_is_prevented()) {
             redirect('not-found');
         }
 

@@ -18,9 +18,9 @@
 
         <?php
         /* Block search engine indexing if the user wants, and if the system viewing links (for preview) are used */
-        if($this->link->settings->seo->block ?? null || \Altum\Router::$original_request == 'l/link'):
+        if(biolinks_discovery_is_prevented() || ($this->link->settings->seo->block ?? null) || \Altum\Router::$original_request == 'l/link'):
         ?>
-            <meta name="robots" content="noindex">
+            <meta name="robots" content="noindex, nofollow, noarchive">
         <?php endif ?>
 
         <?php if(!empty($data->splash_page->settings->favicon)): ?>

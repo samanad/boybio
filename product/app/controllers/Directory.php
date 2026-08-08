@@ -25,6 +25,14 @@ class Directory extends Controller {
             redirect('not-found');
         }
 
+        /* Private biolinks: directory is admin-only (no public browse / export / search) */
+        if(biolinks_discovery_is_prevented()) {
+            $user = \Altum\Authentication::$user ?? null;
+            if(!is_logged_in() || !$user || $user->type != 1) {
+                redirect('not-found');
+            }
+        }
+
         /* Prepare the filtering system */
         $filters = (new \Altum\Filters(['is_verified'], ['url'], ['clicks', 'url']));
         $user = \Altum\Authentication::$user ?? null;

@@ -106,6 +106,15 @@ class Link extends Controller {
         $this->link->settings = json_decode($this->link->settings ?? '');
         $this->link->pixels_ids = json_decode($this->link->pixels_ids ?? '[]');
 
+        /* Private biolinks: never allow search engines / AI scrapers to index public link pages */
+        if(biolinks_discovery_is_prevented()) {
+            header('X-Robots-Tag: noindex, nofollow, noarchive', true);
+            if(!isset($this->link->settings->seo) || !is_object($this->link->settings->seo)) {
+                $this->link->settings->seo = (object) [];
+            }
+            $this->link->settings->seo->block = true;
+        }
+
         /* Determine the actual full url */
         if(in_array($this->type, ['link', 'file', 'vcard', 'event'])) {
             $this->link->full_url = $domain_id && !isset($_GET['link_id']) ? \Altum\Router::$data['domain']->scheme . \Altum\Router::$data['domain']->host . '/' . (\Altum\Router::$data['domain']->link_id == $this->link->link_id ? null : $this->link->url) : SITE_URL . $this->link->url;

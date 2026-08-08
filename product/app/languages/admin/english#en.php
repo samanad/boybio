@@ -1668,6 +1668,8 @@ return [
     'admin_settings.links.claim_url_is_enabled_help' => 'Enabling this will give your guests the ability to write their preferred custom URL before signing up. Shows up for guests, if the main domain usage is eanbled.',
     'admin_settings.links.claim_url_type' => 'Claim URL type',
     'admin_settings.links.claim_url_type_help' => 'Which link type modal should trigger after a successful registration for URL claiming.',
+    'admin_settings.links.prevent_biolinks_discovery' => 'Prevent public discovery of biolink pages',
+    'admin_settings.links.prevent_biolinks_discovery_help' => 'When enabled: biolinks are removed from sitemaps, blocked from search engines (noindex), claim-URL availability checks are disabled, and the directory is admin-only. Visitors need the exact URL (“windows only, no doors”). Missing URLs still use your custom 404 URL from Main settings.',
     'admin_settings.links.directory_is_enabled' => 'Enable the directory system',
     'admin_settings.links.directory_is_enabled_help' => 'Enabling this will give your users the ability to discover new bio link pages.',
     'admin_settings.links.directory_display' => 'Directory biolinks to display',

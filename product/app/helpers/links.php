@@ -201,3 +201,22 @@ function get_domain_from_host($host){
     }
     return $myhost;
 }
+
+/**
+ * Private biolinks mode: no public discovery (sitemap, directory for non-admins,
+ * claim-url oracle, search indexing). Exact URL still works; unknown slugs → not-found / admin 404.
+ * Defaults to ON when the setting has never been saved.
+ */
+function biolinks_discovery_is_prevented() {
+    $links = settings()->links ?? null;
+
+    if(!$links) {
+        return true;
+    }
+
+    if(!isset($links->prevent_biolinks_discovery)) {
+        return true;
+    }
+
+    return (bool) $links->prevent_biolinks_discovery;
+}

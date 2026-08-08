@@ -2533,6 +2533,7 @@ class AdminSettings extends Controller {
             $_POST['static_is_enabled'] = (int) isset($_POST['static_is_enabled']);
             $_POST['sixsixpusher_is_enabled'] = (int) isset($_POST['sixsixpusher_is_enabled']);
             $_POST['claim_url_is_enabled'] = (int) isset($_POST['claim_url_is_enabled']);
+            $_POST['prevent_biolinks_discovery'] = (int) isset($_POST['prevent_biolinks_discovery']);
             $_POST['claim_url_type'] = in_array($_POST['claim_url_type'], ['link', 'biolink', 'file', 'vcard', 'event', 'static']) ? $_POST['claim_url_type'] : 'link';
             
             /* Process claim URL available domains */
@@ -2662,6 +2663,7 @@ class AdminSettings extends Controller {
                 'events_is_enabled' => $_POST['events_is_enabled'],
                 'static_is_enabled' => $_POST['static_is_enabled'],
                 'claim_url_is_enabled' => $_POST['claim_url_is_enabled'],
+                'prevent_biolinks_discovery' => $_POST['prevent_biolinks_discovery'],
                 'claim_url_type' => $_POST['claim_url_type'],
                 'claim_url_available_domains' => $claim_url_available_domains,
                 'subdirectory_redirect_is_enabled' => $_POST['subdirectory_redirect_is_enabled'],

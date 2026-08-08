@@ -96,7 +96,7 @@
                                 <?= l('dashboard.menu') ?> <i class="fas fa-fw fa-sm fa-arrow-right"></i>
                             </a>
                         <?php elseif(settings()->users->register_is_enabled): ?>
-                            <?php if(settings()->links->claim_url_is_enabled): ?>
+                            <?php if(settings()->links->claim_url_is_enabled && !biolinks_discovery_is_prevented()): ?>
                                 <div class="mb-3">
                                     <div class="input-group">
                                         <div class="input-group-prepend">
@@ -247,13 +247,13 @@
                                 }
                                 $claim_base_url = rtrim($subdirectory_redirect_base_url, '/');
                             ?>
-                            <a id="claim_button" href="<?= $claim_base_url ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= settings()->links->claim_url_is_enabled ? 'rounded-pill' : null ?>">
-                                <?= l(settings()->links->claim_url_is_enabled ? 'index.claim' : 'index.sign_up') ?> <i class="fas fa-fw fa-sm fa-arrow-right"></i>
+                            <a id="claim_button" href="<?= (settings()->links->claim_url_is_enabled && !biolinks_discovery_is_prevented()) ? $claim_base_url : url('register') ?>" class="btn index-button rounded-2x index-button-white bg-gradient border-0 mb-3 <?= (settings()->links->claim_url_is_enabled && !biolinks_discovery_is_prevented()) ? 'rounded-pill' : null ?>">
+                                <?= l((settings()->links->claim_url_is_enabled && !biolinks_discovery_is_prevented()) ? 'index.claim' : 'index.sign_up') ?> <i class="fas fa-fw fa-sm fa-arrow-right"></i>
                             </a>
                         <?php endif ?>
 
                         <?php //ALTUMCODE:DEMO if(!DEMO): ?>
-                        <?php if(settings()->links->biolinks_is_enabled && settings()->links->example_url && !settings()->links->claim_url_is_enabled): ?>
+                        <?php if(settings()->links->biolinks_is_enabled && settings()->links->example_url && !settings()->links->claim_url_is_enabled && !biolinks_discovery_is_prevented()): ?>
                             <a href="<?= settings()->links->example_url ?>" target="_blank" class="btn btn-outline-primary index-button mb-3 mb-lg-0">
                                 <?= l('index.example') ?> <i class="fas fa-fw fa-sm fa-external-link-alt"></i>
                             </a>

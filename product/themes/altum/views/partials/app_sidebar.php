@@ -192,7 +192,7 @@
                 <?php endif ?>
             <?php endif ?>
 
-            <?php if(settings()->links->biolinks_is_enabled && settings()->links->directory_is_enabled): ?>
+            <?php if(settings()->links->biolinks_is_enabled && settings()->links->directory_is_enabled && (!biolinks_discovery_is_prevented() || ($this->user->type ?? null) == 1)): ?>
                 <li class="<?= \Altum\Router::$controller == 'Directory' ? 'active' : null ?>">
                     <a href="<?= url('directory') ?>"><i class="fas fa-fw fa-sm fa-sitemap mr-2"></i> <?= l('directory.menu') ?></a>
                 </li>

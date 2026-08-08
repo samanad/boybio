@@ -12,6 +12,12 @@
             <small class="form-text text-muted"><?= l('admin_settings.links.biolinks_is_enabled_help') ?></small>
         </div>
 
+        <div class="form-group custom-control custom-switch">
+            <input id="prevent_biolinks_discovery" name="prevent_biolinks_discovery" type="checkbox" class="custom-control-input" <?= (!isset(settings()->links->prevent_biolinks_discovery) || settings()->links->prevent_biolinks_discovery) ? 'checked="checked"' : null?>>
+            <label class="custom-control-label" for="prevent_biolinks_discovery"><?= l('admin_settings.links.prevent_biolinks_discovery') ?></label>
+            <small class="form-text text-muted"><?= l('admin_settings.links.prevent_biolinks_discovery_help') ?></small>
+        </div>
+
         <div class="form-group">
             <label for="example_url"><?= l('admin_settings.links.example_url') ?></label>
             <input id="example_url" type="url" name="example_url" class="form-control" placeholder="<?= l('global.url_placeholder') ?>" value="<?= settings()->links->example_url ?>" />
