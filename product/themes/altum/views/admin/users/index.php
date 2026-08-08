@@ -297,6 +297,21 @@
                                 <i class="fas fa-fw fa-user-clock text-muted"></i>
                             </span>
 
+                            <?php $alive_sessions = (int) ($data->session_counts[$row->user_id] ?? 0) ?>
+                            <a href="#"
+                               class="mr-2 text-decoration-none"
+                               data-toggle="modal"
+                               data-target="#user_sessions_modal"
+                               data-user-id="<?= $row->user_id ?>"
+                               data-user-name="<?= e($row->name) ?>"
+                               title="<?= sprintf(l('admin_users.table.alive_sessions'), nr($alive_sessions)) ?>"
+                            >
+                                <i class="fas fa-fw fa-satellite-dish <?= $alive_sessions > 0 ? 'text-success' : 'text-muted' ?>"></i>
+                                <?php if($alive_sessions > 0): ?>
+                                    <span class="badge badge-success badge-pill" style="font-size: 0.65rem;"><?= nr($alive_sessions) ?></span>
+                                <?php endif ?>
+                            </a>
+
                             <a href="<?= url('admin/users?continent_code=' . $row->continent_code) ?>" class="mr-2" data-toggle="tooltip" title="<?= get_continent_from_continent_code($row->continent_code ?? l('global.unknown')) ?>">
                                 <i class="fas fa-fw fa-globe-europe text-muted"></i>
                             </a>
@@ -333,4 +348,5 @@
 <?php require THEME_PATH . 'views/partials/js_bulk.php' ?>
 <?php \Altum\Event::add_content(include_view(THEME_PATH . 'views/partials/bulk_delete_modal.php'), 'modals'); ?>
 <?php \Altum\Event::add_content(include_view(THEME_PATH . 'views/admin/users/bulk_resend_activation_modal.php'), 'modals'); ?>
+<?php \Altum\Event::add_content(include_view(THEME_PATH . 'views/admin/users/user_sessions_modal.php'), 'modals'); ?>
 

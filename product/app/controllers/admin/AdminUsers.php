@@ -54,6 +54,15 @@ class AdminUsers extends Controller {
             $users[] = $row;
         }
 
+        /* Alive session counts for users on this page */
+        $session_counts = [];
+        try {
+            \Altum\Models\UsersSessions::prune();
+            $session_counts = \Altum\Models\UsersSessions::alive_counts_for_users(array_map(fn($u) => (int) $u->user_id, $users));
+        } catch(\Throwable $e) {
+            $session_counts = [];
+        }
+
         /* Export handler */
         process_export_json($users, ['user_id', 'email', 'name', 'billing', 'plan_id', 'plan_settings', 'plan_expiration_date', 'plan_trial_done', 'status', 'source', 'language', 'timezone', 'continent_code', 'country', 'city_name', 'datetime', 'next_cleanup_datetime', 'last_activity', 'total_logins']);
         process_export_csv($users, ['user_id', 'email', 'name', 'plan_id', 'plan_expiration_date', 'plan_trial_done', 'status', 'source', 'language', 'timezone', 'continent_code', 'country', 'city_name', 'datetime', 'next_cleanup_datetime', 'last_activity', 'total_logins']);
@@ -72,13 +81,79 @@ class AdminUsers extends Controller {
             'plans' => $plans,
             'paginator' => $paginator,
             'pagination' => $pagination,
-            'filters' => $filters
+            'filters' => $filters,
+            'session_counts' => $session_counts,
         ];
 
         $view = new \Altum\View('admin/users/index', (array) $this);
 
         $this->add_view_content('content', $view->run($data));
 
+    }
+
+    public function sessions() {
+
+        $user_id = isset($this->params[0]) ? (int) $this->params[0] : null;
+
+        if(!$user_id || !\Altum\Csrf::check('global_token')) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => 'bad_request']);
+            die();
+        }
+
+        if(!$user = db()->where('user_id', $user_id)->getOne('users', ['user_id', 'name', 'email', 'type'])) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => 'not_found']);
+            die();
+        }
+
+        $sessions = [];
+        try {
+            foreach(\Altum\Models\UsersSessions::get_alive_for_user($user_id) as $row) {
+                $sessions[] = [
+                    'id' => (int) $row->id,
+                    'session_id' => $row->session_id,
+                    'ip' => $row->ip,
+                    'continent' => get_continent_from_continent_code($row->continent_code ?? null) ?: null,
+                    'country_code' => $row->country_code,
+                    'country' => $row->country_code ? get_country_from_country_code($row->country_code) : null,
+                    'city_name' => $row->city_name,
+                    'device_type' => $row->device_type,
+                    'device_label' => $row->device_type ? (l('global.device.' . $row->device_type) ?: $row->device_type) : null,
+                    'os_name' => $row->os_name,
+                    'browser_name' => $row->browser_name,
+                    'browser_language' => $row->browser_language,
+                    'user_agent' => $row->user_agent,
+                    'is_admin' => (bool) $row->is_admin,
+                    'admin_impersonation' => (bool) $row->admin_impersonation,
+                    'datetime' => $row->datetime,
+                    'datetime_display' => \Altum\Date::get($row->datetime, 2),
+                    'last_activity' => $row->last_activity,
+                    'last_activity_display' => \Altum\Date::get($row->last_activity, 2),
+                    'last_activity_ago' => \Altum\Date::get_timeago($row->last_activity),
+                ];
+            }
+        } catch(\Throwable $e) {
+            $sessions = [];
+        }
+
+        header('Content-Type: application/json');
+        header('Cache-Control: no-store');
+        echo json_encode([
+            'ok' => true,
+            'user' => [
+                'user_id' => (int) $user->user_id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_admin' => (bool) $user->type,
+            ],
+            'alive_minutes' => \Altum\Models\UsersSessions::ALIVE_MINUTES,
+            'count' => count($sessions),
+            'sessions' => $sessions,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        die();
     }
 
     public function login() {

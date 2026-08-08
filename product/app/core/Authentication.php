@@ -366,6 +366,12 @@ class Authentication {
     public static function logout($page = '') {
 
         if(self::check()) {
+            try {
+                \Altum\Models\UsersSessions::end_current();
+            } catch(\Throwable $e) {
+                /* ignore */
+            }
+
             db()->where('user_id', self::$user_id)->update('users', ['token_code' => '']);
 
             /* Clear the cache */

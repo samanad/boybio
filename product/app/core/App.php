@@ -168,6 +168,13 @@ class App {
                 (new User())->update_last_activity(\Altum\Authentication::$user_id);
             }
 
+            /* Keep alive session row fresh (also when admin-impersonating) */
+            try {
+                \Altum\Models\UsersSessions::touch_current((int) \Altum\Authentication::$user_id);
+            } catch(\Throwable $e) {
+                /* ignore */
+            }
+
             if(!isset($_COOKIE['set_language'])) {
                 /* Update the language of the site for next page use if the current language (default) is different than the one the user has */
                 if($_COOKIE['set_language'] != $user->language) {

@@ -292,6 +292,14 @@ class User extends Model {
 
         Logger::users($user_id, 'login.' . $method . '.success');
 
+        /* Track alive session for admin users list */
+        try {
+            $user_type = db()->where('user_id', $user_id)->getValue('users', 'type');
+            \Altum\Models\UsersSessions::upsert_current((int) $user_id, (bool) $user_type);
+        } catch(\Throwable $e) {
+            /* do not break login if session table missing mid-deploy */
+        }
+
         /* Clear the cache */
         cache()->deleteItemsByTag('user_id=' . $user_id);
 
