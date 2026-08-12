@@ -277,6 +277,59 @@ function get_ip() {
 }
 
 /**
+ * Check whether an IP matches a settings value that may contain:
+ * - a single IP
+ * - comma/space/newline separated IPs
+ * - hostnames (resolved via A/AAAA)
+ *
+ * Used by customized Authentication.php on production.
+ */
+function is_ip_in_settings_list($list, $ip = null) {
+    if($ip === null) {
+        $ip = get_ip();
+    }
+
+    if(!$ip || $list === null || $list === '') {
+        return false;
+    }
+
+    if(is_array($list)) {
+        $parts = $list;
+    } else {
+        $parts = preg_split('/[\s,;]+/', (string) $list, -1, PREG_SPLIT_NO_EMPTY);
+    }
+
+    if(!$parts) {
+        return false;
+    }
+
+    foreach($parts as $part) {
+        $part = trim((string) $part);
+        if($part === '') {
+            continue;
+        }
+
+        if(filter_var($part, FILTER_VALIDATE_IP)) {
+            if($part === $ip) {
+                return true;
+            }
+            continue;
+        }
+
+        /* Hostname / subdomain — match resolved A/AAAA */
+        try {
+            if(in_array($ip, get_hostname_ips($part), true)) {
+                return true;
+            }
+        } catch(\Throwable $exception) {
+            /* ignore bad host entries */
+        }
+    }
+
+    return false;
+}
+
+/**
  * Resolve A/AAAA records for a hostname (cached briefly).
  * Used for admin country-ban bypass via subdomain A record.
  */
