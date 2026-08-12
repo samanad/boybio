@@ -477,7 +477,7 @@ class Link extends Controller {
         /* Set cache if not existing */
         if(is_null($cache_instance->get())) {
 
-            $result = database()->query("SELECT * FROM `biolinks_blocks` WHERE `link_id` = {$this->link->link_id} AND `is_enabled` = 1 ORDER BY `order` ASC");
+            $result = database()->query("SELECT * FROM `biolinks_blocks` WHERE `link_id` = {$this->link->link_id} AND `is_enabled` = 1 ORDER BY `is_pinned` DESC, `order` ASC");
             $biolink_blocks = [];
 
             while($row = $result->fetch_object()) {
@@ -808,8 +808,8 @@ class Link extends Controller {
             $this->link->location_url = $parsed_url['scheme'] . '://' . $parsed_url['host'] . ($parsed_url['path'] ?? '');
         }
 
-        /* Check for targeting */
-        if($this->user->plan_settings->targeting_is_enabled && isset($this->link->settings->targeting_type)) {
+        /* Check for targeting (admin bypass IP skips geo targeting) */
+        if($this->user->plan_settings->targeting_is_enabled && isset($this->link->settings->targeting_type) && !is_admin_country_ban_bypassed()) {
             if($this->link->settings->targeting_type == 'continent_code') {
                 /* Detect the location */
                 try {

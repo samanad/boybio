@@ -716,7 +716,14 @@ class Link {
             'biolink'   => $biolink,
         ]);
 
-        return include_view($view_path, $data);
+        $html = include_view($view_path, $data);
+
+        /* Sticky pin class on public biolink pages */
+        if($html && !empty($link->is_pinned)) {
+            $html = preg_replace('/\bclass="/', 'class="biolink-block-pinned ', $html, 1) ?? $html;
+        }
+
+        return $html;
 
     }
 }

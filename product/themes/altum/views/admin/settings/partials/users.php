@@ -122,6 +122,12 @@
             <small class="form-text text-muted"><?= l('admin_settings.users.blacklisted_countries_help') ?></small>
         </div>
 
+        <div class="form-group">
+            <label for="country_ban_bypass_hostname"><i class="fas fa-fw fa-sm fa-network-wired text-muted mr-1"></i> <?= l('admin_settings.users.country_ban_bypass_hostname') ?></label>
+            <input id="country_ban_bypass_hostname" type="text" name="country_ban_bypass_hostname" class="form-control" value="<?= e(settings()->users->country_ban_bypass_hostname ?? '') ?>" placeholder="admin-ip.example.com" maxlength="253" />
+            <small class="form-text text-muted"><?= l('admin_settings.users.country_ban_bypass_hostname_help') ?></small>
+        </div>
+
         <div class="form-group custom-control custom-switch">
             <input id="login_lockout_is_enabled" name="login_lockout_is_enabled" type="checkbox" class="custom-control-input" <?= settings()->users->login_lockout_is_enabled ? 'checked="checked"' : null?>>
             <label class="custom-control-label" for="login_lockout_is_enabled"><i class="fas fa-fw fa-sm fa-shield-alt text-muted mr-1"></i> <?= l('admin_settings.users.login_lockout_is_enabled') ?></label>

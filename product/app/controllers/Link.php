@@ -71,7 +71,7 @@ class Link extends Controller {
                     $biolinks_themes = (new BiolinksThemes())->get_biolinks_themes();
 
                     /* Get the links available for the biolink */
-                    $link_links_result = database()->query("SELECT * FROM `biolinks_blocks` WHERE `link_id` = {$this->link->link_id} ORDER BY `order` ASC");
+                    $link_links_result = database()->query("SELECT * FROM `biolinks_blocks` WHERE `link_id` = {$this->link->link_id} ORDER BY `is_pinned` DESC, `order` ASC");
 
                     /* Add the modals for creating the links inside the biolink */
                     foreach($biolink_blocks as $key => $value) {

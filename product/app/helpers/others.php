@@ -276,6 +276,143 @@ function get_ip() {
     return null;
 }
 
+/**
+ * Resolve A/AAAA records for a hostname (cached briefly).
+ * Used for admin country-ban bypass via subdomain A record.
+ */
+function get_hostname_ips(string $hostname): array {
+    $hostname = strtolower(trim($hostname));
+    $hostname = preg_replace('#^https?://#', '', $hostname);
+    $hostname = rtrim(explode('/', $hostname)[0] ?? '', '.');
+
+    if($hostname === '' || filter_var($hostname, FILTER_VALIDATE_IP)) {
+        return $hostname !== '' && filter_var($hostname, FILTER_VALIDATE_IP) ? [$hostname] : [];
+    }
+
+    if(!preg_match('/^(?=.{1,253}$)(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i', $hostname)) {
+        return [];
+    }
+
+    $cache_key = 'hostname_ips:' . $hostname;
+    try {
+        $cache_item = cache()->getItem($cache_key);
+        if(!is_null($cache_item->get())) {
+            return (array) $cache_item->get();
+        }
+    } catch(\Throwable $exception) {
+        /* cache may be unavailable during early boot */
+        $cache_item = null;
+    }
+
+    $ips = [];
+
+    if(function_exists('dns_get_record')) {
+        foreach([DNS_A, DNS_AAAA] as $type) {
+            try {
+                $records = @dns_get_record($hostname, $type);
+                if(!is_array($records)) {
+                    continue;
+                }
+                foreach($records as $record) {
+                    if(!empty($record['ip']) && filter_var($record['ip'], FILTER_VALIDATE_IP)) {
+                        $ips[] = $record['ip'];
+                    }
+                    if(!empty($record['ipv6']) && filter_var($record['ipv6'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                        $ips[] = $record['ipv6'];
+                    }
+                }
+            } catch(\Throwable $exception) {
+                /* ignore DNS failures */
+            }
+        }
+    }
+
+    if(!$ips) {
+        $resolved = @gethostbyname($hostname);
+        if($resolved && $resolved !== $hostname && filter_var($resolved, FILTER_VALIDATE_IP)) {
+            $ips[] = $resolved;
+        }
+    }
+
+    $ips = array_values(array_unique($ips));
+
+    if(isset($cache_item)) {
+        try {
+            cache()->save($cache_item->set($ips)->expiresAfter(60));
+        } catch(\Throwable $exception) {
+            /* ignore */
+        }
+    }
+
+    return $ips;
+}
+
+/** True when current visitor IP matches the admin bypass hostname A/AAAA record. */
+function is_admin_country_ban_bypassed(): bool {
+    static $cached = null;
+    if($cached !== null) {
+        return $cached;
+    }
+
+    $hostname = trim((string) (settings()->users->country_ban_bypass_hostname ?? ''));
+    if($hostname === '') {
+        return $cached = false;
+    }
+
+    $ip = get_ip();
+    if(!$ip) {
+        return $cached = false;
+    }
+
+    return $cached = in_array($ip, get_hostname_ips($hostname), true);
+}
+
+/** Block the request when visitor country is blacklisted (unless admin hostname IP bypass). */
+function enforce_blacklisted_countries(): void {
+    static $done = false;
+    if($done) {
+        return;
+    }
+    $done = true;
+
+    $blacklisted = settings()->users->blacklisted_countries ?? [];
+    if(!is_array($blacklisted) || !count($blacklisted)) {
+        return;
+    }
+
+    /* Keep system endpoints reachable */
+    $altum = (string) ($_GET['altum'] ?? '');
+    if(
+        str_starts_with($altum, 'cron')
+        || str_starts_with($altum, 'sitemap')
+        || str_starts_with($altum, 'webhook-')
+        || str_starts_with($altum, 'api/')
+    ) {
+        return;
+    }
+
+    if(is_admin_country_ban_bypassed()) {
+        return;
+    }
+
+    try {
+        $maxmind = (get_maxmind_reader_country())->get(get_ip());
+    } catch(\Throwable $exception) {
+        return;
+    }
+
+    $country = isset($maxmind['country']['iso_code']) ? $maxmind['country']['iso_code'] : null;
+    if(!$country || !in_array($country, $blacklisted, true)) {
+        return;
+    }
+
+    http_response_code(403);
+    header('Content-Type: text/html; charset=utf-8');
+    $message = function_exists('l') ? (l('global.error_message.blacklisted_country') ?: 'Access from your country is not allowed.') : 'Access from your country is not allowed.';
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>403</title></head><body style="font-family:system-ui,sans-serif;text-align:center;padding:4rem 1rem;background:#111;color:#eee"><h1 style="margin:0 0 .5rem">403</h1><p style="opacity:.85">' . htmlspecialchars((string) $message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p></body></html>';
+    die();
+}
+
 function get_this_device_type() {
     static $cached_device_type = null;
 

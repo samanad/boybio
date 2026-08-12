@@ -227,6 +227,12 @@ class AdminSettings extends Controller {
             /* :) */
             $_POST['blacklisted_domains'] = array_filter(array_map('trim', explode(',', $_POST['blacklisted_domains'])));
             $_POST['blacklisted_countries'] = $_POST['blacklisted_countries'] ?? [];
+            $_POST['country_ban_bypass_hostname'] = trim(mb_strtolower($_POST['country_ban_bypass_hostname'] ?? ''));
+            $_POST['country_ban_bypass_hostname'] = preg_replace('#^https?://#', '', $_POST['country_ban_bypass_hostname']);
+            $_POST['country_ban_bypass_hostname'] = rtrim(explode('/', $_POST['country_ban_bypass_hostname'])[0] ?? '', '.');
+            if($_POST['country_ban_bypass_hostname'] !== '' && !preg_match('/^(?=.{1,253}$)(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i', $_POST['country_ban_bypass_hostname']) && !filter_var($_POST['country_ban_bypass_hostname'], FILTER_VALIDATE_IP)) {
+                $_POST['country_ban_bypass_hostname'] = '';
+            }
 
             $value = json_encode([
                 'email_aliases_is_enabled' => isset($_POST['email_aliases_is_enabled']),
@@ -244,6 +250,7 @@ class AdminSettings extends Controller {
                 'user_deletion_reminder' => (int) $_POST['user_deletion_reminder'],
                 'blacklisted_domains' => $_POST['blacklisted_domains'],
                 'blacklisted_countries' => $_POST['blacklisted_countries'],
+                'country_ban_bypass_hostname' => $_POST['country_ban_bypass_hostname'],
                 'login_lockout_is_enabled' => isset($_POST['login_lockout_is_enabled']),
                 'login_lockout_max_retries' => (int) $_POST['login_lockout_max_retries'] < 1 ? 1 : (int) $_POST['login_lockout_max_retries'],
                 'login_lockout_time' => (int) $_POST['login_lockout_time'] < 1 ? 1 : (int) $_POST['login_lockout_time'],

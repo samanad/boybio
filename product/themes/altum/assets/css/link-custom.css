@@ -360,6 +360,13 @@ form .btn-primary:active {
     color: white;
 }
 
+/* Pinned biolink block — sticky at top while scrolling */
+.biolink-block-pinned {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
 /* Preview highlight */
 [data-biolink-block-id] {
     transition: .3s all;

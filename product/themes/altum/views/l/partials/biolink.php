@@ -73,14 +73,15 @@
                                 continue;
                             }
 
-                            /* Check if there are any extra display rules */
-                            if($continent_code && count($row->settings->display_continents ?? []) && !in_array($continent_code, $row->settings->display_continents ?? [])) {
+                            /* Check if there are any extra display rules (admin bypass IP skips geo filters) */
+                            $skip_geo_display_rules = is_admin_country_ban_bypassed();
+                            if(!$skip_geo_display_rules && $continent_code && count($row->settings->display_continents ?? []) && !in_array($continent_code, $row->settings->display_continents ?? [])) {
                                 continue;
                             }
-                            if($country_code && count($row->settings->display_countries ?? []) && !in_array($country_code, $row->settings->display_countries ?? [])) {
+                            if(!$skip_geo_display_rules && $country_code && count($row->settings->display_countries ?? []) && !in_array($country_code, $row->settings->display_countries ?? [])) {
                                 continue;
                             }
-                            if($city_name && count($row->settings->display_cities ?? []) && !in_array($city_name, $row->settings->display_cities ?? [])) {
+                            if(!$skip_geo_display_rules && $city_name && count($row->settings->display_cities ?? []) && !in_array($city_name, $row->settings->display_cities ?? [])) {
                                 continue;
                             }
                             if($device_type && count($row->settings->display_devices ?? []) && !in_array($device_type, $row->settings->display_devices ?? [])) {

@@ -1081,6 +1081,10 @@ blockquote {
 	height: min-content;
 }
 
+.biolink-block-editor-pinned {
+	border-left: 3px solid var(--primary, #3f51b5);
+}
+
 /* Icons on links animations */
 a svg {
 	transition: transform .15s;

@@ -113,8 +113,8 @@ class Register extends Controller {
             } catch(\Exception $exception) { /* :) */ }
             $country = isset($maxmind) && isset($maxmind['country']) ? $maxmind['country']['iso_code'] : null;
 
-            /* Make sure the country is not blacklisted */
-            if($country && in_array($country, settings()->users->blacklisted_countries ?? [])) {
+            /* Make sure the country is not blacklisted (admin hostname A-record IP is bypassed) */
+            if($country && in_array($country, settings()->users->blacklisted_countries ?? []) && !is_admin_country_ban_bypassed()) {
                 Alerts::add_error(l('register.error_message.blacklisted_country'));
             }
 

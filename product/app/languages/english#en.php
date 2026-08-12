@@ -173,6 +173,7 @@ return [
     'global.error_message.file_upload' => 'Something happened while uploading the file and we could not process it.',
     'global.error_message.invalid_csrf_token' => 'The action could not be finished because the protector has expired, please try again.',
     'global.error_message.basic' => 'We could not perform this action.',
+    'global.error_message.blacklisted_country' => 'Access from your country is not allowed.',
     'global.error_message.file_size_limit' => 'The uploaded file is too big, the maximum file size you are allowed to upload is %s MB.',
     'global.error_message.password_length' => 'The password must be between 6 and 64 characters.',
     'global.error_message.passwords_not_matching' => 'The entered passwords do not match.',
@@ -2111,6 +2112,7 @@ return [
     'link.biolink_blocks.no_data' => 'You got no content',
     'link.biolink_blocks.no_data_help' => 'Add your first block of content.',
     'link.biolink_blocks.is_enabled_tooltip' => 'Change status',
+    'link.biolink_blocks.is_pinned_tooltip' => 'Pin block to the top (stays sticky while scrolling)',
 
     'link.statistics.breadcrumb' => 'Statistics',
     'link.statistics.header' => 'Statistics',

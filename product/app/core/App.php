@@ -90,6 +90,9 @@ class App {
         /* Initiate the Language system with the default language */
         Language::set_default_by_name(settings()->main->default_language);
 
+        /* Site-wide country blacklist (admin hostname A-record IP bypasses) */
+        enforce_blacklisted_countries();
+
         /* Set the default theme style */
         ThemeStyle::set_default(settings()->main->default_theme_style);
 
