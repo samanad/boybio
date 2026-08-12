@@ -509,6 +509,7 @@ CREATE TABLE `biolinks_blocks` (
 `end_date` datetime DEFAULT NULL,
 `is_enabled` tinyint(4) NOT NULL DEFAULT '1',
 `is_pinned` tinyint(4) NOT NULL DEFAULT '0',
+`is_sticky` tinyint(4) NOT NULL DEFAULT '0',
 `datetime` datetime NOT NULL,
 `last_datetime` datetime DEFAULT NULL,
 PRIMARY KEY (`biolink_block_id`),

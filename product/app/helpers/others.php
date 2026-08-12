@@ -419,21 +419,35 @@ function get_hostname_ips($hostname) {
     return $ips;
 }
 
-/** Whether biolinks_blocks.is_pinned exists (cached). */
-function biolinks_blocks_has_is_pinned_column() {
-    static $cached = null;
-    if($cached !== null) {
-        return $cached;
+/** Whether a biolinks_blocks column exists (cached per column). */
+function biolinks_blocks_has_column($column) {
+    static $cache = [];
+    $column = (string) $column;
+    if(array_key_exists($column, $cache)) {
+        return $cache[$column];
+    }
+
+    /* Only allow known safe column names */
+    if(!preg_match('/^[a-z0-9_]+$/i', $column)) {
+        return $cache[$column] = false;
     }
 
     try {
-        $result = database()->query("SHOW COLUMNS FROM `biolinks_blocks` LIKE 'is_pinned'");
-        $cached = $result && isset($result->num_rows) && $result->num_rows > 0;
+        $result = database()->query("SHOW COLUMNS FROM `biolinks_blocks` LIKE '{$column}'");
+        $cache[$column] = $result && isset($result->num_rows) && $result->num_rows > 0;
     } catch(\Throwable $exception) {
-        $cached = false;
+        $cache[$column] = false;
     }
 
-    return (bool) $cached;
+    return (bool) $cache[$column];
+}
+
+function biolinks_blocks_has_is_pinned_column() {
+    return biolinks_blocks_has_column('is_pinned');
+}
+
+function biolinks_blocks_has_is_sticky_column() {
+    return biolinks_blocks_has_column('is_sticky');
 }
 
 /** ORDER BY fragment for biolink blocks (pinned first when column exists). */

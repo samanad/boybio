@@ -762,7 +762,7 @@
                         $row->settings->border_shadow_color = $row->settings->border_shadow_color ?? '#00000010';
                         ?>
 
-                        <div class="biolink_block card <?= $row->is_enabled ? null : 'custom-row-inactive' ?> <?= !empty($row->is_pinned) ? 'biolink-block-editor-pinned' : null ?> mb-4" data-biolink-block-id="<?= $row->biolink_block_id ?>">
+                        <div class="biolink_block card <?= $row->is_enabled ? null : 'custom-row-inactive' ?> <?= !empty($row->is_pinned) ? 'biolink-block-editor-pinned' : null ?> <?= !empty($row->is_sticky) ? 'biolink-block-editor-sticky' : null ?> mb-4" data-biolink-block-id="<?= $row->biolink_block_id ?>">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
                                     <div class="custom-row-side-controller">
@@ -844,6 +844,17 @@
                                                 <?= !empty($row->is_pinned) ? 'checked="checked"' : null ?>
                                             >
                                             <label class="custom-control-label" for="biolink_block_is_pinned_<?= $row->biolink_block_id ?>"><i class="fas fa-thumbtack fa-sm text-muted"></i></label>
+                                        </div>
+
+                                        <div class="custom-control custom-switch" data-toggle="tooltip" title="<?= l('link.biolink_blocks.is_sticky_tooltip') ?>">
+                                            <input
+                                                    type="checkbox"
+                                                    class="custom-control-input"
+                                                    id="biolink_block_is_sticky_<?= $row->biolink_block_id ?>"
+                                                    data-row-id="<?= $row->biolink_block_id ?>"
+                                                <?= !empty($row->is_sticky) ? 'checked="checked"' : null ?>
+                                            >
+                                            <label class="custom-control-label" for="biolink_block_is_sticky_<?= $row->biolink_block_id ?>"><i class="fas fa-thumbtack fa-sm fa-rotate-270 text-muted"></i></label>
                                         </div>
 
                                         <div class="custom-control custom-switch" data-toggle="tooltip" title="<?= l('link.biolink_blocks.is_enabled_tooltip') ?>">
@@ -1541,6 +1552,13 @@
     $('[id^="biolink_block_is_pinned_"]').on('change', event => {
         ajax_call_helper(event, 'biolink-block-ajax', 'is_pinned_toggle', () => {
             $(event.currentTarget).closest('.biolink_block').toggleClass('biolink-block-editor-pinned');
+            refresh_biolink_preview();
+        });
+    });
+
+    $('[id^="biolink_block_is_sticky_"]').on('change', event => {
+        ajax_call_helper(event, 'biolink-block-ajax', 'is_sticky_toggle', () => {
+            $(event.currentTarget).closest('.biolink_block').toggleClass('biolink-block-editor-sticky');
             refresh_biolink_preview();
         });
     });

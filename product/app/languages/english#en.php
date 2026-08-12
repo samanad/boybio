@@ -2112,7 +2112,8 @@ return [
     'link.biolink_blocks.no_data' => 'You got no content',
     'link.biolink_blocks.no_data_help' => 'Add your first block of content.',
     'link.biolink_blocks.is_enabled_tooltip' => 'Change status',
-    'link.biolink_blocks.is_pinned_tooltip' => 'Pin block to the top (stays sticky while scrolling)',
+    'link.biolink_blocks.is_pinned_tooltip' => 'Pin block to the top of the page',
+    'link.biolink_blocks.is_sticky_tooltip' => 'Keep block sticky while scrolling',
 
     'link.statistics.breadcrumb' => 'Statistics',
     'link.statistics.header' => 'Statistics',

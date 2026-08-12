@@ -1085,6 +1085,10 @@ blockquote {
 	border-left: 3px solid var(--primary, #3f51b5);
 }
 
+.biolink-block-editor-sticky {
+	border-right: 3px solid var(--primary, #3f51b5);
+}
+
 /* Icons on links animations */
 a svg {
 	transition: transform .15s;
