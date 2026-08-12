@@ -96,6 +96,7 @@ require_once APP_PATH . 'core/Model.php';
 /* Load some helpers */
 require_once APP_PATH . 'helpers/Link.php';
 require_once APP_PATH . 'helpers/core.php';
+require_once APP_PATH . 'helpers/sessions.php';
 require_once APP_PATH . 'helpers/others.php';
 require_once APP_PATH . 'helpers/links.php';
 require_once APP_PATH . 'helpers/strings.php';

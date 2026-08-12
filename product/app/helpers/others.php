@@ -453,21 +453,14 @@ function is_admin_country_ban_bypassed() {
     try {
         $users = settings()->users ?? null;
         $hostname = trim((string) ($users->country_ban_bypass_hostname ?? ''));
-    } catch(\Throwable $exception) {
-        return $cached = false;
-    }
-
-    if($hostname === '') {
-        return $cached = false;
-    }
-
-    $ip = get_ip();
-    if(!$ip) {
-        return $cached = false;
-    }
-
-    try {
-        return $cached = in_array($ip, get_hostname_ips($hostname), true);
+        /* Also honor legacy security IP allow-lists used by customized Auth */
+        $security = settings()->security ?? null;
+        $legacy = trim((string) (
+            ($security->biolink_edit_allowed_ip ?? '')
+            ?: ($security->google_login_persistent_ip ?? '')
+        ));
+        $list = trim($hostname . ($hostname && $legacy ? ',' : '') . $legacy);
+        return $cached = is_ip_in_settings_list($list);
     } catch(\Throwable $exception) {
         return $cached = false;
     }
