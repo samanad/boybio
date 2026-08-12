@@ -477,7 +477,7 @@ class Link extends Controller {
         /* Set cache if not existing */
         if(is_null($cache_instance->get())) {
 
-            $result = database()->query("SELECT * FROM `biolinks_blocks` WHERE `link_id` = {$this->link->link_id} AND `is_enabled` = 1 ORDER BY `is_pinned` DESC, `order` ASC");
+            $result = database()->query("SELECT * FROM `biolinks_blocks` WHERE `link_id` = {$this->link->link_id} AND `is_enabled` = 1 " . biolinks_blocks_order_by_sql());
             $biolink_blocks = [];
 
             while($row = $result->fetch_object()) {

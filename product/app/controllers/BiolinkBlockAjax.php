@@ -176,6 +176,10 @@ class BiolinkBlockAjax extends Controller {
             Response::json(l('global.info_message.team_no_access'), 'error');
         }
 
+        if(!biolinks_blocks_has_is_pinned_column()) {
+            Response::json(l('global.error_message.basic'), 'error');
+        }
+
         $_POST['biolink_block_id'] = (int) $_POST['biolink_block_id'];
 
         $biolink_block = db()->where('biolink_block_id', $_POST['biolink_block_id'])->where('user_id', $this->user->user_id)->getOne('biolinks_blocks', ['biolink_block_id', 'link_id', 'is_pinned']);
@@ -279,7 +283,7 @@ class BiolinkBlockAjax extends Controller {
             $settings = json_encode($biolink_block->settings ?? '');
 
             /* Database query */
-            db()->insert('biolinks_blocks', [
+            $insert_data = [
                 'user_id' => $this->user->user_id,
                 'link_id' => $biolink_block->link_id,
                 'type' => $biolink_block->type,
@@ -289,9 +293,12 @@ class BiolinkBlockAjax extends Controller {
                 'start_date' => $biolink_block->start_date,
                 'end_date' => $biolink_block->end_date,
                 'is_enabled' => $biolink_block->is_enabled,
-                'is_pinned' => (int) ($biolink_block->is_pinned ?? 0),
                 'datetime' => get_date(),
-            ]);
+            ];
+            if(biolinks_blocks_has_is_pinned_column()) {
+                $insert_data['is_pinned'] = (int) ($biolink_block->is_pinned ?? 0);
+            }
+            db()->insert('biolinks_blocks', $insert_data);
 
             /* Clear the cache */
             cache()->deleteItem('biolink_blocks?link_id=' . $biolink_block->link_id);

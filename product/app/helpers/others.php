@@ -347,6 +347,30 @@ function get_hostname_ips(string $hostname): array {
     return $ips;
 }
 
+/** Whether biolinks_blocks.is_pinned exists (cached). */
+function biolinks_blocks_has_is_pinned_column(): bool {
+    static $cached = null;
+    if($cached !== null) {
+        return $cached;
+    }
+
+    try {
+        $result = database()->query("SHOW COLUMNS FROM `biolinks_blocks` LIKE 'is_pinned'");
+        $cached = $result && $result->num_rows > 0;
+    } catch(\Throwable $exception) {
+        $cached = false;
+    }
+
+    return $cached;
+}
+
+/** ORDER BY fragment for biolink blocks (pinned first when column exists). */
+function biolinks_blocks_order_by_sql(): string {
+    return biolinks_blocks_has_is_pinned_column()
+        ? 'ORDER BY `is_pinned` DESC, `order` ASC'
+        : 'ORDER BY `order` ASC';
+}
+
 /** True when current visitor IP matches the admin bypass hostname A/AAAA record. */
 function is_admin_country_ban_bypassed(): bool {
     static $cached = null;
@@ -354,7 +378,12 @@ function is_admin_country_ban_bypassed(): bool {
         return $cached;
     }
 
-    $hostname = trim((string) (settings()->users->country_ban_bypass_hostname ?? ''));
+    try {
+        $hostname = trim((string) (settings()->users->country_ban_bypass_hostname ?? ''));
+    } catch(\Throwable $exception) {
+        return $cached = false;
+    }
+
     if($hostname === '') {
         return $cached = false;
     }
@@ -375,7 +404,12 @@ function enforce_blacklisted_countries(): void {
     }
     $done = true;
 
-    $blacklisted = settings()->users->blacklisted_countries ?? [];
+    try {
+        $blacklisted = settings()->users->blacklisted_countries ?? [];
+    } catch(\Throwable $exception) {
+        return;
+    }
+
     if(!is_array($blacklisted) || !count($blacklisted)) {
         return;
     }
@@ -408,7 +442,17 @@ function enforce_blacklisted_countries(): void {
 
     http_response_code(403);
     header('Content-Type: text/html; charset=utf-8');
-    $message = function_exists('l') ? (l('global.error_message.blacklisted_country') ?: 'Access from your country is not allowed.') : 'Access from your country is not allowed.';
+    $message = 'Access from your country is not allowed.';
+    try {
+        if(function_exists('l')) {
+            $translated = l('global.error_message.blacklisted_country');
+            if(is_string($translated) && $translated !== '') {
+                $message = $translated;
+            }
+        }
+    } catch(\Throwable $exception) {
+        /* keep default */
+    }
     echo '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>403</title></head><body style="font-family:system-ui,sans-serif;text-align:center;padding:4rem 1rem;background:#111;color:#eee"><h1 style="margin:0 0 .5rem">403</h1><p style="opacity:.85">' . htmlspecialchars((string) $message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p></body></html>';
     die();
 }
