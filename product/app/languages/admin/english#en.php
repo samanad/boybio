@@ -748,6 +748,7 @@ return [
     'admin_settings.users.country_ban_bypass_hostnames_help' => 'One hostname per line (or comma-separated). Each hostname’s A/AAAA record is resolved; visitors from those IPs skip the country blacklist. Example: admin-ip.yourdomain.com',
     'admin_settings.users.country_ban_bypass_ips' => 'Country ban bypass IPs',
     'admin_settings.users.country_ban_bypass_ips_help' => 'One IPv4/IPv6 address per line (or comma-separated). Use * as a wildcard, e.g. 1.2.3.* or 10.0.*.*. Visitors matching these IPs skip the country blacklist everywhere.',
+    'admin_settings.users.country_ban_bypass_current_ip' => 'Your current IP (add this or a matching pattern): %s',
     'admin_settings.users.country_ban_bypass_hostname' => 'Country ban bypass hostname',
     'admin_settings.users.country_ban_bypass_hostname_help' => 'Enter a subdomain whose A (or AAAA) record points to your admin IP. Connections from that resolved IP skip the country blacklist everywhere. Example: admin-ip.yourdomain.com',
     'admin_settings.users.lockouts' => 'Anti spam measures',

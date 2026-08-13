@@ -268,8 +268,11 @@ function get_ip() {
         return $cached_ip_address;
     }
 
-    /* list of server keys to check for IP */
+    /* Prefer real client IP behind CDN/proxy (Cloudflare first) */
     $ip_sources = [
+        'HTTP_CF_CONNECTING_IP',
+        'HTTP_TRUE_CLIENT_IP',
+        'HTTP_X_REAL_IP',
         'HTTP_CLIENT_IP',
         'HTTP_X_FORWARDED_FOR',
         'REMOTE_ADDR'
@@ -295,6 +298,42 @@ function get_ip() {
 
     /* fallback if no valid IP found */
     return null;
+}
+
+/**
+ * Normalize a settings list that may be a string, array, or object into a clean string list.
+ * Avoids PHP's (array)"1.2.3.4" character-splitting bug.
+ */
+function settings_list_to_array($value) {
+    if($value === null || $value === '') {
+        return [];
+    }
+
+    if(is_string($value)) {
+        $parts = preg_split('/[\s,;]+/', $value, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        return array_values(array_unique(array_filter(array_map('trim', $parts))));
+    }
+
+    if(is_object($value)) {
+        $value = (array) $value;
+    }
+
+    if(!is_array($value)) {
+        return [];
+    }
+
+    $parts = [];
+    foreach($value as $item) {
+        if(is_array($item) || is_object($item)) {
+            continue;
+        }
+        $item = trim((string) $item);
+        if($item !== '') {
+            $parts[] = $item;
+        }
+    }
+
+    return array_values(array_unique($parts));
 }
 
 /**
@@ -565,33 +604,19 @@ function is_admin_country_ban_bypassed() {
     try {
         $users = settings()->users ?? null;
 
-        $entries = [];
-
-        /* New multi-value settings */
-        foreach((array) ($users->country_ban_bypass_ips ?? []) as $ip) {
-            $entries[] = $ip;
-        }
-        foreach((array) ($users->country_ban_bypass_hostnames ?? []) as $hostname) {
-            $entries[] = $hostname;
-        }
-
-        /* Legacy single hostname field */
-        $legacy_hostname = trim((string) ($users->country_ban_bypass_hostname ?? ''));
-        if($legacy_hostname !== '') {
-            $entries[] = $legacy_hostname;
-        }
+        $entries = array_merge(
+            settings_list_to_array($users->country_ban_bypass_ips ?? []),
+            settings_list_to_array($users->country_ban_bypass_hostnames ?? []),
+            settings_list_to_array($users->country_ban_bypass_hostname ?? '')
+        );
 
         /* Also honor legacy security IP allow-lists used by customized Auth */
         $security = settings()->security ?? null;
-        $legacy_security = trim((string) (
-            ($security->biolink_edit_allowed_ip ?? '')
-            ?: ($security->google_login_persistent_ip ?? '')
-        ));
-        if($legacy_security !== '') {
-            foreach(preg_split('/[\s,;]+/', $legacy_security, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $part) {
-                $entries[] = $part;
-            }
-        }
+        $entries = array_merge(
+            $entries,
+            settings_list_to_array($security->biolink_edit_allowed_ip ?? ''),
+            settings_list_to_array($security->google_login_persistent_ip ?? '')
+        );
 
         $entries = array_values(array_unique(array_filter(array_map('trim', $entries))));
 

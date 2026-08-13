@@ -228,39 +228,41 @@ class AdminSettings extends Controller {
             $_POST['blacklisted_domains'] = array_filter(array_map('trim', explode(',', $_POST['blacklisted_domains'])));
             $_POST['blacklisted_countries'] = $_POST['blacklisted_countries'] ?? [];
 
-            /* Country ban bypass: multiple hostnames + multiple IPs */
+            /* Country ban bypass: multiple hostnames + multiple IPs (IPs may appear in either box) */
             $parse_list = static function($raw) {
-                $parts = preg_split('/[\s,;]+/', (string) $raw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-                return array_values(array_unique(array_filter(array_map('trim', $parts))));
+                return settings_list_to_array($raw);
             };
 
-            $hostnames = $parse_list($_POST['country_ban_bypass_hostnames'] ?? '');
-            /* Migrate legacy single hostname field if posted somehow / keep empty for cleanup */
+            $raw_hostnames = $parse_list($_POST['country_ban_bypass_hostnames'] ?? '');
+            $raw_ips = $parse_list($_POST['country_ban_bypass_ips'] ?? '');
             $legacy_hostname = trim(mb_strtolower((string) ($_POST['country_ban_bypass_hostname'] ?? '')));
             if($legacy_hostname !== '') {
-                $hostnames[] = $legacy_hostname;
+                $raw_hostnames[] = $legacy_hostname;
             }
 
             $valid_hostnames = [];
-            foreach($hostnames as $hostname) {
-                $hostname = mb_strtolower($hostname);
-                $hostname = preg_replace('#^https?://#', '', $hostname);
-                $hostname = rtrim(explode('/', $hostname)[0] ?? '', '.');
-                if($hostname === '') {
+            $valid_ips = [];
+
+            foreach(array_merge($raw_ips, $raw_hostnames) as $entry) {
+                $entry = trim((string) $entry);
+                if($entry === '') {
                     continue;
                 }
-                if(preg_match('/^(?=.{1,253}$)(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i', $hostname)) {
+
+                if(is_valid_ip_allowlist_entry($entry)) {
+                    $valid_ips[] = $entry;
+                    continue;
+                }
+
+                $hostname = mb_strtolower($entry);
+                $hostname = preg_replace('#^https?://#', '', $hostname);
+                $hostname = rtrim(explode('/', $hostname)[0] ?? '', '.');
+                if($hostname !== '' && preg_match('/^(?=.{1,253}$)(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i', $hostname)) {
                     $valid_hostnames[] = $hostname;
                 }
             }
-            $valid_hostnames = array_values(array_unique($valid_hostnames));
 
-            $valid_ips = [];
-            foreach($parse_list($_POST['country_ban_bypass_ips'] ?? '') as $ip) {
-                if(is_valid_ip_allowlist_entry($ip)) {
-                    $valid_ips[] = $ip;
-                }
-            }
+            $valid_hostnames = array_values(array_unique($valid_hostnames));
             $valid_ips = array_values(array_unique($valid_ips));
 
             $_POST['country_ban_bypass_hostnames'] = $valid_hostnames;

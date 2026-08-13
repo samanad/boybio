@@ -125,19 +125,27 @@
         <div class="form-group">
             <label for="country_ban_bypass_hostnames"><i class="fas fa-fw fa-sm fa-network-wired text-muted mr-1"></i> <?= l('admin_settings.users.country_ban_bypass_hostnames') ?></label>
             <?php
-            $bypass_hostnames = array_values(array_unique(array_filter(array_merge(
-                (array) (settings()->users->country_ban_bypass_hostnames ?? []),
-                !empty(settings()->users->country_ban_bypass_hostname) ? [(string) settings()->users->country_ban_bypass_hostname] : []
-            ))));
+            $bypass_hostnames = settings_list_to_array(settings()->users->country_ban_bypass_hostnames ?? []);
+            $legacy_bypass_hostname = trim((string) (settings()->users->country_ban_bypass_hostname ?? ''));
+            if($legacy_bypass_hostname !== '') {
+                $bypass_hostnames[] = $legacy_bypass_hostname;
+                $bypass_hostnames = array_values(array_unique($bypass_hostnames));
+            }
+            $bypass_ips = settings_list_to_array(settings()->users->country_ban_bypass_ips ?? []);
             ?>
-            <textarea id="country_ban_bypass_hostnames" name="country_ban_bypass_hostnames" class="form-control" rows="3" placeholder="admin-ip.example.com&#10;office.example.com"><?= e(implode("\n", $bypass_hostnames)) ?></textarea>
+            <textarea id="country_ban_bypass_hostnames" name="country_ban_bypass_hostnames" class="form-control" rows="3" placeholder="admin-ip.example.com, office.example.com"><?= e(implode("\n", $bypass_hostnames)) ?></textarea>
             <small class="form-text text-muted"><?= l('admin_settings.users.country_ban_bypass_hostnames_help') ?></small>
         </div>
 
         <div class="form-group">
             <label for="country_ban_bypass_ips"><i class="fas fa-fw fa-sm fa-server text-muted mr-1"></i> <?= l('admin_settings.users.country_ban_bypass_ips') ?></label>
-            <textarea id="country_ban_bypass_ips" name="country_ban_bypass_ips" class="form-control" rows="3" placeholder="1.2.3.4&#10;1.2.3.*&#10;10.0.*.*"><?= e(implode("\n", (array) (settings()->users->country_ban_bypass_ips ?? []))) ?></textarea>
-            <small class="form-text text-muted"><?= l('admin_settings.users.country_ban_bypass_ips_help') ?></small>
+            <textarea id="country_ban_bypass_ips" name="country_ban_bypass_ips" class="form-control" rows="3" placeholder="1.2.3.4, 1.2.3.*, 10.0.*.*"><?= e(implode("\n", $bypass_ips)) ?></textarea>
+            <small class="form-text text-muted">
+                <?= l('admin_settings.users.country_ban_bypass_ips_help') ?>
+                <?php if($current_ip = get_ip()): ?>
+                    <br><?= sprintf(l('admin_settings.users.country_ban_bypass_current_ip'), '<code>' . e($current_ip) . '</code>') ?>
+                <?php endif ?>
+            </small>
         </div>
 
         <div class="form-group custom-control custom-switch">
