@@ -188,6 +188,66 @@
             document.documentElement.style.height = 'auto';
         }
     }
+
+    /* Sticky avatar: square for 1s at top → configured shape; shrink ~5x on scroll */
+    (() => {
+        const sticky_avatars = document.querySelectorAll('.biolink-block-sticky[data-biolink-block-type="avatar"]');
+        if(!sticky_avatars.length) return;
+
+        const SCROLL_COMPACT_AT = 24;
+
+        const apply_target_radius = block => {
+            const img = block.querySelector('[data-avatar]');
+            if(!img || img.dataset.radiusApplied === '1') return;
+
+            const target = block.getAttribute('data-avatar-target-radius') || 'round';
+            img.classList.remove('link-avatar-straight', 'link-avatar-round', 'link-avatar-rounded');
+            img.classList.add('link-avatar-' + target);
+            img.dataset.radiusApplied = '1';
+        };
+
+        sticky_avatars.forEach(block => {
+            const img = block.querySelector('[data-avatar]');
+            const size = parseInt(block.getAttribute('data-avatar-size') || '125', 10);
+            if(img && size > 0) {
+                img.style.setProperty('--avatar-size', size + 'px');
+            }
+
+            /* After 1s at top, morph square → round/rounded (if configured) */
+            const target = block.getAttribute('data-avatar-target-radius') || 'round';
+            if(target === 'round' || target === 'rounded') {
+                window.setTimeout(() => {
+                    if(window.scrollY <= SCROLL_COMPACT_AT) {
+                        apply_target_radius(block);
+                    }
+                }, 1000);
+            } else {
+                img && (img.dataset.radiusApplied = '1');
+            }
+        });
+
+        let ticking = false;
+        const on_scroll = () => {
+            const compact = window.scrollY > SCROLL_COMPACT_AT;
+            sticky_avatars.forEach(block => {
+                block.classList.toggle('biolink-avatar-compact', compact);
+                /* If user scrolls before the 1s intro finishes, still apply the round shape */
+                if(compact) {
+                    apply_target_radius(block);
+                }
+            });
+            ticking = false;
+        };
+
+        window.addEventListener('scroll', () => {
+            if(!ticking) {
+                window.requestAnimationFrame(on_scroll);
+                ticking = true;
+            }
+        }, {passive: true});
+
+        on_scroll();
+    })();
 </script>
 
 <?= $this->views['pixels'] ?? null ?>

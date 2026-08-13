@@ -367,6 +367,38 @@ form .btn-primary:active {
     z-index: 50;
 }
 
+/* Sticky avatar: square intro → round, then shrink ~5x while scrolling */
+.biolink-block-sticky[data-biolink-block-type="avatar"] {
+    padding-top: .35rem;
+    padding-bottom: .35rem;
+    transition: padding .35s ease, margin .35s ease;
+}
+
+.biolink-block-sticky[data-biolink-block-type="avatar"] [data-avatar] {
+    --avatar-size: 125px;
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+    transition:
+        width .35s ease,
+        height .35s ease,
+        border-radius .65s ease,
+        box-shadow .35s ease,
+        margin .35s ease;
+    will-change: width, height, border-radius;
+}
+
+.biolink-block-sticky[data-biolink-block-type="avatar"].biolink-avatar-compact {
+    padding-top: .2rem;
+    padding-bottom: .2rem;
+    margin-top: 0 !important;
+    margin-bottom: .25rem !important;
+}
+
+.biolink-block-sticky[data-biolink-block-type="avatar"].biolink-avatar-compact [data-avatar] {
+    width: calc(var(--avatar-size) / 5) !important;
+    height: calc(var(--avatar-size) / 5) !important;
+}
+
 /* Preview highlight */
 [data-biolink-block-id] {
     transition: .3s all;

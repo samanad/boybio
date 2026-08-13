@@ -118,6 +118,62 @@ class Link extends Controller {
             $this->link->full_url .= '/';
         }
 
+        /* Lightweight per-biolink web app manifest for home-screen icons (non-Chrome / obscure browsers) */
+        if($this->link->type == 'biolink' && isset($_GET['homescreen_manifest'])) {
+            $pwa_settings = settings()->pwa ?? null;
+            $icon_url = null;
+            if(!empty($this->link->settings->pwa_icon)) {
+                $icon_url = \Altum\Uploads::get_full_url('app_icon') . $this->link->settings->pwa_icon;
+            } elseif(!empty($this->link->settings->favicon)) {
+                $icon_url = \Altum\Uploads::get_full_url('favicons') . $this->link->settings->favicon;
+            } elseif(!empty($this->link->settings->seo->image ?? null)) {
+                $icon_url = \Altum\Uploads::get_full_url('block_images') . $this->link->settings->seo->image;
+            } elseif(!empty($pwa_settings->app_icon)) {
+                $icon_url = \Altum\Uploads::get_full_url('app_icon') . $pwa_settings->app_icon;
+            } elseif(!empty(settings()->main->favicon)) {
+                $icon_url = settings()->main->favicon_full_url;
+            }
+
+            $app_name = trim((string) ($this->link->settings->seo->title ?? '')) ?: ($this->link->url ?? settings()->main->title);
+            $theme_color = !empty($this->link->settings->pwa_theme_color) && verify_hex_color($this->link->settings->pwa_theme_color)
+                ? $this->link->settings->pwa_theme_color
+                : (!empty($pwa_settings->theme_color) ? $pwa_settings->theme_color : '#000000');
+
+            $icons = [];
+            if($icon_url) {
+                $icons[] = [
+                    'src' => $icon_url,
+                    'sizes' => '192x192',
+                    'type' => 'image/png',
+                    'purpose' => 'any',
+                ];
+                $icons[] = [
+                    'src' => $icon_url,
+                    'sizes' => '512x512',
+                    'type' => 'image/png',
+                    'purpose' => 'any maskable',
+                ];
+            }
+
+            $manifest = [
+                'name' => $app_name,
+                'short_name' => mb_substr($app_name, 0, 12),
+                'description' => trim((string) ($this->link->settings->seo->meta_description ?? '')) ?: $app_name,
+                'start_url' => $this->link->full_url,
+                'scope' => $this->link->full_url,
+                'display' => 'standalone',
+                'orientation' => 'portrait',
+                'background_color' => $theme_color,
+                'theme_color' => $theme_color,
+                'icons' => $icons,
+            ];
+
+            header('Content-Type: application/manifest+json; charset=utf-8');
+            header('Cache-Control: public, max-age=3600');
+            echo json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            die();
+        }
+
         /* Set the language */
         Language::set_by_name($this->user->language);
 

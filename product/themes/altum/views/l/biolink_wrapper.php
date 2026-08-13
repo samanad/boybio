@@ -7,15 +7,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
-        <?php if(\Altum\Plugin::is_active('pwa') && settings()->pwa->is_enabled): ?>
-            <?php if($this->user->plan_settings->custom_pwa_is_enabled && $this->link->settings->pwa_is_enabled && !empty($this->link->settings->pwa_file_name)): ?>
-                <link rel="manifest" href="<?= SITE_URL . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . $this->link->settings->pwa_file_name . '.json' ?>" />
-                <meta name="theme-color" content="<?= $this->link->settings->pwa_theme_color ?>"/>
-            <?php else: ?>
-                <link rel="manifest" href="<?= SITE_URL . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json' ?>" />
-                <meta name="theme-color" content="<?= settings()->pwa->theme_color ?>"/>
-            <?php endif ?>
-        <?php endif ?>
+        <?php require THEME_PATH . 'views/l/partials/homescreen_icons.php' ?>
 
         <?php if(\Altum\Meta::$description): ?>
             <meta name="description" content="<?= \Altum\Meta::$description ?>" />
@@ -38,9 +30,9 @@
             <meta name="robots" content="noindex">
         <?php endif ?>
 
-        <?php if(!empty($this->link->settings->favicon)): ?>
+        <?php if(!empty($this->link->settings->favicon) && empty($this->link->settings->pwa_icon)): ?>
             <link href="<?= \Altum\Uploads::get_full_url('favicons') . $this->link->settings->favicon ?>" rel="icon" />
-        <?php elseif(!empty(settings()->main->favicon)): ?>
+        <?php elseif(empty($this->link->settings->pwa_icon) && empty($this->link->settings->favicon) && !empty(settings()->main->favicon)): ?>
             <link href="<?= settings()->main->favicon_full_url ?>" rel="icon" />
         <?php endif ?>
 
