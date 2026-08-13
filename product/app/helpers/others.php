@@ -290,7 +290,7 @@ function get_ip() {
 
             /* validate and assign */
             if(filter_var($ip_value, FILTER_VALIDATE_IP)) {
-                $cached_ip_address = $ip_value;
+                $cached_ip_address = canonicalize_ip($ip_value);
                 return $cached_ip_address;
             }
         }
@@ -298,6 +298,50 @@ function get_ip() {
 
     /* fallback if no valid IP found */
     return null;
+}
+
+/** Turn ::ffff:1.2.3.4 into 1.2.3.4 so allowlists match. */
+function canonicalize_ip($ip) {
+    $ip = trim((string) $ip);
+    if($ip === '') {
+        return $ip;
+    }
+
+    if(stripos($ip, '::ffff:') === 0) {
+        $v4 = substr($ip, 7);
+        if(filter_var($v4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $v4;
+        }
+    }
+
+    $packed = @inet_pton($ip);
+    if($packed === false) {
+        return $ip;
+    }
+
+    $canon = inet_ntop($packed);
+    if($canon && stripos($canon, '::ffff:') === 0) {
+        $v4 = substr($canon, 7);
+        if(filter_var($v4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $v4;
+        }
+    }
+
+    return $canon ?: $ip;
+}
+
+/** Fresh `settings` row from DB (skips stale file cache). */
+function get_settings_row($key) {
+    try {
+        $row = db()->where('`key`', $key)->getOne('settings', ['value']);
+        if(empty($row->value)) {
+            return null;
+        }
+        $decoded = json_decode($row->value);
+        return is_null($decoded) ? $row->value : $decoded;
+    } catch(\Throwable $exception) {
+        return settings()->{$key} ?? null;
+    }
 }
 
 /**
@@ -348,8 +392,11 @@ function ip_matches_allowlist_entry($ip, $entry) {
         return false;
     }
 
-    if(filter_var($entry, FILTER_VALIDATE_IP)) {
-        return $entry === $ip;
+    $ip = canonicalize_ip($ip);
+    $entry_exact = canonicalize_ip($entry);
+
+    if(filter_var($entry_exact, FILTER_VALIDATE_IP)) {
+        return $entry_exact === $ip;
     }
 
     if(!str_contains($entry, '*')) {
@@ -602,7 +649,8 @@ function is_admin_country_ban_bypassed() {
     }
 
     try {
-        $users = settings()->users ?? null;
+        /* Prefer DB so a stale settings cache cannot hide newly saved allowlists */
+        $users = get_settings_row('users') ?: (settings()->users ?? null);
 
         $entries = array_merge(
             settings_list_to_array($users->country_ban_bypass_ips ?? []),

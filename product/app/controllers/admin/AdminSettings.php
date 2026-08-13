@@ -69,7 +69,18 @@ class AdminSettings extends Controller {
         \Altum\Language::clear_cache();
 
         /* Clear the cache */
-        cache()->deleteItem('settings');
+        try {
+            cache()->deleteItem('settings');
+        } catch(\Throwable $exception) {
+            /* ignore */
+        }
+
+        /* File cache may be owned by another user and ignore deleteItem() */
+        foreach(glob(UPLOADS_PATH . 'cache/*') ?: [] as $cache_file) {
+            if(is_file($cache_file)) {
+                @unlink($cache_file);
+            }
+        }
 
         /* Set a nice success message */
         Alerts::add_success(l('global.success_message.update2'));
@@ -267,8 +278,7 @@ class AdminSettings extends Controller {
 
             $_POST['country_ban_bypass_hostnames'] = $valid_hostnames;
             $_POST['country_ban_bypass_ips'] = $valid_ips;
-            /* Keep legacy key empty so old single-field installs migrate cleanly on save */
-            $_POST['country_ban_bypass_hostname'] = '';
+            $_POST['country_ban_bypass_hostname'] = implode(',', $valid_hostnames);
 
             $value = json_encode([
                 'email_aliases_is_enabled' => isset($_POST['email_aliases_is_enabled']),
