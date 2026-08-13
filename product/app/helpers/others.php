@@ -239,6 +239,27 @@ function is_https_request() {
     return false;
 }
 
+/**
+ * Long-lived cookie for "stay on this device" (biolink unlock / remember login).
+ * Default ~10 years. Uses SameSite=Lax so home-screen / PWA apps keep it.
+ */
+function set_device_cookie($name, $value, $days = 3650) {
+    $days = (int) $days;
+    if($days < 1) {
+        $days = 3650;
+    }
+
+    $options = [
+        'expires' => time() + (60 * 60 * 24 * $days),
+        'path' => defined('COOKIE_PATH') ? COOKIE_PATH : '/',
+        'secure' => function_exists('is_https_request') ? is_https_request() : (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ];
+
+    return setcookie((string) $name, (string) $value, $options);
+}
+
 function get_ip() {
     static $cached_ip_address = null;
 

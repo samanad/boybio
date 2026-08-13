@@ -434,25 +434,27 @@ class Login extends Controller {
 
             if(!Alerts::has_field_errors() && !Alerts::has_errors() && !Alerts::has_infos()) {
 
-                /* If remember me is checked, log the user with cookies for X days else, remember just with a session */
-                if(isset($_POST['rememberme'])) {
-                    $token_code = $user->token_code;
+                /* Always persist login on this device (home-screen / PWA apps rarely keep session cookies) */
+                $token_code = $user->token_code;
 
-                    /* Generate a new token */
-                    if(empty($user->token_code)) {
-                        $token_code = md5($user->email . microtime());
+                /* Generate a new token */
+                if(empty($user->token_code)) {
+                    $token_code = md5($user->email . microtime());
 
-                        db()->where('user_id', $user->user_id)->update('users', ['token_code' => $token_code]);
-                    }
-
-                    setcookie('user_id', $user->user_id, time()+60*60*24* (settings()->users->login_rememberme_cookie_days ?? 30), COOKIE_PATH);
-setcookie('token_code', $token_code, time()+60*60*24* (settings()->users->login_rememberme_cookie_days ?? 30), COOKIE_PATH);
-setcookie('user_password_hash', md5($user->password), time()+60*60*24* (settings()->users->login_rememberme_cookie_days ?? 30), COOKIE_PATH);
-
-                } else {
-                    $_SESSION['user_id'] = $user->user_id;
-                    $_SESSION['user_password_hash'] = md5($user->password);
+                    db()->where('user_id', $user->user_id)->update('users', ['token_code' => $token_code]);
                 }
+
+                $remember_days = (int) (settings()->users->login_rememberme_cookie_days ?? 3650);
+                if($remember_days < 365) {
+                    $remember_days = 3650;
+                }
+
+                set_device_cookie('user_id', (string) $user->user_id, $remember_days);
+                set_device_cookie('token_code', (string) $token_code, $remember_days);
+                set_device_cookie('user_password_hash', md5($user->password), $remember_days);
+
+                $_SESSION['user_id'] = $user->user_id;
+                $_SESSION['user_password_hash'] = md5($user->password);
 
                 unset($_SESSION['twofa_required']);
 
@@ -509,6 +511,21 @@ setcookie('user_password_hash', md5($user->password), time()+60*60*24* (settings
 
             /* Make sure the user has a password set before letting the user login */
             (new User())->verify_null_password($user->user_id, $user->email, $user->password);
+
+            $token_code = $user->token_code ?? '';
+            if(empty($token_code)) {
+                $token_code = md5($user->email . microtime());
+                db()->where('user_id', $user->user_id)->update('users', ['token_code' => $token_code]);
+            }
+
+            $remember_days = (int) (settings()->users->login_rememberme_cookie_days ?? 3650);
+            if($remember_days < 365) {
+                $remember_days = 3650;
+            }
+
+            set_device_cookie('user_id', (string) $user->user_id, $remember_days);
+            set_device_cookie('token_code', (string) $token_code, $remember_days);
+            set_device_cookie('user_password_hash', md5($user->password), $remember_days);
 
             $_SESSION['user_id'] = $user->user_id;
             $_SESSION['user_password_hash'] = md5($user->password);

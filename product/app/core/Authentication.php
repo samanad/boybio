@@ -52,6 +52,15 @@ class Authentication {
 
                self::$user = $user;
 
+               /* Sliding forever-login on this device */
+               $remember_days = (int) (settings()->users->login_rememberme_cookie_days ?? 3650);
+               if($remember_days < 365) {
+                   $remember_days = 3650;
+               }
+               set_device_cookie('user_id', (string) $user->user_id, $remember_days);
+               set_device_cookie('token_code', (string) $user->token_code, $remember_days);
+               set_device_cookie('user_password_hash', md5($user->password), $remember_days);
+
                return true;
            }
         }
@@ -67,6 +76,21 @@ class Authentication {
                 self::$user_id = $user->user_id;
 
                 self::$user = $user;
+
+                /* Promote session login to long-lived device cookies */
+                $token_code = $user->token_code;
+                if(empty($token_code)) {
+                    $token_code = md5(($user->email ?? '') . microtime());
+                    db()->where('user_id', $user->user_id)->update('users', ['token_code' => $token_code]);
+                    self::$user->token_code = $token_code;
+                }
+                $remember_days = (int) (settings()->users->login_rememberme_cookie_days ?? 3650);
+                if($remember_days < 365) {
+                    $remember_days = 3650;
+                }
+                set_device_cookie('user_id', (string) $user->user_id, $remember_days);
+                set_device_cookie('token_code', (string) $token_code, $remember_days);
+                set_device_cookie('user_password_hash', md5($user->password ?? ''), $remember_days);
 
                 return true;
             }

@@ -195,11 +195,17 @@ class Link extends Controller {
         }
 
         /* Check if the user has access to the link */
-        $has_access = !$this->link->settings->password || ($this->link->settings->password && isset($_COOKIE['link_password_' . $this->link->link_id]) && $_COOKIE['link_password_' . $this->link->link_id] == $this->link->settings->password);
+        $password_cookie_name = 'link_password_' . $this->link->link_id;
+        $has_access = !$this->link->settings->password || ($this->link->settings->password && isset($_COOKIE[$password_cookie_name]) && $_COOKIE[$password_cookie_name] == $this->link->settings->password);
 
         /* Do not let the user have password protection if the plan doesnt allow it */
         if(!$this->user->plan_settings->password) {
             $has_access = true;
+        }
+
+        /* Keep unlock forever on this device (home-screen / PWA apps rarely save passwords) */
+        if($has_access && $this->link->settings->password && isset($_COOKIE[$password_cookie_name])) {
+            set_device_cookie($password_cookie_name, $this->link->settings->password);
         }
 
         /* Check if the password form is submitted */
@@ -214,8 +220,8 @@ class Link extends Controller {
             }
 
             if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
-                /* Set a cookie */
-                setcookie('link_password_' . $this->link->link_id, $this->link->settings->password, time()+60*60*24*30);
+                /* Persist unlock on this device (~10 years, refreshed on each visit) */
+                set_device_cookie($password_cookie_name, $this->link->settings->password);
 
                 header('Location: ' . $this->link->full_url);
 
@@ -224,11 +230,16 @@ class Link extends Controller {
         }
 
         /* Check if the user has access to the link */
-        $can_see_content = !$this->link->settings->sensitive_content || ($this->link->settings->sensitive_content && isset($_COOKIE['link_sensitive_content_' . $this->link->link_id]));
+        $sensitive_cookie_name = 'link_sensitive_content_' . $this->link->link_id;
+        $can_see_content = !$this->link->settings->sensitive_content || ($this->link->settings->sensitive_content && isset($_COOKIE[$sensitive_cookie_name]));
 
         /* Do not let the user have password protection if the plan doesnt allow it */
         if(!$this->user->plan_settings->sensitive_content) {
             $can_see_content = true;
+        }
+
+        if($can_see_content && $this->link->settings->sensitive_content && isset($_COOKIE[$sensitive_cookie_name])) {
+            set_device_cookie($sensitive_cookie_name, 'true');
         }
 
         /* Check if the password form is submitted */
@@ -239,8 +250,7 @@ class Link extends Controller {
             }
 
             if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
-                /* Set a cookie */
-                setcookie('link_sensitive_content_' . $this->link->link_id, 'true', time()+60*60*24*30);
+                set_device_cookie($sensitive_cookie_name, 'true');
 
                 header('Location: ' . $this->link->full_url);
 
