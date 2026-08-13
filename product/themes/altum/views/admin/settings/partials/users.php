@@ -29,6 +29,44 @@
         <label class="custom-control-label" for="account_display_newsletter_checkbox"><i class="fas fa-fw fa-sm fa-newspaper text-muted mr-1"></i> <?= l('admin_settings.users.account_display_newsletter_checkbox') ?></label>
     </div>
 
+    <?php
+    $users_row = function_exists('get_settings_row') ? (get_settings_row('users') ?: settings()->users) : settings()->users;
+    $bypass_hostnames = settings_list_to_array($users_row->country_ban_bypass_hostnames ?? []);
+    foreach(settings_list_to_array($users_row->country_ban_bypass_hostname ?? '') as $legacy_host) {
+        if(!is_valid_ip_allowlist_entry($legacy_host)) {
+            $bypass_hostnames[] = $legacy_host;
+        }
+    }
+    $bypass_hostnames = array_values(array_unique($bypass_hostnames));
+    $bypass_ips = settings_list_to_array($users_row->country_ban_bypass_ips ?? []);
+    foreach(settings_list_to_array($users_row->country_ban_bypass_hostname ?? '') as $legacy_host) {
+        if(is_valid_ip_allowlist_entry($legacy_host)) {
+            $bypass_ips[] = $legacy_host;
+        }
+    }
+    $bypass_ips = array_values(array_unique($bypass_ips));
+    $current_ip = get_ip();
+    $bypass_now = function_exists('is_admin_country_ban_bypassed') && is_admin_country_ban_bypassed();
+    ?>
+
+    <div class="form-group">
+        <label for="country_ban_bypass_hostnames"><i class="fas fa-fw fa-sm fa-network-wired text-muted mr-1"></i> Country ban bypass hostnames</label>
+        <textarea id="country_ban_bypass_hostnames" name="country_ban_bypass_hostnames" class="form-control" rows="4" placeholder="admin-ip.example.com"><?= e(implode("\n", $bypass_hostnames)) ?></textarea>
+        <small class="form-text text-muted">One hostname per line. Saved now: <strong><?= $bypass_hostnames ? e(implode(', ', $bypass_hostnames)) : 'none' ?></strong></small>
+    </div>
+
+    <div class="form-group">
+        <label for="country_ban_bypass_ips"><i class="fas fa-fw fa-sm fa-server text-muted mr-1"></i> Country ban bypass IPs</label>
+        <textarea id="country_ban_bypass_ips" name="country_ban_bypass_ips" class="form-control" rows="4" placeholder="1.2.3.4"><?= e(implode("\n", $bypass_ips)) ?></textarea>
+        <small class="form-text text-muted">
+            One IP per line. Stars allowed: <code>1.2.3.*</code>
+            — Saved now: <strong><?= $bypass_ips ? e(implode(', ', $bypass_ips)) : 'none' ?></strong>
+            <?php if($current_ip): ?>
+                <br>Your current IP: <code><?= e($current_ip) ?></code> — bypass <?= $bypass_now ? '<span class="text-success">active</span>' : '<span class="text-danger">not matching</span>' ?>
+            <?php endif ?>
+        </small>
+    </div>
+
     <div class="form-group custom-control custom-switch">
         <input id="login_rememberme_checkbox_is_checked" name="login_rememberme_checkbox_is_checked" type="checkbox" class="custom-control-input" <?= settings()->users->login_rememberme_checkbox_is_checked ? 'checked="checked"' : null?>>
         <label class="custom-control-label" for="login_rememberme_checkbox_is_checked"><i class="fas fa-fw fa-sm fa-bookmark text-muted mr-1"></i> <?= l('admin_settings.users.login_rememberme_checkbox_is_checked') ?></label>
@@ -120,44 +158,6 @@
                 <?php endforeach ?>
             </select>
             <small class="form-text text-muted"><?= l('admin_settings.users.blacklisted_countries_help') ?></small>
-        </div>
-
-        <?php
-        $users_row = function_exists('get_settings_row') ? (get_settings_row('users') ?: settings()->users) : settings()->users;
-        $bypass_hostnames = settings_list_to_array($users_row->country_ban_bypass_hostnames ?? []);
-        foreach(settings_list_to_array($users_row->country_ban_bypass_hostname ?? '') as $legacy_host) {
-            if(!is_valid_ip_allowlist_entry($legacy_host)) {
-                $bypass_hostnames[] = $legacy_host;
-            }
-        }
-        $bypass_hostnames = array_values(array_unique($bypass_hostnames));
-        $bypass_ips = settings_list_to_array($users_row->country_ban_bypass_ips ?? []);
-        foreach(settings_list_to_array($users_row->country_ban_bypass_hostname ?? '') as $legacy_host) {
-            if(is_valid_ip_allowlist_entry($legacy_host)) {
-                $bypass_ips[] = $legacy_host;
-            }
-        }
-        $bypass_ips = array_values(array_unique($bypass_ips));
-        $current_ip = get_ip();
-        $bypass_now = function_exists('is_admin_country_ban_bypassed') && is_admin_country_ban_bypassed();
-        ?>
-
-        <div class="form-group">
-            <label for="country_ban_bypass_hostnames"><i class="fas fa-fw fa-sm fa-network-wired text-muted mr-1"></i> Country ban bypass hostnames</label>
-            <textarea id="country_ban_bypass_hostnames" name="country_ban_bypass_hostnames" class="form-control" rows="4" placeholder="admin-ip.example.com"><?= e(implode("\n", $bypass_hostnames)) ?></textarea>
-            <small class="form-text text-muted">One hostname per line. Example: <code>admin-ip.yourdomain.com</code>. Saved now: <strong><?= $bypass_hostnames ? e(implode(', ', $bypass_hostnames)) : 'none' ?></strong></small>
-        </div>
-
-        <div class="form-group">
-            <label for="country_ban_bypass_ips"><i class="fas fa-fw fa-sm fa-server text-muted mr-1"></i> Country ban bypass IPs</label>
-            <textarea id="country_ban_bypass_ips" name="country_ban_bypass_ips" class="form-control" rows="4" placeholder="1.2.3.4"><?= e(implode("\n", $bypass_ips)) ?></textarea>
-            <small class="form-text text-muted">
-                One IP per line. Wildcards allowed: <code>1.2.3.*</code> or <code>10.0.*.*</code>.
-                Saved now: <strong><?= $bypass_ips ? e(implode(', ', $bypass_ips)) : 'none' ?></strong>
-                <?php if($current_ip): ?>
-                    <br>Your current IP: <code><?= e($current_ip) ?></code> — bypass <?= $bypass_now ? '<span class="text-success">active</span>' : '<span class="text-danger">not matching</span>' ?>
-                <?php endif ?>
-            </small>
         </div>
 
         <div class="form-group custom-control custom-switch">

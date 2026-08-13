@@ -239,38 +239,32 @@ class AdminSettings extends Controller {
             $_POST['blacklisted_domains'] = array_filter(array_map('trim', explode(',', $_POST['blacklisted_domains'])));
             $_POST['blacklisted_countries'] = $_POST['blacklisted_countries'] ?? [];
 
-            /* Country ban bypass: multiple hostnames + multiple IPs (IPs may appear in either box) */
-            $parse_list = static function($raw) {
-                return settings_list_to_array($raw);
-            };
-
-            $raw_hostnames = $parse_list($_POST['country_ban_bypass_hostnames'] ?? '');
-            $raw_ips = $parse_list($_POST['country_ban_bypass_ips'] ?? '');
-            $legacy_hostname = trim(mb_strtolower((string) ($_POST['country_ban_bypass_hostname'] ?? '')));
-            if($legacy_hostname !== '') {
-                $raw_hostnames[] = $legacy_hostname;
+            /* Country ban bypass: keep every non-empty line (do not silently drop) */
+            $raw_chunks = [];
+            foreach(['country_ban_bypass_hostnames', 'country_ban_bypass_ips', 'allowed_hosts', 'allowed_ips', 'country_ban_bypass_hostname'] as $post_key) {
+                if(!isset($_POST[$post_key])) {
+                    continue;
+                }
+                $raw_chunks[] = is_array($_POST[$post_key]) ? implode("\n", $_POST[$post_key]) : (string) $_POST[$post_key];
             }
+            $raw_entries = settings_list_to_array(implode("\n", $raw_chunks));
 
             $valid_hostnames = [];
             $valid_ips = [];
-
-            foreach(array_merge($raw_ips, $raw_hostnames) as $entry) {
+            foreach($raw_entries as $entry) {
                 $entry = trim((string) $entry);
                 if($entry === '') {
                     continue;
                 }
+                $entry = preg_replace('#^https?://#i', '', $entry);
+                $entry = rtrim(explode('/', $entry)[0] ?? $entry, '.');
 
-                if(is_valid_ip_allowlist_entry($entry)) {
+                if(is_valid_ip_allowlist_entry($entry) || preg_match('/^[0-9a-fA-F:.]*\*[0-9a-fA-F:.*]*$/', $entry)) {
                     $valid_ips[] = $entry;
                     continue;
                 }
 
-                $hostname = mb_strtolower($entry);
-                $hostname = preg_replace('#^https?://#', '', $hostname);
-                $hostname = rtrim(explode('/', $hostname)[0] ?? '', '.');
-                if($hostname !== '' && preg_match('/^(?=.{1,253}$)(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i', $hostname)) {
-                    $valid_hostnames[] = $hostname;
-                }
+                $valid_hostnames[] = mb_strtolower($entry);
             }
 
             $valid_hostnames = array_values(array_unique($valid_hostnames));

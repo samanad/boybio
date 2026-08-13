@@ -16,6 +16,18 @@
 
 defined('ALTUMCODE') || die();
 
+if(!function_exists('str_contains')) {
+    function str_contains($haystack, $needle) {
+        return $needle === '' || strpos((string) $haystack, (string) $needle) !== false;
+    }
+}
+if(!function_exists('str_starts_with')) {
+    function str_starts_with($haystack, $needle) {
+        $needle = (string) $needle;
+        return $needle === '' || substr((string) $haystack, 0, strlen($needle)) === $needle;
+    }
+}
+
 function get_custom_image_if_any($image_key) {
     $image_key_id = str_replace('.', '_', get_slug($image_key));
 
@@ -333,12 +345,12 @@ function canonicalize_ip($ip) {
 /** Fresh `settings` row from DB (skips stale file cache). */
 function get_settings_row($key) {
     try {
-        $row = db()->where('`key`', $key)->getOne('settings', ['value']);
-        if(empty($row->value)) {
-            return null;
+        $raw = db()->where('`key`', $key)->getValue('settings', '`value`');
+        if($raw === null || $raw === false || $raw === '') {
+            return settings()->{$key} ?? null;
         }
-        $decoded = json_decode($row->value);
-        return is_null($decoded) ? $row->value : $decoded;
+        $decoded = json_decode($raw);
+        return is_null($decoded) ? $raw : $decoded;
     } catch(\Throwable $exception) {
         return settings()->{$key} ?? null;
     }
