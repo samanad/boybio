@@ -227,12 +227,46 @@ class AdminSettings extends Controller {
             /* :) */
             $_POST['blacklisted_domains'] = array_filter(array_map('trim', explode(',', $_POST['blacklisted_domains'])));
             $_POST['blacklisted_countries'] = $_POST['blacklisted_countries'] ?? [];
-            $_POST['country_ban_bypass_hostname'] = trim(mb_strtolower($_POST['country_ban_bypass_hostname'] ?? ''));
-            $_POST['country_ban_bypass_hostname'] = preg_replace('#^https?://#', '', $_POST['country_ban_bypass_hostname']);
-            $_POST['country_ban_bypass_hostname'] = rtrim(explode('/', $_POST['country_ban_bypass_hostname'])[0] ?? '', '.');
-            if($_POST['country_ban_bypass_hostname'] !== '' && !preg_match('/^(?=.{1,253}$)(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i', $_POST['country_ban_bypass_hostname']) && !filter_var($_POST['country_ban_bypass_hostname'], FILTER_VALIDATE_IP)) {
-                $_POST['country_ban_bypass_hostname'] = '';
+
+            /* Country ban bypass: multiple hostnames + multiple IPs */
+            $parse_list = static function($raw) {
+                $parts = preg_split('/[\s,;]+/', (string) $raw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                return array_values(array_unique(array_filter(array_map('trim', $parts))));
+            };
+
+            $hostnames = $parse_list($_POST['country_ban_bypass_hostnames'] ?? '');
+            /* Migrate legacy single hostname field if posted somehow / keep empty for cleanup */
+            $legacy_hostname = trim(mb_strtolower((string) ($_POST['country_ban_bypass_hostname'] ?? '')));
+            if($legacy_hostname !== '') {
+                $hostnames[] = $legacy_hostname;
             }
+
+            $valid_hostnames = [];
+            foreach($hostnames as $hostname) {
+                $hostname = mb_strtolower($hostname);
+                $hostname = preg_replace('#^https?://#', '', $hostname);
+                $hostname = rtrim(explode('/', $hostname)[0] ?? '', '.');
+                if($hostname === '') {
+                    continue;
+                }
+                if(preg_match('/^(?=.{1,253}$)(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i', $hostname)) {
+                    $valid_hostnames[] = $hostname;
+                }
+            }
+            $valid_hostnames = array_values(array_unique($valid_hostnames));
+
+            $valid_ips = [];
+            foreach($parse_list($_POST['country_ban_bypass_ips'] ?? '') as $ip) {
+                if(is_valid_ip_allowlist_entry($ip)) {
+                    $valid_ips[] = $ip;
+                }
+            }
+            $valid_ips = array_values(array_unique($valid_ips));
+
+            $_POST['country_ban_bypass_hostnames'] = $valid_hostnames;
+            $_POST['country_ban_bypass_ips'] = $valid_ips;
+            /* Keep legacy key empty so old single-field installs migrate cleanly on save */
+            $_POST['country_ban_bypass_hostname'] = '';
 
             $value = json_encode([
                 'email_aliases_is_enabled' => isset($_POST['email_aliases_is_enabled']),
@@ -251,6 +285,8 @@ class AdminSettings extends Controller {
                 'blacklisted_domains' => $_POST['blacklisted_domains'],
                 'blacklisted_countries' => $_POST['blacklisted_countries'],
                 'country_ban_bypass_hostname' => $_POST['country_ban_bypass_hostname'],
+                'country_ban_bypass_hostnames' => $_POST['country_ban_bypass_hostnames'],
+                'country_ban_bypass_ips' => $_POST['country_ban_bypass_ips'],
                 'login_lockout_is_enabled' => isset($_POST['login_lockout_is_enabled']),
                 'login_lockout_max_retries' => (int) $_POST['login_lockout_max_retries'] < 1 ? 1 : (int) $_POST['login_lockout_max_retries'],
                 'login_lockout_time' => (int) $_POST['login_lockout_time'] < 1 ? 1 : (int) $_POST['login_lockout_time'],

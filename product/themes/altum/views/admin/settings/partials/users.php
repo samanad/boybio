@@ -123,9 +123,21 @@
         </div>
 
         <div class="form-group">
-            <label for="country_ban_bypass_hostname"><i class="fas fa-fw fa-sm fa-network-wired text-muted mr-1"></i> <?= l('admin_settings.users.country_ban_bypass_hostname') ?></label>
-            <input id="country_ban_bypass_hostname" type="text" name="country_ban_bypass_hostname" class="form-control" value="<?= e(settings()->users->country_ban_bypass_hostname ?? '') ?>" placeholder="admin-ip.example.com" maxlength="253" />
-            <small class="form-text text-muted"><?= l('admin_settings.users.country_ban_bypass_hostname_help') ?></small>
+            <label for="country_ban_bypass_hostnames"><i class="fas fa-fw fa-sm fa-network-wired text-muted mr-1"></i> <?= l('admin_settings.users.country_ban_bypass_hostnames') ?></label>
+            <?php
+            $bypass_hostnames = array_values(array_unique(array_filter(array_merge(
+                (array) (settings()->users->country_ban_bypass_hostnames ?? []),
+                !empty(settings()->users->country_ban_bypass_hostname) ? [(string) settings()->users->country_ban_bypass_hostname] : []
+            ))));
+            ?>
+            <textarea id="country_ban_bypass_hostnames" name="country_ban_bypass_hostnames" class="form-control" rows="3" placeholder="admin-ip.example.com&#10;office.example.com"><?= e(implode("\n", $bypass_hostnames)) ?></textarea>
+            <small class="form-text text-muted"><?= l('admin_settings.users.country_ban_bypass_hostnames_help') ?></small>
+        </div>
+
+        <div class="form-group">
+            <label for="country_ban_bypass_ips"><i class="fas fa-fw fa-sm fa-server text-muted mr-1"></i> <?= l('admin_settings.users.country_ban_bypass_ips') ?></label>
+            <textarea id="country_ban_bypass_ips" name="country_ban_bypass_ips" class="form-control" rows="3" placeholder="1.2.3.4&#10;1.2.3.*&#10;10.0.*.*"><?= e(implode("\n", (array) (settings()->users->country_ban_bypass_ips ?? []))) ?></textarea>
+            <small class="form-text text-muted"><?= l('admin_settings.users.country_ban_bypass_ips_help') ?></small>
         </div>
 
         <div class="form-group custom-control custom-switch">

@@ -298,8 +298,83 @@ function get_ip() {
 }
 
 /**
+ * Match an IP against an exact address or a * wildcard pattern.
+ * Examples: 1.2.3.4 | 1.2.3.* | 1.2.*.* | 2001:db8:*:*
+ */
+function ip_matches_allowlist_entry($ip, $entry) {
+    $ip = trim((string) $ip);
+    $entry = trim((string) $entry);
+
+    if($ip === '' || $entry === '') {
+        return false;
+    }
+
+    if(filter_var($entry, FILTER_VALIDATE_IP)) {
+        return $entry === $ip;
+    }
+
+    if(!str_contains($entry, '*')) {
+        return false;
+    }
+
+    /* Only compare like families (IPv4 pattern vs IPv4 IP, etc.) */
+    $entry_looks_v6 = str_contains($entry, ':');
+    $ip_is_v6 = (bool) filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
+    $ip_is_v4 = (bool) filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+
+    if($entry_looks_v6 && !$ip_is_v6) {
+        return false;
+    }
+    if(!$entry_looks_v6 && !$ip_is_v4) {
+        return false;
+    }
+
+    $regex = '/^' . str_replace('\*', $entry_looks_v6 ? '[0-9a-fA-F]+' : '[0-9]{1,3}', preg_quote($entry, '/')) . '$/';
+
+    return (bool) preg_match($regex, $ip);
+}
+
+/** True when entry is an exact IP or a * wildcard IP pattern. */
+function is_valid_ip_allowlist_entry($entry) {
+    $entry = trim((string) $entry);
+    if($entry === '') {
+        return false;
+    }
+
+    if(filter_var($entry, FILTER_VALIDATE_IP)) {
+        return true;
+    }
+
+    if(!str_contains($entry, '*')) {
+        return false;
+    }
+
+    /* IPv4: 4 octets of digit(s) or * */
+    if(preg_match('/^(\*|\d{1,3})(\.(\*|\d{1,3})){3}$/', $entry)) {
+        foreach(explode('.', $entry) as $octet) {
+            if($octet === '*') {
+                continue;
+            }
+            $n = (int) $octet;
+            if((string) $n !== $octet || $n < 0 || $n > 255) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /* IPv6 with * as whole hextet(s): 2001:db8:*:* */
+    if(str_contains($entry, ':') && preg_match('/^[0-9a-fA-F:*]+$/', $entry) && !str_contains($entry, '**')) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
  * Check whether an IP matches a settings value that may contain:
  * - a single IP
+ * - IP patterns with * (e.g. 1.2.3.*)
  * - comma/space/newline separated IPs
  * - hostnames (resolved via A/AAAA)
  *
@@ -330,10 +405,12 @@ function is_ip_in_settings_list($list, $ip = null) {
             continue;
         }
 
-        if(filter_var($part, FILTER_VALIDATE_IP)) {
-            if($part === $ip) {
-                return true;
-            }
+        if(ip_matches_allowlist_entry($ip, $part)) {
+            return true;
+        }
+
+        /* Skip hostname resolve for IP / wildcard patterns */
+        if(filter_var($part, FILTER_VALIDATE_IP) || str_contains($part, '*')) {
             continue;
         }
 
@@ -478,7 +555,7 @@ function biolinks_blocks_order_by_sql() {
         : 'ORDER BY `order` ASC';
 }
 
-/** True when current visitor IP matches the admin bypass hostname A/AAAA record. */
+/** True when current visitor IP matches country-ban bypass hostnames/IPs (or legacy lists). */
 function is_admin_country_ban_bypassed() {
     static $cached = null;
     if($cached !== null) {
@@ -487,15 +564,38 @@ function is_admin_country_ban_bypassed() {
 
     try {
         $users = settings()->users ?? null;
-        $hostname = trim((string) ($users->country_ban_bypass_hostname ?? ''));
+
+        $entries = [];
+
+        /* New multi-value settings */
+        foreach((array) ($users->country_ban_bypass_ips ?? []) as $ip) {
+            $entries[] = $ip;
+        }
+        foreach((array) ($users->country_ban_bypass_hostnames ?? []) as $hostname) {
+            $entries[] = $hostname;
+        }
+
+        /* Legacy single hostname field */
+        $legacy_hostname = trim((string) ($users->country_ban_bypass_hostname ?? ''));
+        if($legacy_hostname !== '') {
+            $entries[] = $legacy_hostname;
+        }
+
         /* Also honor legacy security IP allow-lists used by customized Auth */
         $security = settings()->security ?? null;
-        $legacy = trim((string) (
+        $legacy_security = trim((string) (
             ($security->biolink_edit_allowed_ip ?? '')
             ?: ($security->google_login_persistent_ip ?? '')
         ));
-        $list = trim($hostname . ($hostname && $legacy ? ',' : '') . $legacy);
-        return $cached = is_ip_in_settings_list($list);
+        if($legacy_security !== '') {
+            foreach(preg_split('/[\s,;]+/', $legacy_security, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $part) {
+                $entries[] = $part;
+            }
+        }
+
+        $entries = array_values(array_unique(array_filter(array_map('trim', $entries))));
+
+        return $cached = is_ip_in_settings_list($entries);
     } catch(\Throwable $exception) {
         return $cached = false;
     }
