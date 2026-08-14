@@ -1,6 +1,21 @@
 <?php defined('ALTUMCODE') || die() ?>
+<?php
+$biolink_tools_enabled = isset($this->link->settings->tools->enabled)
+    ? array_values((array) $this->link->settings->tools->enabled)
+    : [];
+$biolink_html_tool_classes = '';
+if(in_array('magnifier', $biolink_tools_enabled, true)) {
+    $biolink_html_tool_classes .= ' biolink-tool-magnifier-' . ((isset($this->link->settings->tools->magnifier) && $this->link->settings->tools->magnifier === 'advanced') ? 'advanced' : 'light');
+}
+if(in_array('contrast', $biolink_tools_enabled, true)) {
+    $biolink_html_tool_classes .= ' biolink-tool-contrast';
+}
+if(in_array('earthquake', $biolink_tools_enabled, true)) {
+    $biolink_html_tool_classes .= ' biolink-tool-earthquake';
+}
+?>
 <!DOCTYPE html>
-<html lang="<?= \Altum\Language::$default_code ?>" class="link-html" dir="<?= l('direction') ?>">
+<html lang="<?= \Altum\Language::$default_code ?>" class="link-html<?= $biolink_html_tool_classes ?>" dir="<?= l('direction') ?>">
     <head>
         <title><?= \Altum\Title::get() ?></title>
         <base href="<?= SITE_URL; ?>">
@@ -42,6 +57,10 @@
             <link href="<?= ASSETS_FULL_URL . 'css/' . $file . '?v=' . PRODUCT_CODE ?>" rel="stylesheet" media="screen,print">
         <?php endforeach ?>
 
+        <?php if(count($biolink_tools_enabled)): ?>
+            <link href="<?= ASSETS_FULL_URL . 'css/biolink-tools.css?v=' . PRODUCT_CODE ?>" rel="stylesheet" media="screen,print">
+        <?php endif ?>
+
         <?php if($this->link->settings->font ?? null): ?>
             <?php $biolink_fonts = settings()->links->biolinks_fonts ?>
             <?php if($biolink_fonts->{$this->link->settings->font}->css_url): ?>
@@ -52,9 +71,16 @@
                 <style>html, body {font-family: <?= $biolink_fonts->{$this->link->settings->font}->font_family ?>, "Helvetica Neue", Arial, sans-serif !important;}</style>
             <?php endif ?>
         <?php endif ?>
+        <?php
+        $biolink_font_size = (int) ($this->link->settings->font_size ?? 16);
+        if(in_array('magnifier', $biolink_tools_enabled ?? [], true)) {
+            $biolink_magnifier_mode = ($this->link->settings->tools->magnifier ?? 'light') === 'advanced' ? 'advanced' : 'light';
+            $biolink_font_size = (int) round($biolink_font_size * ($biolink_magnifier_mode === 'advanced' ? 1.6 : 1.2));
+        }
+        ?>
         <style>
             html {
-                font-size: <?= (int) ($this->link->settings->font_size ?? 16) . 'px' ?> !important;
+                font-size: <?= $biolink_font_size . 'px' ?> !important;
                 <?php if(isset($_GET['preview_template'])) echo 'zoom: 75%'; ?>
             }
         </style>
@@ -113,6 +139,10 @@
     <?php foreach(['libraries/jquery.min.js', 'libraries/popper.min.js', 'libraries/bootstrap.min.js', 'custom.js'] as $file): ?>
         <script src="<?= ASSETS_FULL_URL ?>js/<?= $file ?>?v=<?= PRODUCT_CODE ?>"></script>
     <?php endforeach ?>
+
+    <?php if(count($biolink_tools_enabled ?? [])): ?>
+        <script src="<?= ASSETS_FULL_URL ?>js/biolink-tools.js?v=<?= PRODUCT_CODE ?>"></script>
+    <?php endif ?>
 
     <?php foreach(['libraries/fontawesome.min.js', 'libraries/fontawesome-solid.min.js', 'libraries/fontawesome-brands.min.js'] as $file): ?>
         <script src="<?= ASSETS_FULL_URL ?>js/<?= $file ?>?v=<?= PRODUCT_CODE ?>" defer></script>

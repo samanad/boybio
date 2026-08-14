@@ -1,4 +1,13 @@
 <?php defined('ALTUMCODE') || die() ?>
+<?php $biolink_tools = require APP_PATH . 'includes/biolink_tools.php'; ?>
+<?php
+$enabled_biolink_tools = isset($data->link->settings->tools->enabled)
+    ? (array) $data->link->settings->tools->enabled
+    : [];
+$biolink_tool_magnifier = isset($data->link->settings->tools->magnifier) && in_array($data->link->settings->tools->magnifier, ['light', 'advanced'], true)
+    ? $data->link->settings->tools->magnifier
+    : 'light';
+?>
 
 <?php ob_start() ?>
 <div class="row">
@@ -582,6 +591,55 @@
                                     </div>
                                 </div>
                             <?php endif ?>
+
+                            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#tools_container" aria-expanded="false" aria-controls="tools_container">
+                                <i class="fas fa-fw fa-toolbox fa-sm mr-1"></i> <?= l('link.settings.tools_header') ?>
+                            </button>
+
+                            <div class="collapse" id="tools_container" data-parent="#settings">
+                                <small class="form-text text-muted mb-3"><?= l('link.settings.tools_help') ?></small>
+
+                                <div class="biolink-tools-settings">
+                                    <?php foreach($biolink_tools as $tool_id => $tool): ?>
+                                        <div class="biolink-tools-item">
+                                            <div class="form-group custom-control custom-switch mb-1">
+                                                <input
+                                                    type="checkbox"
+                                                    class="custom-control-input"
+                                                    id="tool_<?= $tool_id ?>"
+                                                    name="tools[]"
+                                                    value="<?= $tool_id ?>"
+                                                    data-biolink-tool
+                                                    <?= in_array($tool_id, $enabled_biolink_tools) ? 'checked="checked"' : null ?>
+                                                >
+                                                <label class="custom-control-label" for="tool_<?= $tool_id ?>">
+                                                    <i class="<?= $tool['icon'] ?> fa-sm text-muted mr-1"></i>
+                                                    <?= l('link.settings.tools.' . $tool_id) ?>
+                                                </label>
+                                            </div>
+                                            <small class="form-text text-muted"><?= l('link.settings.tools.' . $tool_id . '_help') ?></small>
+
+                                            <?php if(!empty($tool['options'])): ?>
+                                                <div class="biolink-tools-options <?= in_array($tool_id, $enabled_biolink_tools) ? null : 'd-none' ?>" id="tool_<?= $tool_id ?>_options">
+                                                    <?php foreach($tool['options'] as $option_id): ?>
+                                                        <div class="custom-control custom-radio custom-control-inline">
+                                                            <input
+                                                                type="radio"
+                                                                id="tool_<?= $tool_id ?>_<?= $option_id ?>"
+                                                                name="tool_<?= $tool_id ?>"
+                                                                value="<?= $option_id ?>"
+                                                                class="custom-control-input"
+                                                                <?= ($tool_id === 'magnifier' ? $biolink_tool_magnifier : ($tool['default_option'] ?? $tool['options'][0])) == $option_id ? 'checked="checked"' : null ?>
+                                                            >
+                                                            <label class="custom-control-label" for="tool_<?= $tool_id ?>_<?= $option_id ?>"><?= l('link.settings.tools.' . $tool_id . '_' . $option_id) ?></label>
+                                                        </div>
+                                                    <?php endforeach ?>
+                                                </div>
+                                            <?php endif ?>
+                                        </div>
+                                    <?php endforeach ?>
+                                </div>
+                            </div>
 
                             <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#advanced_container" aria-expanded="false" aria-controls="advanced_container">
                                 <i class="fas fa-fw fa-user-tie fa-sm mr-1"></i> <?= l('link.settings.advanced_header') ?>
@@ -1312,6 +1370,21 @@
         } else {
             document.querySelector('#branding_url_text_color').classList.add('container-disabled');
         }
+    });
+
+    /* Biolink tools: enable at most two */
+    document.querySelectorAll('[data-biolink-tool]').forEach(input => {
+        input.addEventListener('change', () => {
+            const checked = document.querySelectorAll('[data-biolink-tool]:checked');
+            if(checked.length > 2) {
+                input.checked = false;
+            }
+
+            const options = document.querySelector('#tool_' + input.value + '_options');
+            if(options) {
+                options.classList.toggle('d-none', !input.checked);
+            }
+        });
     });
 
     /* Form handling update */

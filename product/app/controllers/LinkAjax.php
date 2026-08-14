@@ -322,6 +322,10 @@ class LinkAjax extends Controller {
             'custom_js' => null,
             'share_is_enabled' => true,
             'scroll_buttons_is_enabled' => true,
+            'tools' => [
+                'enabled' => [],
+                'magnifier' => 'light',
+            ],
         ];
 
         /* Generate random url if not specified */
@@ -1522,6 +1526,14 @@ class LinkAjax extends Controller {
         /* Link hover animation */
         $_POST['hover_animation'] = isset($_POST['hover_animation']) && in_array($_POST['hover_animation'], ['false', 'smooth', 'instant',]) ? input_clean($_POST['hover_animation']) : 'smooth';
 
+        /* Biolink tools: keep at most two enabled ids */
+        $biolink_tools = require APP_PATH . 'includes/biolink_tools.php';
+        $posted_tools = array_values(array_filter($_POST['tools'] ?? [], function($tool_id) use ($biolink_tools) {
+            return is_string($tool_id) && array_key_exists($tool_id, $biolink_tools);
+        }));
+        $posted_tools = array_slice(array_unique($posted_tools), 0, 2);
+        $tool_magnifier = isset($_POST['tool_magnifier']) && in_array($_POST['tool_magnifier'], ['light', 'advanced'], true) ? $_POST['tool_magnifier'] : 'light';
+
         /* Service worker */
         if(settings()->links->sixsixpusher_is_enabled) {
             $service_worker = \Altum\Uploads::process_upload($link->settings->service_worker, 'service_workers', 'service_worker', 'service_worker_remove', null, 'json_error', force_local: true);
@@ -1612,6 +1624,10 @@ class LinkAjax extends Controller {
             'custom_js' => $_POST['custom_js'],
             'share_is_enabled' => $_POST['share_is_enabled'],
             'scroll_buttons_is_enabled' => $_POST['scroll_buttons_is_enabled'],
+            'tools' => [
+                'enabled' => $posted_tools,
+                'magnifier' => $tool_magnifier,
+            ],
         ];
 
         /* Check if we need to override defaults for a new theme */
@@ -1621,6 +1637,10 @@ class LinkAjax extends Controller {
 
             /* Save settings for biolink page */
             $settings = array_merge($settings, (array) $biolink_theme->settings->biolink);
+            $settings['tools'] = [
+                'enabled' => $posted_tools,
+                'magnifier' => $tool_magnifier,
+            ];
 
             /* Save the additional settings */
             $additional = json_encode($biolink_theme->settings->additional ?? '');

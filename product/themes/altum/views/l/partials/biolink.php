@@ -147,6 +147,8 @@
     </div>
 </div>
 
+<?php require THEME_PATH . 'views/l/partials/biolink_tools.php' ?>
+
 <?php if(settings()->links->biolinks_report_is_enabled): ?>
     <div id="info" class="link-info">
         <a href="<?= url('contact?subject=' . urlencode(sprintf(l('link.biolink.report.subject'), remove_url_protocol_from_url($data->link->full_url))) . '&message=' . urlencode(l('link.biolink.report.message'))) ?>" target="_blank" data-toggle="tooltip" title="<?= l('link.biolink.report') ?>">
