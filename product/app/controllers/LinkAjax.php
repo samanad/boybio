@@ -329,10 +329,6 @@ class LinkAjax extends Controller {
                     'hide_content' => false,
                     'link_ids' => [],
                 ],
-                'password' => [
-                    'hash' => '',
-                    'content' => '',
-                ],
             ],
         ];
 
@@ -1539,15 +1535,10 @@ class LinkAjax extends Controller {
         $posted_tools = array_values(array_filter($_POST['tools'] ?? [], function($tool_id) use ($biolink_tools) {
             return is_string($tool_id) && array_key_exists($tool_id, $biolink_tools);
         }));
-        $posted_tools = array_values(array_unique($posted_tools));
-        $password_tool_on = in_array('password', $posted_tools, true);
         $posted_tools = array_values(array_filter($posted_tools, function($tool_id) {
             return $tool_id !== 'password';
         }));
-        $posted_tools = array_slice($posted_tools, 0, 2);
-        if($password_tool_on) {
-            array_unshift($posted_tools, 'password');
-        }
+        $posted_tools = array_slice(array_unique($posted_tools), 0, 2);
         $tool_magnifier = isset($_POST['tool_magnifier']) && in_array($_POST['tool_magnifier'], ['light', 'advanced'], true) ? $_POST['tool_magnifier'] : 'light';
         $tool_tag_hide_content = isset($_POST['tool_tag_hide_content']);
         $tool_tag_link_ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['tool_tag_link_ids'] ?? [])))));
@@ -1565,16 +1556,6 @@ class LinkAjax extends Controller {
         $tool_tag_settings = [
             'hide_content' => $tool_tag_hide_content,
             'link_ids' => $tool_tag_link_ids,
-        ];
-        $existing_tool_password_hash = isset($link->settings->tools->password->hash) ? (string) $link->settings->tools->password->hash : '';
-        $posted_tool_password_secret = (string) ($_POST['tool_password_secret'] ?? '');
-        $tool_password_hash = $posted_tool_password_secret !== ''
-            ? password_hash($posted_tool_password_secret, PASSWORD_DEFAULT)
-            : $existing_tool_password_hash;
-        $tool_password_content = mb_substr(trim(strip_tags((string) ($_POST['tool_password_content'] ?? ''))), 0, 10000);
-        $tool_password_settings = [
-            'hash' => $tool_password_hash,
-            'content' => $tool_password_content,
         ];
 
         /* Service worker */
@@ -1671,7 +1652,6 @@ class LinkAjax extends Controller {
                 'enabled' => $posted_tools,
                 'magnifier' => $tool_magnifier,
                 'tag' => $tool_tag_settings,
-                'password' => $tool_password_settings,
             ],
         ];
 
@@ -1686,7 +1666,6 @@ class LinkAjax extends Controller {
                 'enabled' => $posted_tools,
                 'magnifier' => $tool_magnifier,
                 'tag' => $tool_tag_settings,
-                'password' => $tool_password_settings,
             ];
 
             /* Save the additional settings */

@@ -4,14 +4,10 @@
 $biolink_tools_enabled = isset($data->link->settings->tools->enabled)
     ? array_values((array) $data->link->settings->tools->enabled)
     : [];
-$password_tool_on = in_array('password', $biolink_tools_enabled, true);
 $biolink_tools_enabled = array_values(array_filter($biolink_tools_enabled, function($tool_id) {
     return $tool_id !== 'password';
 }));
 $biolink_tools_enabled = array_slice($biolink_tools_enabled, 0, 2);
-if($password_tool_on) {
-    array_unshift($biolink_tools_enabled, 'password');
-}
 $biolink_tools_magnifier = isset($data->link->settings->tools->magnifier) && in_array($data->link->settings->tools->magnifier, ['light', 'advanced'], true)
     ? $data->link->settings->tools->magnifier
     : 'light';
