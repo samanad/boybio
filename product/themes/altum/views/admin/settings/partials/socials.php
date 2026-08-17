@@ -5,7 +5,7 @@
         <i class="fas fa-fw fa-bars fa-sm mr-1"></i> <?= l('admin_settings.socials.footer') ?>
     </button>
 
-    <div class="collapse" id="footer_container">
+    <div class="collapse show" id="footer_container">
         <?php foreach(require APP_PATH . 'includes/admin_socials.php' AS $key => $value): ?>
             <div class="form-group">
                 <label for="<?= $key ?>"><i class="<?= $value['icon'] ?> fa-fw fa-sm mr-1 text-muted"></i> <?= $value['name'] ?></label>
