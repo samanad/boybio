@@ -29,6 +29,182 @@
         addClass('biolink-tool-contrast');
     }
 
+    if(has('favicon')) {
+        let favicon_src = root.getAttribute('data-favicon') || '';
+        if(!favicon_src) {
+            const icon_link = document.querySelector('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]');
+            favicon_src = icon_link ? (icon_link.getAttribute('href') || '') : '';
+        }
+
+        const links_row = document.querySelector('#links .row');
+        if(links_row && favicon_src) {
+            const wrap = document.createElement('div');
+            wrap.className = 'col-12 my-2 biolink-tool-favicon-avatar';
+
+            const inner = document.createElement('div');
+            inner.className = 'biolink-tool-favicon-avatar-inner';
+
+            const img = document.createElement('img');
+            img.src = favicon_src;
+            img.alt = '';
+            img.draggable = false;
+
+            inner.appendChild(img);
+            wrap.appendChild(inner);
+            links_row.insertBefore(wrap, links_row.firstChild);
+
+            const on_favicon_scroll = () => {
+                wrap.classList.toggle('is-compact', window.scrollY > 20);
+            };
+            window.addEventListener('scroll', on_favicon_scroll, {passive: true});
+            on_favicon_scroll();
+        }
+    }
+
+    if(has('password')) {
+        const password_token = typeof global_token !== 'undefined' ? global_token : '';
+        const password_url = window.location.href;
+        let private_html = '';
+        let private_mode = false;
+
+        const make_enter_box = () => {
+            const input = document.createElement('input');
+            input.type = 'password';
+            input.className = 'biolink-tool-password-input';
+            input.setAttribute('placeholder', 'enter');
+            input.setAttribute('autocomplete', 'off');
+            input.setAttribute('autocapitalize', 'off');
+            input.setAttribute('spellcheck', 'false');
+            input.setAttribute('enterkeyhint', 'done');
+            return input;
+        };
+
+        const request_private = password_value => {
+            const body = new FormData();
+            body.append('type', 'tool_password');
+            body.append('global_token', password_token);
+            body.append('password', password_value);
+
+            return fetch(password_url, {
+                method: 'POST',
+                body,
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(response => response.json()).then(data => {
+                if(!data || data.status !== 'success') {
+                    throw new Error('denied');
+                }
+                private_html = (data.details && data.details.content) ? data.details.content : '';
+                return private_html;
+            });
+        };
+
+        const private_box = document.createElement('div');
+        private_box.className = 'col-12 my-2 biolink-tool-password-private-content';
+        private_box.hidden = true;
+
+        const links_row = document.querySelector('#links .row');
+        if(links_row) {
+            links_row.appendChild(private_box);
+        }
+
+        const show_private_on_page = () => {
+            private_box.innerHTML = private_html;
+            private_box.hidden = false;
+        };
+
+        const set_private_mode = on => {
+            private_mode = on;
+            document.body.classList.toggle('biolink-tool-password-private', on);
+            lock_button.setAttribute('aria-pressed', on ? 'true' : 'false');
+            lock_icon.className = on ? 'fas fa-lock-open' : 'fas fa-lock';
+            if(on) {
+                show_private_on_page();
+                bottom_wrap.hidden = true;
+            } else {
+                bottom_wrap.hidden = false;
+            }
+        };
+
+        const bind_enter = (input, on_ok) => {
+            input.addEventListener('keydown', event => {
+                if(event.key !== 'Enter') return;
+                event.preventDefault();
+                const value = input.value;
+                if(!value) return;
+                request_private(value).then(() => {
+                    input.value = '';
+                    on_ok();
+                }).catch(() => {
+                    input.value = '';
+                });
+            });
+        };
+
+        const lock_wrap = document.createElement('div');
+        lock_wrap.className = 'biolink-tool-password-lock';
+
+        const lock_button = document.createElement('button');
+        lock_button.type = 'button';
+        lock_button.className = 'biolink-tool-password-lock-button';
+        lock_button.setAttribute('aria-pressed', 'false');
+
+        const lock_icon = document.createElement('i');
+        lock_icon.className = 'fas fa-lock';
+        lock_button.appendChild(lock_icon);
+
+        const lock_input = make_enter_box();
+        lock_input.hidden = true;
+
+        lock_wrap.appendChild(lock_button);
+        lock_wrap.appendChild(lock_input);
+
+        const content = document.querySelector('.link-content');
+        if(content) {
+            content.insertBefore(lock_wrap, content.firstChild);
+        } else {
+            document.body.insertBefore(lock_wrap, document.body.firstChild);
+        }
+
+        lock_button.addEventListener('click', () => {
+            if(private_mode) {
+                lock_input.hidden = true;
+                lock_button.hidden = false;
+                set_private_mode(false);
+                return;
+            }
+
+            lock_button.hidden = true;
+            lock_input.hidden = false;
+            lock_input.focus();
+        });
+
+        bind_enter(lock_input, () => {
+            lock_input.hidden = true;
+            lock_button.hidden = false;
+            set_private_mode(true);
+        });
+
+        const bottom_wrap = document.createElement('div');
+        bottom_wrap.className = 'biolink-tool-password-bottom';
+        const bottom_input = make_enter_box();
+        bottom_wrap.appendChild(bottom_input);
+
+        const footer = document.querySelector('.link-footer');
+        if(footer && footer.parentNode) {
+            footer.parentNode.insertBefore(bottom_wrap, footer);
+        } else if(content) {
+            content.appendChild(bottom_wrap);
+        } else {
+            document.body.appendChild(bottom_wrap);
+        }
+
+        bind_enter(bottom_input, () => {
+            show_private_on_page();
+            bottom_wrap.hidden = true;
+        });
+    }
+
     if(has('earthquake')) {
         addClass('biolink-tool-earthquake');
         const rumble = () => {

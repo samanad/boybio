@@ -24,7 +24,31 @@
 
             <main id="links" class="my-<?= $data->link->settings->block_spacing ?? '2' ?>">
                 <div class="row">
-                    <?php if($data->link->is_verified): ?>
+                    <?php
+                    $biolink_tools_enabled = isset($data->link->settings->tools->enabled)
+                        ? array_values((array) $data->link->settings->tools->enabled)
+                        : [];
+                    $biolink_tag_enabled = in_array('tag', $biolink_tools_enabled, true);
+                    $biolink_tag_hide_content = $biolink_tag_enabled && !empty($data->link->settings->tools->tag->hide_content);
+                    $biolink_tag_pages = $biolink_tag_enabled ? (array) ($data->link->tag_pages ?? []) : [];
+                    ?>
+
+                    <?php if($biolink_tag_enabled && count($biolink_tag_pages)): ?>
+                        <div class="col-12 my-<?= $data->link->settings->block_spacing ?? '2' ?>">
+                            <div class="biolink-tool-tag-list">
+                                <?php foreach($biolink_tag_pages as $tag_page): ?>
+                                    <a href="<?= e($tag_page->full_url) ?>" class="biolink-tool-tag-item">
+                                        <?php if(!empty($tag_page->icon_url)): ?>
+                                            <img src="<?= e($tag_page->icon_url) ?>" alt="" />
+                                        <?php endif ?>
+                                        <span><?= e($tag_page->display_name) ?></span>
+                                    </a>
+                                <?php endforeach ?>
+                            </div>
+                        </div>
+                    <?php endif ?>
+
+                    <?php if($data->link->is_verified && !$biolink_tag_hide_content): ?>
                         <div id="link-verified-wrapper-top" class="col-12 my-<?= $data->link->settings->block_spacing ?? '2' ?> text-center" style="<?= $data->link->settings->verified_location == 'top' ? null : 'display: none;' ?>">
                             <div>
                                 <small class="link-verified" data-toggle="tooltip" title="<?= sprintf(l('link.biolink.verified_help'), settings()->main->title) ?>"><i class="fas fa-fw fa-check-circle fa-1x"></i> <?= l('link.biolink.verified') ?></small>
@@ -32,7 +56,7 @@
                         </div>
                     <?php endif ?>
 
-                    <?php if($data->biolink_blocks): ?>
+                    <?php if($data->biolink_blocks && !$biolink_tag_hide_content): ?>
                         <?php
                         /* Detect the location */
                         try {

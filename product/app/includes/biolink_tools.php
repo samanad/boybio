@@ -1,11 +1,16 @@
 <?php
 /*
- * Biolink page tools. Owners enable up to two from the Settings tab.
+ * Biolink page tools. Owners enable up to two from the Settings tab,
+ * plus the password tool for private / public content.
  */
 
 defined('ALTUMCODE') || die();
 
 return [
+    'password' => [
+        'category' => 'utility',
+        'icon' => 'fas fa-fw fa-key',
+    ],
     'magnifier' => [
         'category' => 'utility',
         'icon' => 'fas fa-fw fa-search-plus',
@@ -19,6 +24,14 @@ return [
     'contrast' => [
         'category' => 'utility',
         'icon' => 'fas fa-fw fa-adjust',
+    ],
+    'favicon' => [
+        'category' => 'utility',
+        'icon' => 'fas fa-fw fa-user-circle',
+    ],
+    'tag' => [
+        'category' => 'utility',
+        'icon' => 'fas fa-fw fa-tags',
     ],
     'rain' => [
         'category' => 'display',

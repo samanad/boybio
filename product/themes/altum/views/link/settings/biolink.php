@@ -7,6 +7,10 @@ $enabled_biolink_tools = isset($data->link->settings->tools->enabled)
 $biolink_tool_magnifier = isset($data->link->settings->tools->magnifier) && in_array($data->link->settings->tools->magnifier, ['light', 'advanced'], true)
     ? $data->link->settings->tools->magnifier
     : 'light';
+$biolink_tool_tag_hide_content = !empty($data->link->settings->tools->tag->hide_content);
+$biolink_tool_tag_link_ids = array_map('intval', (array) ($data->link->settings->tools->tag->link_ids ?? []));
+$biolink_tool_password_content = isset($data->link->settings->tools->password->content) ? (string) $data->link->settings->tools->password->content : '';
+$biolink_tool_password_has = !empty($data->link->settings->tools->password->hash);
 ?>
 
 <?php ob_start() ?>
@@ -592,11 +596,11 @@ $biolink_tool_magnifier = isset($data->link->settings->tools->magnifier) && in_a
                                 </div>
                             <?php endif ?>
 
-                            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#tools_container" aria-expanded="false" aria-controls="tools_container">
+                            <button class="btn btn-block btn-gray-200 my-4" type="button" data-toggle="collapse" data-target="#tools_container" aria-expanded="true" aria-controls="tools_container">
                                 <i class="fas fa-fw fa-toolbox fa-sm mr-1"></i> <?= l('link.settings.tools_header') ?>
                             </button>
 
-                            <div class="collapse" id="tools_container" data-parent="#settings">
+                            <div class="collapse show" id="tools_container" data-parent="#settings">
                                 <small class="form-text text-muted mb-3"><?= l('link.settings.tools_help') ?></small>
 
                                 <div class="biolink-tools-settings">
@@ -634,6 +638,65 @@ $biolink_tool_magnifier = isset($data->link->settings->tools->magnifier) && in_a
                                                             <label class="custom-control-label" for="tool_<?= $tool_id ?>_<?= $option_id ?>"><?= l('link.settings.tools.' . $tool_id . '_' . $option_id) ?></label>
                                                         </div>
                                                     <?php endforeach ?>
+                                                </div>
+                                            <?php endif ?>
+
+                                            <?php if($tool_id === 'tag'): ?>
+                                                <div class="biolink-tools-options <?= in_array($tool_id, $enabled_biolink_tools) ? null : 'd-none' ?>" id="tool_tag_options">
+                                                    <div class="form-group custom-control custom-checkbox mt-2 mb-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            class="custom-control-input"
+                                                            id="tool_tag_hide_content"
+                                                            name="tool_tag_hide_content"
+                                                            <?= $biolink_tool_tag_hide_content ? 'checked="checked"' : null ?>
+                                                        >
+                                                        <label class="custom-control-label" for="tool_tag_hide_content"><?= l('link.settings.tools.tag_hide_content') ?></label>
+                                                        <small class="form-text text-muted"><?= l('link.settings.tools.tag_hide_content_help') ?></small>
+                                                    </div>
+
+                                                    <div class="form-group mb-1">
+                                                        <label><?= l('link.settings.tools.tag_pages') ?></label>
+                                                        <?php if(!empty($data->tag_biolinks)): ?>
+                                                            <div class="border rounded p-2" style="max-height: 220px; overflow-y: auto;">
+                                                                <?php foreach($data->tag_biolinks as $tag_biolink): ?>
+                                                                    <?php
+                                                                    $tag_biolink_title = trim((string) ($tag_biolink->settings->seo->title ?? ''));
+                                                                    $tag_biolink_label = $tag_biolink_title !== '' ? $tag_biolink_title . ' (' . $tag_biolink->url . ')' : $tag_biolink->url;
+                                                                    ?>
+                                                                    <div class="custom-control custom-checkbox my-1">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            class="custom-control-input"
+                                                                            id="tool_tag_link_id_<?= $tag_biolink->link_id ?>"
+                                                                            name="tool_tag_link_ids[]"
+                                                                            value="<?= $tag_biolink->link_id ?>"
+                                                                            <?= in_array((int) $tag_biolink->link_id, $biolink_tool_tag_link_ids, true) ? 'checked="checked"' : null ?>
+                                                                        >
+                                                                        <label class="custom-control-label" for="tool_tag_link_id_<?= $tag_biolink->link_id ?>"><?= e($tag_biolink_label) ?></label>
+                                                                    </div>
+                                                                <?php endforeach ?>
+                                                            </div>
+                                                            <small class="form-text text-muted"><?= l('link.settings.tools.tag_pages_help') ?></small>
+                                                        <?php else: ?>
+                                                            <small class="form-text text-muted"><?= l('link.settings.tools.tag_pages_empty') ?></small>
+                                                        <?php endif ?>
+                                                    </div>
+                                                </div>
+                                            <?php endif ?>
+
+                                            <?php if($tool_id === 'password'): ?>
+                                                <div class="biolink-tools-options <?= in_array($tool_id, $enabled_biolink_tools) ? null : 'd-none' ?>" id="tool_password_options">
+                                                    <div class="form-group mt-2" data-password-toggle-view data-password-toggle-view-show="<?= l('global.show') ?>" data-password-toggle-view-hide="<?= l('global.hide') ?>">
+                                                        <label for="tool_password_secret"><?= l('link.settings.tools.password_secret') ?></label>
+                                                        <input id="tool_password_secret" type="password" class="form-control" name="tool_password_secret" value="" autocomplete="new-password" placeholder="<?= $biolink_tool_password_has ? '••••••' : '' ?>" />
+                                                        <small class="form-text text-muted"><?= l('link.settings.tools.password_secret_help') ?></small>
+                                                    </div>
+                                                    <div class="form-group mb-1">
+                                                        <label for="tool_password_content"><?= l('link.settings.tools.password_content') ?></label>
+                                                        <textarea id="tool_password_content" name="tool_password_content" class="form-control" rows="5" maxlength="10000"><?= e($biolink_tool_password_content) ?></textarea>
+                                                        <small class="form-text text-muted"><?= l('link.settings.tools.password_content_help') ?></small>
+                                                    </div>
                                                 </div>
                                             <?php endif ?>
                                         </div>
@@ -1372,12 +1435,14 @@ $biolink_tool_magnifier = isset($data->link->settings->tools->magnifier) && in_a
         }
     });
 
-    /* Biolink tools: enable at most two */
+    /* Biolink tools: enable at most two, plus password */
     document.querySelectorAll('[data-biolink-tool]').forEach(input => {
         input.addEventListener('change', () => {
-            const checked = document.querySelectorAll('[data-biolink-tool]:checked');
-            if(checked.length > 2) {
-                input.checked = false;
+            if(input.value !== 'password') {
+                const checked = [...document.querySelectorAll('[data-biolink-tool]:checked')].filter(el => el.value !== 'password');
+                if(checked.length > 2) {
+                    input.checked = false;
+                }
             }
 
             const options = document.querySelector('#tool_' + input.value + '_options');

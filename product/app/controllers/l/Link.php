@@ -537,6 +537,11 @@ class Link extends Controller {
             return;
         }
 
+        if(!empty($_POST) && ($_POST['type'] ?? '') === 'tool_password') {
+            $this->process_biolink_tool_password();
+            return;
+        }
+
         /* Get all the links inside of the biolink */
         $cache_instance = cache()->getItem('biolink_blocks?link_id=' . $this->link->link_id);
 
@@ -561,6 +566,12 @@ class Link extends Controller {
 
         /* Default basic title */
         Title::set($this->link->url);
+
+        $this->link->tag_pages = [];
+        $enabled_biolink_tools = array_values((array) ($this->link->settings->tools->enabled ?? []));
+        if(in_array('tag', $enabled_biolink_tools, true)) {
+            $this->link->tag_pages = get_biolink_tag_pages($this->link, $this->link->user_id);
+        }
 
         /* Dynamic OG images plugin */
         if(\Altum\Plugin::is_active('dynamic-og-images') && settings()->dynamic_og_images->is_enabled) {
@@ -595,6 +606,31 @@ class Link extends Controller {
         /* Prepare the view */
         $biolink_wrapper = new \Altum\View('l/biolink_wrapper', (array) $this);
         echo $biolink_wrapper->run();
+    }
+
+    private function process_biolink_tool_password() {
+        $enabled = array_values((array) ($this->link->settings->tools->enabled ?? []));
+        $hash = isset($this->link->settings->tools->password->hash) ? (string) $this->link->settings->tools->password->hash : '';
+        $content = isset($this->link->settings->tools->password->content) ? (string) $this->link->settings->tools->password->content : '';
+
+        if(!in_array('password', $enabled, true) || $hash === '') {
+            \Altum\Response::json('', 'error');
+        }
+
+        if(!\Altum\Csrf::check('global_token')) {
+            \Altum\Response::json('', 'error');
+        }
+
+        $posted_password = (string) ($_POST['password'] ?? '');
+        if($posted_password === '' || !password_verify($posted_password, $hash)) {
+            \Altum\Response::json('', 'error');
+        }
+
+        set_device_cookie('biolink_tool_password_' . $this->link->link_id, $hash);
+
+        \Altum\Response::json('', 'success', [
+            'content' => nl2br(e($content)),
+        ]);
     }
 
     private function process_vcard() {

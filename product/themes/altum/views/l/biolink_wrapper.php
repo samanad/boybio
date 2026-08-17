@@ -58,7 +58,7 @@ if(in_array('earthquake', $biolink_tools_enabled, true)) {
         <?php endforeach ?>
 
         <?php if(count($biolink_tools_enabled)): ?>
-            <link href="<?= ASSETS_FULL_URL . 'css/biolink-tools.css?v=' . PRODUCT_CODE ?>" rel="stylesheet" media="screen,print">
+            <link href="<?= ASSETS_FULL_URL . 'css/biolink-tools.css?v=' . PRODUCT_CODE . '-pw1' ?>" rel="stylesheet" media="screen,print">
         <?php endif ?>
 
         <?php if($this->link->settings->font ?? null): ?>
@@ -141,7 +141,7 @@ if(in_array('earthquake', $biolink_tools_enabled, true)) {
     <?php endforeach ?>
 
     <?php if(count($biolink_tools_enabled ?? [])): ?>
-        <script src="<?= ASSETS_FULL_URL ?>js/biolink-tools.js?v=<?= PRODUCT_CODE ?>"></script>
+        <script src="<?= ASSETS_FULL_URL ?>js/biolink-tools.js?v=<?= PRODUCT_CODE ?>-pw1"></script>
     <?php endif ?>
 
     <?php foreach(['libraries/fontawesome.min.js', 'libraries/fontawesome-solid.min.js', 'libraries/fontawesome-brands.min.js'] as $file): ?>

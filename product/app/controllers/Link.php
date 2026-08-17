@@ -94,6 +94,13 @@ class Link extends Controller {
                     $data = ['biolinks_themes' => $biolinks_themes,];
                     $view = new \Altum\View('link/settings/biolink_themes_modal', (array) $this);
                     \Altum\Event::add_content($view->run($data), 'modals');
+
+                    $tag_biolinks = [];
+                    $tag_biolinks_result = database()->query("SELECT `link_id`, `url`, `settings` FROM `links` WHERE `user_id` = {$this->user->user_id} AND `type` = 'biolink' AND `link_id` != {$this->link->link_id} ORDER BY `url` ASC");
+                    while($tag_biolink_row = $tag_biolinks_result->fetch_object()) {
+                        $tag_biolink_row->settings = json_decode($tag_biolink_row->settings ?? '');
+                        $tag_biolinks[] = $tag_biolink_row;
+                    }
                 }
 
                 /* Get the available domains to use */
@@ -127,6 +134,7 @@ class Link extends Controller {
                     'biolinks_themes'   => $biolinks_themes ?? null,
                     'links_types'       => $links_types,
                     'notification_handlers' => $notification_handlers ?? null,
+                    'tag_biolinks'      => $tag_biolinks ?? [],
                 ];
 
                 break;

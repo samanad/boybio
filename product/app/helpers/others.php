@@ -653,6 +653,62 @@ function biolinks_blocks_order_by_sql() {
         : 'ORDER BY `order` ASC';
 }
 
+/** Related biolink pages chosen for the Tag tool (opponents). */
+function get_biolink_tag_pages($link, $user_id) {
+    $tag = $link->settings->tools->tag ?? null;
+    if(empty($tag)) {
+        return [];
+    }
+
+    $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($tag->link_ids ?? [])))));
+    if(!$ids) {
+        return [];
+    }
+
+    $user_id = (int) $user_id;
+    $id_list = implode(',', $ids);
+    $order = array_flip($ids);
+    $pages = [];
+
+    $result = database()->query("
+        SELECT `links`.*, `domains`.`scheme`, `domains`.`host`, `domains`.`link_id` as `domain_link_id`
+        FROM `links`
+        LEFT JOIN `domains` ON `links`.`domain_id` = `domains`.`domain_id`
+        WHERE `links`.`user_id` = {$user_id}
+            AND `links`.`type` = 'biolink'
+            AND `links`.`is_enabled` = 1
+            AND `links`.`link_id` IN ({$id_list})
+    ");
+
+    while($row = $result->fetch_object()) {
+        $row->settings = json_decode($row->settings ?? '');
+        $row->full_url = $row->domain_id
+            ? $row->scheme . $row->host . '/' . ($row->domain_link_id == $row->link_id ? null : $row->url)
+            : SITE_URL . $row->url;
+
+        $title = trim((string) ($row->settings->seo->title ?? ''));
+        $row->display_name = $title !== '' ? $title : $row->url;
+
+        if(!empty($row->settings->favicon)) {
+            $row->icon_url = \Altum\Uploads::get_full_url('favicons') . $row->settings->favicon;
+        } elseif(!empty($row->settings->pwa_icon)) {
+            $row->icon_url = \Altum\Uploads::get_full_url('app_icon') . $row->settings->pwa_icon;
+        } elseif(!empty(settings()->main->favicon)) {
+            $row->icon_url = settings()->main->favicon_full_url;
+        } else {
+            $row->icon_url = '';
+        }
+
+        $pages[] = $row;
+    }
+
+    usort($pages, function($a, $b) use ($order) {
+        return ($order[$a->link_id] ?? 0) <=> ($order[$b->link_id] ?? 0);
+    });
+
+    return $pages;
+}
+
 /** True when current visitor IP matches country-ban bypass hostnames/IPs (or legacy lists). */
 function is_admin_country_ban_bypassed() {
     static $cached = null;
