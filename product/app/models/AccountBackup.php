@@ -107,13 +107,11 @@ class AccountBackup extends Model {
         $media = [];
 
         $this->add_media_file($media, 'users', $account['avatar'] ?? null, 'account.avatar');
+        $this->harvest_media($media, $account, 'account');
 
-        $preferences = $account['preferences'] ?? null;
-        if(is_string($preferences)) $preferences = json_decode($preferences);
-        if(is_object($preferences) || is_array($preferences)) {
-            $preferences = (object) $preferences;
-            foreach(['white_label_logo_light' => 'users', 'white_label_logo_dark' => 'users', 'white_label_favicon' => 'users'] as $field => $key) {
-                $this->add_media_file($media, $key, $preferences->{$field} ?? null, 'account.preferences.' . $field);
+        foreach($tables as $table => $payload) {
+            foreach(($payload['rows'] ?? []) as $row) {
+                $this->harvest_media($media, $row, $table);
             }
         }
 
@@ -137,7 +135,7 @@ class AccountBackup extends Model {
                 $this->add_media_file($media, 'block_images', $settings->{$field} ?? null, 'blocks.' . $field);
             }
             $this->add_media_file($media, 'block_thumbnail_images', $settings->thumbnail ?? ($settings->image ?? null), 'blocks.thumbnail');
-            $this->add_media_file($media, 'files', $settings->file ?? null, 'blocks.file');
+            $this->add_media_file($media, 'files', $settings->file ?? ($settings->video ?? ($settings->audio ?? null)), 'blocks.file');
             $this->add_media_file($media, 'products_files', $settings->file ?? null, 'blocks.product_file');
             $this->add_media_file($media, 'avatars', $settings->avatar ?? ($settings->vcard_avatar ?? null), 'blocks.avatar');
         }
@@ -159,6 +157,105 @@ class AccountBackup extends Model {
         return array_values($media);
     }
 
+    private function harvest_media(&$media, $node, $source, $field = null) {
+        if(is_string($node)) {
+            $decoded = json_decode($node);
+            if(json_last_error() === JSON_ERROR_NONE && (is_array($decoded) || is_object($decoded))) {
+                $this->harvest_media($media, $decoded, $source, $field);
+                return;
+            }
+            $this->add_media_from_string($media, $node, $source, $field);
+            return;
+        }
+        if(is_object($node) || is_array($node)) {
+            foreach((array) $node as $key => $value) {
+                $this->harvest_media($media, $value, $source, is_string($key) ? $key : $field);
+            }
+        }
+    }
+
+    private function add_media_from_string(&$media, $value, $source, $field = null) {
+        if(!is_string($value) || $value === '') return;
+
+        $parsed = $this->parse_upload_reference($value);
+        if($parsed) {
+            if(!empty($parsed['folder'])) {
+                $this->add_media_folder($media, $parsed['key'], $parsed['filename'], $source . '.' . ($field ?: 'url'));
+            } else {
+                $this->add_media_file($media, $parsed['key'], $parsed['filename'], $source . '.' . ($field ?: 'url'));
+            }
+            return;
+        }
+
+        $key = $this->uploads_key_from_field($field);
+        if($key) {
+            $this->add_media_file($media, $key, $value, $source . '.' . $field);
+        }
+    }
+
+    private function uploads_key_from_field($field) {
+        $map = [
+            'avatar' => 'users',
+            'vcard_avatar' => 'avatars',
+            'background' => 'biolink_background',
+            'favicon' => 'favicons',
+            'image' => 'block_images',
+            'image_new' => 'block_images',
+            'poster' => 'block_images',
+            'thumbnail' => 'block_thumbnail_images',
+            'file' => 'files',
+            'video' => 'files',
+            'audio' => 'files',
+            'logo' => 'splash_pages',
+            'opengraph' => 'splash_pages',
+            'qr_code' => 'qr_code',
+            'qr_code_logo' => 'qr_code_logo',
+            'qr_code_background' => 'qr_code_background',
+            'qr_code_foreground' => 'qr_code_foreground',
+            'cloaking_favicon' => 'favicons',
+            'cloaking_opengraph' => 'opengraph',
+            'white_label_logo_light' => 'users',
+            'white_label_logo_dark' => 'users',
+            'white_label_favicon' => 'users',
+        ];
+        return $map[$field] ?? null;
+    }
+
+    private function parse_upload_reference($value) {
+        if(!is_string($value) || $value === '') return null;
+        $path = $value;
+        if(preg_match('#https?://#i', $value)) {
+            $parts = parse_url($value);
+            $path = $parts['path'] ?? '';
+        }
+        $path = ltrim($path, '/');
+        if(str_starts_with($path, UPLOADS_URL_PATH)) {
+            $path = mb_substr($path, mb_strlen(UPLOADS_URL_PATH));
+        }
+        foreach(['uploads/', 'upload/'] as $prefix) {
+            if(str_starts_with($path, $prefix)) {
+                $path = mb_substr($path, mb_strlen($prefix));
+            }
+        }
+        $path = ltrim($path, '/');
+        if($path === '' || str_contains($path, '..')) return null;
+
+        $segments = explode('/', $path);
+        if(count($segments) < 2) return null;
+        $folder = $segments[0] . '/';
+        $filename = end($segments);
+        $uploads = \Altum\Uploads::$uploads ?: (require APP_PATH . 'includes/uploads.php');
+        \Altum\Uploads::$uploads = $uploads;
+        foreach($uploads as $key => $conf) {
+            $conf_path = $conf['path'] ?? ($key . '/');
+            if($conf_path === $folder || rtrim($conf_path, '/') === rtrim($folder, '/')) {
+                $is_folder = count($segments) > 2 || !str_contains($filename, '.');
+                return ['key' => $key, 'filename' => $is_folder && count($segments) > 2 ? implode('/', array_slice($segments, 1)) : $filename, 'folder' => false];
+            }
+        }
+        return null;
+    }
+
     private function decode_json($value) {
         if(is_object($value) || is_array($value)) return (object) json_decode(json_encode($value));
         if(!is_string($value) || $value === '') return (object) [];
@@ -167,9 +264,10 @@ class AccountBackup extends Model {
     }
 
     private function looks_like_filename($name) {
-        if(!is_string($name) || $name === '' || mb_strlen($name) > 180) return false;
-        if(str_contains($name, '/') || str_contains($name, '\\') || str_starts_with($name, 'http')) return false;
-        return (bool) preg_match('/^[A-Za-z0-9._-]+\.[A-Za-z0-9]{2,5}$/', $name);
+        if(!is_string($name) || $name === '' || mb_strlen($name) > 240) return false;
+        if(str_contains($name, '/') || str_contains($name, '\\')) return false;
+        if(str_starts_with($name, 'http://') || str_starts_with($name, 'https://')) return false;
+        return (bool) preg_match('/^[A-Za-z0-9._-]+\.[A-Za-z0-9]{2,8}$/', $name);
     }
 
     private function add_media_file(&$media, $uploads_key, $filename, $source) {
@@ -183,6 +281,7 @@ class AccountBackup extends Model {
             'filename' => $filename,
             'path' => \Altum\Uploads::get_path($uploads_key) . $filename,
             'url' => $this->public_file_url($uploads_key, $filename),
+            's3_key' => UPLOADS_URL_PATH . \Altum\Uploads::get_path($uploads_key) . $filename,
             'on_server' => $on_server,
             'storage' => $on_server ? 'server' : ($this->offload_is_ready() ? 'offload' : 'missing'),
             'folder' => false,
@@ -201,6 +300,7 @@ class AccountBackup extends Model {
             'filename' => $folder,
             'path' => \Altum\Uploads::get_path($uploads_key) . $folder . '/',
             'url' => $this->public_file_url($uploads_key, $folder . '/'),
+            's3_key' => UPLOADS_URL_PATH . \Altum\Uploads::get_path($uploads_key) . $folder . '/',
             'on_server' => $on_server,
             'storage' => $on_server ? 'server' : ($this->offload_is_ready() ? 'offload' : 'missing'),
             'folder' => true,
@@ -210,6 +310,7 @@ class AccountBackup extends Model {
 
     public function build_package($user, $destination) {
         @set_time_limit(0);
+        @ini_set('memory_limit', '1024M');
         $account = $this->account_payload($user);
         $tables = $this->fetch_user_rows($user->user_id);
         $media = $this->collect_media($account, $tables);
@@ -247,6 +348,8 @@ class AccountBackup extends Model {
         }
 
         $media_written = [];
+        $bytes = 0;
+        $failed = 0;
         foreach($media as $item) {
             $include_bytes = $destination === 'pc' || !empty($item['on_server']);
             $item['included'] = false;
@@ -254,12 +357,21 @@ class AccountBackup extends Model {
                 $ok = $this->copy_media_into_package($dir, $item);
                 $item['included'] = $ok;
                 $item['missing'] = !$ok;
+                if($ok && empty($item['folder'])) {
+                    $packed = $dir . '/media/' . $item['path'];
+                    $item['bytes'] = is_file($packed) ? filesize($packed) : 0;
+                    $bytes += $item['bytes'];
+                }
+                if(!$ok) $failed++;
             } else {
                 $item['included'] = false;
                 $item['reference_only'] = true;
             }
             $media_written[] = $item;
         }
+        $manifest['counts']['media_bytes'] = $bytes;
+        $manifest['counts']['media_failed'] = $failed;
+        file_put_contents($dir . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         file_put_contents($dir . '/media-index.json', json_encode($media_written, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
         $zip_path = $dir . '.zip';
@@ -291,10 +403,49 @@ class AccountBackup extends Model {
             return copy($this->local_file_path($item['key'], $item['filename']), $target);
         }
 
-        if(!empty($item['url'])) {
-            return $this->download_url_to($item['url'], $target);
+        if($this->download_offload_object($item, $target)) {
+            return true;
+        }
+
+        foreach($this->public_url_candidates($item) as $url) {
+            if($this->download_url_to($url, $target)) return true;
         }
         return false;
+    }
+
+    private function public_url_candidates($item) {
+        $urls = [];
+        $path = ltrim($item['path'] ?? '', '/');
+        $filename = $item['filename'] ?? '';
+        $key = $item['key'] ?? '';
+        if(!empty($item['url'])) $urls[] = $item['url'];
+        if($key && $filename) $urls[] = $this->public_file_url($key, $filename);
+        if($this->offload_is_ready()) {
+            foreach([settings()->offload->cdn_uploads_url ?? null, settings()->offload->uploads_url ?? null] as $base) {
+                if(!$base) continue;
+                $urls[] = rtrim($base, '/') . '/' . $path;
+                $urls[] = rtrim($base, '/') . '/' . UPLOADS_URL_PATH . $path;
+            }
+        }
+        return array_values(array_unique(array_filter($urls)));
+    }
+
+    private function download_offload_object($item, $dest) {
+        if(!$this->offload_is_ready()) return false;
+        $key = $item['s3_key'] ?? (UPLOADS_URL_PATH . ($item['path'] ?? ''));
+        if($key === '' || $key === UPLOADS_URL_PATH) return false;
+        try {
+            $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
+            $s3->getObject([
+                'Bucket' => settings()->offload->storage_name,
+                'Key' => $key,
+                'SaveAs' => $dest,
+            ]);
+            return is_file($dest) && filesize($dest) > 0;
+        } catch(\Exception $exception) {
+            @unlink($dest);
+            return false;
+        }
     }
 
     private function download_offload_prefix($item, $target_dir) {
@@ -334,10 +485,11 @@ class AccountBackup extends Model {
         curl_setopt_array($ch, [
             CURLOPT_FILE => $fp,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT => 300,
-            CURLOPT_CONNECTTIMEOUT => 20,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_CONNECTTIMEOUT => 30,
             CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_USERAGENT => 'cloub-account-backup',
+            CURLOPT_USERAGENT => 'Mozilla/5.0 cloub-account-backup',
+            CURLOPT_FAILONERROR => false,
         ]);
         $ok = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -361,6 +513,9 @@ class AccountBackup extends Model {
             $full = $file->getRealPath();
             $local = ltrim(str_replace($dir, '', $full), '/');
             $zip->addFile($full, $local);
+            if(str_starts_with($local, 'media/') && is_file($full) && filesize($full) > 1024 * 1024) {
+                $zip->setCompressionName($local, \ZipArchive::CM_STORE);
+            }
         }
         $zip->close();
     }
