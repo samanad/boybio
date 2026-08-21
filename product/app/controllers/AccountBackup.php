@@ -20,6 +20,15 @@ class AccountBackup extends Controller {
         \Altum\Authentication::guard();
 
         $backup = new AccountBackupModel();
+
+        if(!empty($_GET['download'])) {
+            try {
+                $this->export_download($backup, $_GET['download']);
+            } catch(\Exception $exception) {
+                Alerts::add_error(l('account_backup.error.no_file'));
+            }
+        }
+
         $this->handle_post($backup, true);
 
         $offload_ready = $backup->offload_is_ready();
@@ -31,7 +40,7 @@ class AccountBackup extends Controller {
             session_write_close();
         }
 
-        $cloud_packages = [];
+        $cloud_packages = $offload_ready ? $backup->list_offload_packages($this->user->user_id) : [];
         $local_packages = $backup->list_local_packages($this->user->user_id);
 
         $menu = new \Altum\View('partials/account_header_menu', (array) $this);
@@ -195,19 +204,42 @@ class AccountBackup extends Controller {
         die();
     }
 
-    private function export_download(AccountBackupModel $backup) {
-        $path = $backup->local_zip_path($this->user->user_id, $_POST['filename'] ?? '');
+    private function export_download(AccountBackupModel $backup, $filename = null) {
+        $filename = $filename ?: ($_POST['filename'] ?? '');
+        $path = $backup->local_zip_path($this->user->user_id, $filename);
+        $job = $backup->read_job($this->user->user_id);
+
+        if(!empty($job['offload_key']) && ($job['filename'] ?? '') === basename((string) $filename)) {
+            $url = $job['offload_url'] ?: $backup->offload_download_url($job['offload_key']);
+            if($url) {
+                if(session_status() === PHP_SESSION_ACTIVE) session_write_close();
+                header('Location: ' . $url);
+                die();
+            }
+        }
+
         if(!$path) {
             throw new \RuntimeException('no_file');
         }
         if(session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
         }
+        while(ob_get_level()) {
+            ob_end_clean();
+        }
         header('Content-Type: application/zip');
         header('Content-Disposition: attachment; filename="' . basename($path) . '"');
         header('Content-Length: ' . filesize($path));
         header('Cache-Control: no-store');
-        readfile($path);
+        header('X-Accel-Buffering: no');
+        $fp = fopen($path, 'rb');
+        if($fp) {
+            while(!feof($fp)) {
+                echo fread($fp, 1024 * 1024);
+                flush();
+            }
+            fclose($fp);
+        }
         die();
     }
 

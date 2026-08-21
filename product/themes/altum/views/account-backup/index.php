@@ -103,11 +103,12 @@
                     <script>setTimeout(function () { window.location.reload(); }, 8000);</script>
                 <?php elseif(($job['status'] ?? '') === 'done' && !empty($job['filename'])): ?>
                     <p><?= sprintf(l('account_backup.export.job.done'), htmlspecialchars($job['filename']), htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($job['bytes'] ?? 0))) ?></p>
-                    <form action="" method="post">
-                        <input type="hidden" name="token" value="<?= \Altum\Csrf::get() ?>" />
-                        <input type="hidden" name="filename" value="<?= htmlspecialchars($job['filename']) ?>" />
-                        <button type="submit" name="type" value="export_download" class="btn btn-primary"><?= l('account_backup.export.job.download') ?></button>
-                    </form>
+                    <?php if(!empty($job['offload_url'])): ?>
+                        <p class="small text-muted"><?= l('account_backup.export.job.offload_kept') ?></p>
+                        <a class="btn btn-primary" href="<?= htmlspecialchars($job['offload_url']) ?>"><?= l('account_backup.export.job.download') ?></a>
+                    <?php else: ?>
+                        <a class="btn btn-primary" href="<?= url('account-backup?download=' . urlencode($job['filename'])) ?>"><?= l('account_backup.export.job.download') ?></a>
+                    <?php endif ?>
                 <?php elseif(($job['status'] ?? '') === 'error'): ?>
                     <p class="mb-0 text-danger"><?= sprintf(l('account_backup.export.job.error'), htmlspecialchars($job['message'] ?? '')) ?></p>
                 <?php endif ?>
@@ -214,14 +215,10 @@
                         <hr>
                         <h3 class="h6"><?= l('account_backup.export.local.header') ?></h3>
                         <?php foreach($data->local_packages as $item): ?>
-                            <form action="" method="post" class="mb-2">
-                                <input type="hidden" name="token" value="<?= \Altum\Csrf::get() ?>" />
-                                <input type="hidden" name="filename" value="<?= htmlspecialchars($item['filename']) ?>" />
-                                <button type="submit" name="type" value="export_download" class="btn btn-sm btn-outline-secondary">
-                                    <?= htmlspecialchars($item['filename']) ?>
-                                    · <?= htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($item['size'] ?? 0)) ?>
-                                </button>
-                            </form>
+                            <a class="btn btn-sm btn-outline-secondary mb-2 d-block" href="<?= url('account-backup?download=' . urlencode($item['filename'])) ?>">
+                                <?= htmlspecialchars($item['filename']) ?>
+                                · <?= htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($item['size'] ?? 0)) ?>
+                            </a>
                         <?php endforeach ?>
                     <?php endif ?>
                 </div>
@@ -288,6 +285,11 @@
                                     <?php endforeach ?>
                                 </select>
                             </div>
+                            <?php foreach($data->cloud_packages as $item): ?>
+                                <?php if(!empty($item['url'])): ?>
+                                    <a class="small d-block mb-1" href="<?= htmlspecialchars($item['url']) ?>"><?= htmlspecialchars($item['filename']) ?> · <?= htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($item['size'] ?? 0)) ?></a>
+                                <?php endif ?>
+                            <?php endforeach ?>
                             <button type="submit" name="type" value="import_cloud" class="btn btn-block btn-outline-primary" <?= count($data->cloud_packages) ? '' : 'disabled="disabled"' ?>>
                                 <?= l('account_backup.import.load_cloud') ?>
                             </button>

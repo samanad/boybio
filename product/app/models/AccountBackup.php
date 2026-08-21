@@ -811,9 +811,15 @@ class AccountBackup extends Model {
                 @unlink($package['zip_path']);
             }
             $offload_key = null;
-            if($destination === 'offload' && $this->offload_is_ready()) {
-                $uploaded = $this->upload_package_to_offload($user, $local, $package['filename']);
-                $offload_key = $uploaded['key'] ?? null;
+            $offload_url = null;
+            if($this->offload_is_ready()) {
+                try {
+                    $uploaded = $this->upload_package_to_offload($user, $local, $package['filename']);
+                    $offload_key = $uploaded['key'] ?? null;
+                    $offload_url = $this->offload_download_url($offload_key) ?: ($uploaded['url'] ?? null);
+                } catch(\Exception $exception) {
+                    $offload_key = null;
+                }
             }
             $this->write_job($user->user_id, [
                 'status' => 'done',
@@ -821,6 +827,7 @@ class AccountBackup extends Model {
                 'filename' => $package['filename'],
                 'bytes' => is_file($local) ? filesize($local) : 0,
                 'offload_key' => $offload_key,
+                'offload_url' => $offload_url,
                 'started_at' => date('c'),
             ]);
         } catch(\Throwable $exception) {
@@ -894,6 +901,23 @@ class AccountBackup extends Model {
         ];
     }
 
+    public function offload_download_url($key) {
+        if(!$key || !$this->offload_is_ready()) return null;
+        $public = rtrim((string) (settings()->offload->cdn_uploads_url ?: settings()->offload->uploads_url), '/') . '/' . ltrim(str_replace(UPLOADS_URL_PATH, '', $key), '/');
+        try {
+            $s3 = $this->s3_client(10);
+            $command = $s3->getCommand('GetObject', [
+                'Bucket' => settings()->offload->storage_name,
+                'Key' => $key,
+                'ResponseContentDisposition' => 'attachment; filename="' . basename($key) . '"',
+            ]);
+            $request = $s3->createPresignedRequest($command, '+6 hours');
+            return (string) $request->getUri();
+        } catch(\Exception $exception) {
+            return $public ?: null;
+        }
+    }
+
     public function list_offload_packages($user_id) {
         if(!$this->offload_is_ready()) return [];
         try {
@@ -915,6 +939,7 @@ class AccountBackup extends Model {
                         'filename' => basename($key),
                         'size' => $object['Size'] ?? 0,
                         'modified' => isset($object['LastModified']) ? (string) $object['LastModified'] : null,
+                        'url' => $this->offload_download_url($key),
                     ];
                 }
             }
