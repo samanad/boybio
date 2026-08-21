@@ -9,6 +9,7 @@ class AccountBackup extends Model {
 
     public const FORMAT = 'cloub-account-backup';
     public const FORMAT_VERSION = 1;
+    public const LARGE_FILE_BYTES = 52428800;
 
     public const TABLES = [
         'projects' => 'project_id',
@@ -166,6 +167,75 @@ class AccountBackup extends Model {
         return array_values($media);
     }
 
+    public static function format_bytes($bytes) {
+        $bytes = (float) $bytes;
+        if($bytes < 1024) return round($bytes) . ' B';
+        $units = ['KB', 'MB', 'GB', 'TB'];
+        $i = -1;
+        do {
+            $bytes /= 1024;
+            $i++;
+        } while($bytes >= 1024 && $i < count($units) - 1);
+        return round($bytes, $bytes >= 10 ? 1 : 2) . ' ' . $units[$i];
+    }
+
+    public function prepare_export($user, $destination) {
+        @set_time_limit(90);
+        @ini_set('memory_limit', '1024M');
+        $account = $this->account_payload($user);
+        $tables = $this->fetch_user_rows($user->user_id);
+        $media = $this->collect_media($account, $tables);
+        $limit = self::LARGE_FILE_BYTES;
+        $total = 0;
+        $unknown = 0;
+        $packable_items = [];
+        $large = [];
+
+        foreach($media as $item) {
+            if($destination === 'pc' || !empty($item['on_server'])) {
+                $packable_items[] = $item;
+            }
+        }
+        $force_head = count($packable_items) <= 80;
+
+        foreach($packable_items as $item) {
+            $size = $this->media_item_bytes($item, $force_head);
+            if($size === null) {
+                $unknown++;
+                continue;
+            }
+            $total += $size;
+            if($size > $limit) {
+                $large[] = [
+                    'path' => $item['path'] ?? ($item['filename'] ?? ''),
+                    'bytes' => $size,
+                    'source' => $item['source'] ?? '',
+                ];
+            }
+        }
+
+        usort($large, function($a, $b) {
+            return ($b['bytes'] ?? 0) <=> ($a['bytes'] ?? 0);
+        });
+        $large_bytes = 0;
+        foreach($large as $row) $large_bytes += $row['bytes'];
+
+        return [
+            'destination' => $destination,
+            'links' => count($tables['links']['rows'] ?? []),
+            'blocks' => count($this->table_rows($tables, 'biolinks_blocks')),
+            'media' => count($media),
+            'packable' => count($packable_items),
+            'total_bytes' => $total,
+            'unknown' => $unknown,
+            'large' => array_slice($large, 0, 40),
+            'large_count' => count($large),
+            'large_bytes' => $large_bytes,
+            'limit_bytes' => $limit,
+            'size_without_large' => max(0, $total - $large_bytes),
+        ];
+    }
+
     private function harvest_media(&$media, $node, $source, $field = null) {
         if(is_string($node)) {
             $decoded = json_decode($node);
@@ -317,9 +387,108 @@ class AccountBackup extends Model {
         ];
     }
 
-    public function build_package($user, $destination) {
+    private function might_be_large($item) {
+        if(!empty($item['folder'])) return true;
+        $name = strtolower((string) ($item['filename'] ?? ($item['path'] ?? '')));
+        return (bool) preg_match('/\.(mp4|webm|mov|mkv|avi|m4v|mp3|wav|flac|aac|ogg|zip|rar|7z|gz|tar|pdf|iso|dmg|exe|bin|apk|xapk)$/i', $name);
+    }
+
+    private function media_item_bytes($item, $force_head = false) {
+        if(!empty($item['on_server'])) {
+            $path = $this->local_file_path($item['key'] ?? '', $item['filename'] ?? '');
+            if(!empty($item['folder']) && $path && is_dir($path)) {
+                return $this->directory_bytes($path);
+            }
+            if($path && is_file($path)) return (int) filesize($path);
+        }
+
+        if(!$force_head && !$this->might_be_large($item)) {
+            return null;
+        }
+
+        $size = $this->head_offload_object($item);
+        if($size !== null) return $size;
+
+        foreach($this->public_url_candidates($item) as $url) {
+            $size = $this->head_url_bytes($url);
+            if($size !== null) return $size;
+        }
+        return null;
+    }
+
+    private function directory_bytes($dir) {
+        $bytes = 0;
+        if(!is_dir($dir)) return 0;
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS));
+        foreach($files as $file) {
+            if($file->isFile()) $bytes += $file->getSize();
+        }
+        return $bytes;
+    }
+
+    private function offload_keys($item) {
+        $keys = [];
+        foreach([$item['s3_key'] ?? null, UPLOADS_URL_PATH . ($item['path'] ?? ''), $item['path'] ?? ''] as $key) {
+            $key = ltrim((string) $key, '/');
+            if($key === '' || $key === rtrim(UPLOADS_URL_PATH, '/')) continue;
+            $keys[] = $key;
+            if(str_starts_with($key, 'uploads/')) $keys[] = mb_substr($key, mb_strlen('uploads/'));
+            else $keys[] = 'uploads/' . $key;
+        }
+        return array_values(array_unique($keys));
+    }
+
+    private function s3_client($timeout = 20) {
+        $config = get_aws_s3_config();
+        $config['http'] = array_merge($config['http'] ?? [], [
+            'timeout' => (int) $timeout,
+            'connect_timeout' => 5,
+        ]);
+        return new \Aws\S3\S3Client($config);
+    }
+
+    private function head_offload_object($item) {
+        if(!$this->offload_is_ready()) return null;
+        try {
+            $s3 = $this->s3_client(8);
+            foreach($this->offload_keys($item) as $key) {
+                try {
+                    $result = $s3->headObject([
+                        'Bucket' => settings()->offload->storage_name,
+                        'Key' => $key,
+                    ]);
+                    if(isset($result['ContentLength'])) return (int) $result['ContentLength'];
+                } catch(\Exception $exception) {
+                }
+            }
+        } catch(\Exception $exception) {
+        }
+        return null;
+    }
+
+    private function head_url_bytes($url) {
+        $ch = curl_init($url);
+        if(!$ch) return null;
+        curl_setopt_array($ch, [
+            CURLOPT_NOBODY => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 cloub-account-backup',
+        ]);
+        curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $len = (int) curl_getinfo($ch, CURLINFO_CONTENT_LENGTH_DOWNLOAD);
+        curl_close($ch);
+        if($code >= 400 || $len < 1) return null;
+        return $len;
+    }
+
+    public function build_package($user, $destination, $options = []) {
         @set_time_limit(0);
         @ini_set('memory_limit', '1024M');
+        $exclude_over = (int) ($options['exclude_over_bytes'] ?? 0);
         $account = $this->account_payload($user);
         $tables = $this->fetch_user_rows($user->user_id);
         $media = $this->collect_media($account, $tables);
@@ -338,6 +507,7 @@ class AccountBackup extends Model {
                 'biolink_blocks' => count($this->table_rows($tables, 'biolinks_blocks')),
                 'media' => count($media),
             ],
+            'exclude_over_bytes' => $exclude_over,
             'offload' => [
                 'active' => $this->offload_is_ready(),
                 'uploads_url' => $this->offload_is_ready() ? settings()->offload->uploads_url : null,
@@ -359,9 +529,21 @@ class AccountBackup extends Model {
         $media_written = [];
         $bytes = 0;
         $failed = 0;
+        $skipped_large = 0;
         foreach($media as $item) {
             $include_bytes = $destination === 'pc' || !empty($item['on_server']);
             $item['included'] = false;
+            if($include_bytes && $exclude_over > 0) {
+                $size = $this->media_item_bytes($item);
+                if($size !== null && $size > $exclude_over) {
+                    $item['bytes'] = $size;
+                    $item['skipped_large'] = true;
+                    $item['reference_only'] = true;
+                    $skipped_large++;
+                    $media_written[] = $item;
+                    continue;
+                }
+            }
             if($include_bytes) {
                 $ok = $this->copy_media_into_package($dir, $item);
                 $item['included'] = $ok;
@@ -380,6 +562,7 @@ class AccountBackup extends Model {
         }
         $manifest['counts']['media_bytes'] = $bytes;
         $manifest['counts']['media_failed'] = $failed;
+        $manifest['counts']['media_skipped_large'] = $skipped_large;
         file_put_contents($dir . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         file_put_contents($dir . '/media-index.json', json_encode($media_written, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
@@ -441,18 +624,10 @@ class AccountBackup extends Model {
 
     private function download_offload_object($item, $dest) {
         if(!$this->offload_is_ready()) return false;
-        $keys = [];
-        foreach([$item['s3_key'] ?? null, UPLOADS_URL_PATH . ($item['path'] ?? ''), $item['path'] ?? ''] as $key) {
-            $key = ltrim((string) $key, '/');
-            if($key === '' || $key === rtrim(UPLOADS_URL_PATH, '/')) continue;
-            $keys[] = $key;
-            if(str_starts_with($key, 'uploads/')) $keys[] = mb_substr($key, mb_strlen('uploads/'));
-            else $keys[] = 'uploads/' . $key;
-        }
-        $keys = array_values(array_unique($keys));
+        $keys = $this->offload_keys($item);
         if(!$keys) return false;
         try {
-            $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
+            $s3 = $this->s3_client(60);
             foreach($keys as $key) {
                 try {
                     $s3->getObject([
@@ -508,8 +683,8 @@ class AccountBackup extends Model {
         curl_setopt_array($ch, [
             CURLOPT_FILE => $fp,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_CONNECTTIMEOUT => 30,
+            CURLOPT_TIMEOUT => 120,
+            CURLOPT_CONNECTTIMEOUT => 15,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_USERAGENT => 'Mozilla/5.0 cloub-account-backup',
             CURLOPT_FAILONERROR => false,
@@ -608,15 +783,16 @@ class AccountBackup extends Model {
     public function list_offload_packages($user_id) {
         if(!$this->offload_is_ready()) return [];
         try {
-            $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
+            $s3 = $this->s3_client(8);
             $list = [];
             $seen = [];
             foreach($this->account_offload_prefixes($user_id) as $prefix) {
-                $objects = $s3->getIterator('ListObjectsV2', [
+                $objects = $s3->listObjectsV2([
                     'Bucket' => settings()->offload->storage_name,
                     'Prefix' => $prefix,
+                    'MaxKeys' => 50,
                 ]);
-                foreach($objects as $object) {
+                foreach(($objects['Contents'] ?? []) as $object) {
                     $key = $object['Key'] ?? '';
                     if(isset($seen[$key]) || !str_ends_with(mb_strtolower($key), '.zip')) continue;
                     $seen[$key] = true;

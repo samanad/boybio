@@ -20,10 +20,10 @@ class AccountBackup extends Controller {
         \Altum\Authentication::guard();
 
         $backup = new AccountBackupModel();
+        $this->handle_post($backup, true);
+
         $offload_ready = $backup->offload_is_ready();
         $cloud_packages = $offload_ready ? $backup->list_offload_packages($this->user->user_id) : [];
-
-        $this->handle_post($backup, true);
 
         $review = $this->build_review($backup, $this->user);
 
@@ -35,6 +35,7 @@ class AccountBackup extends Controller {
             'offload_ready' => $offload_ready,
             'cloud_packages' => $cloud_packages,
             'review' => $review,
+            'export_preview' => $_SESSION['account_backup_export'] ?? null,
             'logged_in' => true,
         ]));
     }
@@ -69,9 +70,14 @@ class AccountBackup extends Controller {
 
         try {
             if($type === 'export_pc' && $logged_in) {
-                $this->export($backup, 'pc');
+                $this->prepare_export($backup, 'pc');
             } elseif($type === 'export_offload' && $logged_in) {
-                $this->export($backup, 'offload');
+                $this->prepare_export($backup, 'offload');
+            } elseif($type === 'export_confirm' && $logged_in) {
+                $this->export_confirm($backup);
+            } elseif($type === 'export_cancel' && $logged_in) {
+                unset($_SESSION['account_backup_export']);
+                redirect('account-backup');
             } elseif($type === 'import_upload') {
                 $this->import_upload($backup, $logged_in);
             } elseif($type === 'import_cloud' && $logged_in) {
@@ -118,18 +124,44 @@ class AccountBackup extends Controller {
         ];
     }
 
-    private function export(AccountBackupModel $backup, $destination) {
+    private function prepare_export(AccountBackupModel $backup, $destination) {
+        if($destination === 'offload' && !$backup->offload_is_ready()) {
+            throw new \RuntimeException('offload_not_ready');
+        }
+        $_SESSION['account_backup_export'] = $backup->prepare_export($this->user, $destination);
+        redirect('account-backup');
+    }
+
+    private function export_confirm(AccountBackupModel $backup) {
+        $preview = $_SESSION['account_backup_export'] ?? null;
+        if(!$preview) {
+            throw new \RuntimeException('no_file');
+        }
+        $destination = ($preview['destination'] ?? '') === 'offload' ? 'offload' : 'pc';
+        $exclude_over = !empty($_POST['exclude_large']) ? AccountBackupModel::LARGE_FILE_BYTES : 0;
+        unset($_SESSION['account_backup_export']);
+        if($destination === 'pc' && session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        ignore_user_abort(true);
+        $this->export($backup, $destination, $exclude_over);
+    }
+
+    private function export(AccountBackupModel $backup, $destination, $exclude_over = 0) {
         if($destination === 'offload' && !$backup->offload_is_ready()) {
             throw new \RuntimeException('offload_not_ready');
         }
 
-        $package = $backup->build_package($this->user, $destination);
+        $package = $backup->build_package($this->user, $destination, [
+            'exclude_over_bytes' => $exclude_over,
+        ]);
         \Altum\Logger::users($this->user->user_id, 'account.backup.exported.' . $destination);
 
         if($destination === 'pc') {
             header('Content-Type: application/zip');
             header('Content-Disposition: attachment; filename="' . $package['filename'] . '"');
             header('Content-Length: ' . filesize($package['zip_path']));
+            header('Cache-Control: no-store');
             readfile($package['zip_path']);
             @unlink($package['zip_path']);
             die();

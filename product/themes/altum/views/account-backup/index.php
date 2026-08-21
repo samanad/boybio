@@ -94,6 +94,74 @@
         </div>
     <?php endif ?>
 
+    <?php if(!empty($data->export_preview)): ?>
+        <?php $preview = $data->export_preview; ?>
+        <div class="card mb-4 border-primary">
+            <div class="card-body">
+                <h2 class="h5"><?= l('account_backup.export.preview.header') ?></h2>
+                <p class="text-muted"><?= l('account_backup.export.preview.help') ?></p>
+                <div class="table-responsive mb-3">
+                    <table class="table table-bordered table-sm">
+                        <tr><th><?= l('account_backup.review.destination_mode') ?></th><td><?= htmlspecialchars($preview['destination']) ?></td></tr>
+                        <tr><th><?= l('account_backup.review.links') ?></th><td><?= (int) ($preview['links'] ?? 0) ?></td></tr>
+                        <tr><th><?= l('account_backup.review.blocks') ?></th><td><?= (int) ($preview['blocks'] ?? 0) ?></td></tr>
+                        <tr><th><?= l('account_backup.review.media') ?></th><td><?= (int) ($preview['media'] ?? 0) ?></td></tr>
+                        <tr>
+                            <th><?= l('account_backup.export.preview.size') ?></th>
+                            <td class="font-weight-bold"><?= htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($preview['total_bytes'] ?? 0)) ?></td>
+                        </tr>
+                        <?php if(!empty($preview['unknown'])): ?>
+                            <tr>
+                                <th><?= l('account_backup.export.preview.other') ?></th>
+                                <td><?= sprintf(l('account_backup.export.preview.size_unknown'), (int) $preview['unknown']) ?></td>
+                            </tr>
+                        <?php endif ?>
+                        <tr>
+                            <th><?= l('account_backup.export.preview.large_header') ?></th>
+                            <td>
+                                <?php if(empty($preview['large_count'])): ?>
+                                    <?= l('account_backup.export.preview.large_none') ?>
+                                <?php else: ?>
+                                    <?= (int) $preview['large_count'] ?> · <?= htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($preview['large_bytes'] ?? 0)) ?>
+                                <?php endif ?>
+                            </td>
+                        </tr>
+                        <?php if(!empty($preview['large_count'])): ?>
+                            <tr>
+                                <th><?= l('account_backup.export.preview.size_if_excluded') ?></th>
+                                <td><?= htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($preview['size_without_large'] ?? 0)) ?></td>
+                            </tr>
+                        <?php endif ?>
+                    </table>
+                </div>
+                <?php if(!empty($preview['large'])): ?>
+                    <ul class="small mb-3">
+                        <?php foreach($preview['large'] as $file): ?>
+                            <li>
+                                <?= htmlspecialchars($file['path'] ?? '') ?>
+                                · <?= htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($file['bytes'] ?? 0)) ?>
+                            </li>
+                        <?php endforeach ?>
+                    </ul>
+                <?php endif ?>
+                <form action="" method="post">
+                    <input type="hidden" name="token" value="<?= \Altum\Csrf::get() ?>" />
+                    <div class="custom-control custom-checkbox mb-3">
+                        <input id="exclude_large" name="exclude_large" type="checkbox" class="custom-control-input" value="1" checked="checked">
+                        <label class="custom-control-label" for="exclude_large">
+                            <strong><?= l('account_backup.export.preview.exclude_large') ?></strong>
+                            <div class="small text-muted"><?= l('account_backup.export.preview.exclude_large_help') ?></div>
+                        </label>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" name="type" value="export_confirm" class="btn btn-primary"><?= l('account_backup.export.preview.create') ?></button>
+                        <button type="submit" name="type" value="export_cancel" class="btn btn-light"><?= l('global.cancel') ?></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    <?php endif ?>
+
     <div class="row">
         <div class="col-12 col-lg-6 mb-4">
             <div class="card h-100">
