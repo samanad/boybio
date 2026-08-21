@@ -25,12 +25,14 @@ class AccountBackup extends Controller {
         $offload_ready = $backup->offload_is_ready();
         $review = $this->build_review($backup, $this->user);
         $export_preview = $_SESSION['account_backup_export'] ?? null;
+        $export_job = $backup->read_job($this->user->user_id);
 
         if(session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
         }
 
         $cloud_packages = $offload_ready ? $backup->list_offload_packages($this->user->user_id) : [];
+        $local_packages = $backup->list_local_packages($this->user->user_id);
 
         $menu = new \Altum\View('partials/account_header_menu', (array) $this);
         $this->add_view_content('account_header_menu', $menu->run());
@@ -41,6 +43,8 @@ class AccountBackup extends Controller {
             'cloud_packages' => $cloud_packages,
             'review' => $review,
             'export_preview' => $export_preview,
+            'export_job' => $export_job,
+            'local_packages' => $local_packages,
             'logged_in' => true,
         ]));
     }
@@ -80,6 +84,8 @@ class AccountBackup extends Controller {
                 $this->prepare_export($backup, 'offload');
             } elseif($type === 'export_confirm' && $logged_in) {
                 $this->export_confirm($backup);
+            } elseif($type === 'export_download' && $logged_in) {
+                $this->export_download($backup);
             } elseif($type === 'export_cancel' && $logged_in) {
                 unset($_SESSION['account_backup_export']);
                 redirect('account-backup');
@@ -145,37 +151,59 @@ class AccountBackup extends Controller {
         $destination = ($preview['destination'] ?? '') === 'offload' ? 'offload' : 'pc';
         $exclude_over = !empty($_POST['exclude_large']) ? AccountBackupModel::LARGE_FILE_BYTES : 0;
         unset($_SESSION['account_backup_export']);
-        if($destination === 'pc' && session_status() === PHP_SESSION_ACTIVE) {
+
+        $job = $backup->read_job($this->user->user_id);
+        if($job && in_array($job['status'] ?? '', ['queued', 'running'], true)) {
+            $updated = strtotime($job['updated_at'] ?? $job['started_at'] ?? 'now');
+            if($updated && (time() - $updated) < 3600) {
+                Alerts::add_info(l('account_backup.export.job.already'));
+                redirect('account-backup');
+            }
+        }
+
+        $spawned = $backup->start_export_job($this->user, $destination, $exclude_over);
+        Alerts::add_success(l('account_backup.export.job.started'));
+
+        if($spawned) {
+            redirect('account-backup');
+        }
+
+        if(session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
         }
         ignore_user_abort(true);
-        $this->export($backup, $destination, $exclude_over);
+        @set_time_limit(0);
+
+        if(!headers_sent()) {
+            header('Location: ' . url('account-backup'));
+            header('Connection: close');
+        }
+        if(function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            echo str_repeat(' ', 2048);
+            @ob_end_flush();
+            @flush();
+        }
+
+        $backup->run_queued_export($this->user, $destination, $exclude_over);
+        die();
     }
 
-    private function export(AccountBackupModel $backup, $destination, $exclude_over = 0) {
-        if($destination === 'offload' && !$backup->offload_is_ready()) {
-            throw new \RuntimeException('offload_not_ready');
+    private function export_download(AccountBackupModel $backup) {
+        $path = $backup->local_zip_path($this->user->user_id, $_POST['filename'] ?? '');
+        if(!$path) {
+            throw new \RuntimeException('no_file');
         }
-
-        $package = $backup->build_package($this->user, $destination, [
-            'exclude_over_bytes' => $exclude_over,
-        ]);
-        \Altum\Logger::users($this->user->user_id, 'account.backup.exported.' . $destination);
-
-        if($destination === 'pc') {
-            header('Content-Type: application/zip');
-            header('Content-Disposition: attachment; filename="' . $package['filename'] . '"');
-            header('Content-Length: ' . filesize($package['zip_path']));
-            header('Cache-Control: no-store');
-            readfile($package['zip_path']);
-            @unlink($package['zip_path']);
-            die();
+        if(session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
         }
-
-        $uploaded = $backup->upload_package_to_offload($this->user, $package['zip_path'], $package['filename']);
-        @unlink($package['zip_path']);
-        Alerts::add_success(sprintf(l('account_backup.success.exported_offload'), $uploaded['folder'], basename($uploaded['key'])));
-        redirect('account-backup');
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . basename($path) . '"');
+        header('Content-Length: ' . filesize($path));
+        header('Cache-Control: no-store');
+        readfile($path);
+        die();
     }
 
     private function restore_mode($logged_in) {

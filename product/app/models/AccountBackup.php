@@ -752,6 +752,141 @@ class AccountBackup extends Model {
         $zip->close();
     }
 
+    public function local_backup_dir($user_id) {
+        $dir = \Altum\Uploads::get_full_path('account_backups') . 'account-' . (int) $user_id . '/';
+        if(!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        return $dir;
+    }
+
+    public function job_file($user_id) {
+        return $this->local_backup_dir($user_id) . 'job.json';
+    }
+
+    public function read_job($user_id) {
+        $file = $this->job_file($user_id);
+        if(!is_file($file)) return null;
+        $data = json_decode(file_get_contents($file), true);
+        return is_array($data) ? $data : null;
+    }
+
+    public function write_job($user_id, $data) {
+        $data['updated_at'] = date('c');
+        file_put_contents($this->job_file($user_id), json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+
+    public function list_local_packages($user_id) {
+        $dir = $this->local_backup_dir($user_id);
+        $list = [];
+        foreach(glob($dir . 'cloub-account-*.zip') ?: [] as $path) {
+            $list[] = [
+                'key' => 'local:' . basename($path),
+                'filename' => basename($path),
+                'size' => filesize($path),
+                'modified' => date('c', filemtime($path)),
+                'local' => true,
+            ];
+        }
+        usort($list, function($a, $b) {
+            return strcmp($b['modified'] ?? '', $a['modified'] ?? '');
+        });
+        return $list;
+    }
+
+    public function local_zip_path($user_id, $filename) {
+        $filename = basename((string) $filename);
+        if(!preg_match('/^cloub-account-' . (int) $user_id . '-\d{8}-\d{6}\.zip$/', $filename)) {
+            return null;
+        }
+        $path = $this->local_backup_dir($user_id) . $filename;
+        return is_file($path) ? $path : null;
+    }
+
+    private function php_cli_binary() {
+        $candidates = [
+            PHP_BINDIR . '/php',
+            '/usr/bin/php83',
+            '/usr/bin/php8.3',
+            '/usr/bin/php82',
+            '/usr/bin/php8.2',
+            '/usr/bin/php84',
+            '/usr/bin/php8.4',
+            '/usr/bin/php',
+        ];
+        foreach($candidates as $bin) {
+            if($bin && is_executable($bin) && !str_contains($bin, 'fpm')) {
+                return $bin;
+            }
+        }
+        return 'php';
+    }
+
+    public function start_export_job($user, $destination, $exclude_over) {
+        $this->write_job($user->user_id, [
+            'status' => 'queued',
+            'destination' => $destination,
+            'exclude_over_bytes' => (int) $exclude_over,
+            'started_at' => date('c'),
+        ]);
+        $worker = ROOT_PATH . 'account-backup-worker.php';
+        if(!is_file($worker) || !function_exists('exec')) {
+            return false;
+        }
+        $cmd = sprintf(
+            'nohup %s -d max_execution_time=0 -d memory_limit=1024M %s %d %s %d >/dev/null 2>&1 & echo $!',
+            escapeshellarg($this->php_cli_binary()),
+            escapeshellarg($worker),
+            (int) $user->user_id,
+            escapeshellarg($destination),
+            (int) $exclude_over
+        );
+        $output = [];
+        @exec($cmd, $output);
+        return !empty($output[0]);
+    }
+
+    public function run_queued_export($user, $destination, $exclude_over) {
+        @set_time_limit(0);
+        @ini_set('memory_limit', '1024M');
+        ignore_user_abort(true);
+        $this->write_job($user->user_id, [
+            'status' => 'running',
+            'destination' => $destination,
+            'exclude_over_bytes' => (int) $exclude_over,
+            'started_at' => date('c'),
+        ]);
+        try {
+            $package = $this->build_package($user, $destination, [
+                'exclude_over_bytes' => (int) $exclude_over,
+            ]);
+            $local = $this->local_backup_dir($user->user_id) . $package['filename'];
+            if(!@rename($package['zip_path'], $local)) {
+                copy($package['zip_path'], $local);
+                @unlink($package['zip_path']);
+            }
+            $offload_key = null;
+            if($destination === 'offload' && $this->offload_is_ready()) {
+                $uploaded = $this->upload_package_to_offload($user, $local, $package['filename']);
+                $offload_key = $uploaded['key'] ?? null;
+            }
+            $this->write_job($user->user_id, [
+                'status' => 'done',
+                'destination' => $destination,
+                'filename' => $package['filename'],
+                'bytes' => is_file($local) ? filesize($local) : 0,
+                'offload_key' => $offload_key,
+                'started_at' => date('c'),
+            ]);
+        } catch(\Throwable $exception) {
+            $this->write_job($user->user_id, [
+                'status' => 'error',
+                'destination' => $destination,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
     public function account_offload_folder($user_id) {
         $user_id = (int) $user_id;
         return UPLOADS_URL_PATH . \Altum\Uploads::get_path('account_backups') . 'account-' . $user_id . '/';

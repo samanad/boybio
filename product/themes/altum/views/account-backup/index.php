@@ -94,6 +94,27 @@
         </div>
     <?php endif ?>
 
+    <?php $job = $data->export_job ?? null; ?>
+    <?php if(!empty($job['status'])): ?>
+        <div class="card mb-4 <?= ($job['status'] ?? '') === 'error' ? 'border-danger' : 'border-info' ?>">
+            <div class="card-body">
+                <?php if(in_array($job['status'], ['queued', 'running'], true)): ?>
+                    <p class="mb-0"><?= l('account_backup.export.job.running') ?></p>
+                    <script>setTimeout(function () { window.location.reload(); }, 8000);</script>
+                <?php elseif(($job['status'] ?? '') === 'done' && !empty($job['filename'])): ?>
+                    <p><?= sprintf(l('account_backup.export.job.done'), htmlspecialchars($job['filename']), htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($job['bytes'] ?? 0))) ?></p>
+                    <form action="" method="post">
+                        <input type="hidden" name="token" value="<?= \Altum\Csrf::get() ?>" />
+                        <input type="hidden" name="filename" value="<?= htmlspecialchars($job['filename']) ?>" />
+                        <button type="submit" name="type" value="export_download" class="btn btn-primary"><?= l('account_backup.export.job.download') ?></button>
+                    </form>
+                <?php elseif(($job['status'] ?? '') === 'error'): ?>
+                    <p class="mb-0 text-danger"><?= sprintf(l('account_backup.export.job.error'), htmlspecialchars($job['message'] ?? '')) ?></p>
+                <?php endif ?>
+            </div>
+        </div>
+    <?php endif ?>
+
     <?php if(!empty($data->export_preview)): ?>
         <?php $preview = $data->export_preview; ?>
         <div class="card mb-4 border-primary">
@@ -186,6 +207,21 @@
                             <?= $data->offload_ready ? l('account_backup.export.offload_help') : l('account_backup.error.offload_not_ready') ?>
                         </small>
                     </form>
+
+                    <?php if(!empty($data->local_packages)): ?>
+                        <hr>
+                        <h3 class="h6"><?= l('account_backup.export.local.header') ?></h3>
+                        <?php foreach($data->local_packages as $item): ?>
+                            <form action="" method="post" class="mb-2">
+                                <input type="hidden" name="token" value="<?= \Altum\Csrf::get() ?>" />
+                                <input type="hidden" name="filename" value="<?= htmlspecialchars($item['filename']) ?>" />
+                                <button type="submit" name="type" value="export_download" class="btn btn-sm btn-outline-secondary">
+                                    <?= htmlspecialchars($item['filename']) ?>
+                                    · <?= htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($item['size'] ?? 0)) ?>
+                                </button>
+                            </form>
+                        <?php endforeach ?>
+                    <?php endif ?>
                 </div>
             </div>
         </div>
