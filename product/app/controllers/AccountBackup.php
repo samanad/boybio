@@ -23,9 +23,14 @@ class AccountBackup extends Controller {
         $this->handle_post($backup, true);
 
         $offload_ready = $backup->offload_is_ready();
-        $cloud_packages = $offload_ready ? $backup->list_offload_packages($this->user->user_id) : [];
-
         $review = $this->build_review($backup, $this->user);
+        $export_preview = $_SESSION['account_backup_export'] ?? null;
+
+        if(session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+
+        $cloud_packages = $offload_ready ? $backup->list_offload_packages($this->user->user_id) : [];
 
         $menu = new \Altum\View('partials/account_header_menu', (array) $this);
         $this->add_view_content('account_header_menu', $menu->run());
@@ -35,7 +40,7 @@ class AccountBackup extends Controller {
             'offload_ready' => $offload_ready,
             'cloud_packages' => $cloud_packages,
             'review' => $review,
-            'export_preview' => $_SESSION['account_backup_export'] ?? null,
+            'export_preview' => $export_preview,
             'logged_in' => true,
         ]));
     }

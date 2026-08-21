@@ -180,26 +180,32 @@ class AccountBackup extends Model {
     }
 
     public function prepare_export($user, $destination) {
-        @set_time_limit(90);
-        @ini_set('memory_limit', '1024M');
-        $account = $this->account_payload($user);
-        $tables = $this->fetch_user_rows($user->user_id);
-        $media = $this->collect_media($account, $tables);
+        @set_time_limit(30);
+        $uid = (int) $user->user_id;
         $limit = self::LARGE_FILE_BYTES;
+        $links = 0;
+        $blocks = 0;
+
+        if($this->table_exists('links')) {
+            $row = database()->query("SELECT COUNT(*) AS `t` FROM `links` WHERE `user_id` = {$uid}")->fetch_object();
+            $links = (int) ($row->t ?? 0);
+        }
+        if($this->table_exists('biolinks_blocks')) {
+            $row = database()->query("SELECT COUNT(*) AS `t` FROM `biolinks_blocks` WHERE `user_id` = {$uid}")->fetch_object();
+            $blocks = (int) ($row->t ?? 0);
+        }
+
+        $candidates = $this->collect_large_candidates($uid);
         $total = 0;
         $unknown = 0;
-        $packable_items = [];
         $large = [];
-
-        foreach($media as $item) {
-            if($destination === 'pc' || !empty($item['on_server'])) {
-                $packable_items[] = $item;
+        foreach($candidates as $item) {
+            $would_pack = $destination === 'pc' || !empty($item['on_server']);
+            if(!$would_pack) {
+                $unknown++;
+                continue;
             }
-        }
-        $force_head = count($packable_items) <= 80;
-
-        foreach($packable_items as $item) {
-            $size = $this->media_item_bytes($item, $force_head);
+            $size = $this->media_item_bytes($item, true);
             if($size === null) {
                 $unknown++;
                 continue;
@@ -222,10 +228,10 @@ class AccountBackup extends Model {
 
         return [
             'destination' => $destination,
-            'links' => count($tables['links']['rows'] ?? []),
-            'blocks' => count($this->table_rows($tables, 'biolinks_blocks')),
-            'media' => count($media),
-            'packable' => count($packable_items),
+            'links' => $links,
+            'blocks' => $blocks,
+            'media' => count($candidates),
+            'packable' => count($candidates),
             'total_bytes' => $total,
             'unknown' => $unknown,
             'large' => array_slice($large, 0, 40),
@@ -234,6 +240,34 @@ class AccountBackup extends Model {
             'limit_bytes' => $limit,
             'size_without_large' => max(0, $total - $large_bytes),
         ];
+    }
+
+    private function collect_large_candidates($user_id) {
+        $media = [];
+        $user_id = (int) $user_id;
+
+        if($this->table_exists('links')) {
+            $result = database()->query("SELECT `settings` FROM `links` WHERE `user_id` = {$user_id} AND `type` IN ('file','static')");
+            while($result && $row = $result->fetch_assoc()) {
+                $settings = $this->decode_json($row['settings'] ?? null);
+                $this->add_media_file($media, 'files', $settings->file ?? null, 'links.file');
+                if(!empty($settings->static_folder)) {
+                    $this->add_media_folder($media, 'static', $settings->static_folder, 'links.static_folder');
+                }
+            }
+        }
+
+        if($this->table_exists('biolinks_blocks')) {
+            $result = database()->query("SELECT `type`, `settings`, `location_url` FROM `biolinks_blocks` WHERE `user_id` = {$user_id} AND `type` IN ('file','video','audio','pdf_document','powerpoint_presentation','excel_spreadsheet','product')");
+            while($result && $row = $result->fetch_assoc()) {
+                $settings = $this->decode_json($row['settings'] ?? null);
+                $this->add_media_file($media, 'files', $settings->file ?? ($settings->video ?? ($settings->audio ?? null)), 'blocks.file');
+                $this->add_media_file($media, 'products_files', $settings->file ?? null, 'blocks.product_file');
+                $this->add_media_from_string($media, $row['location_url'] ?? '', 'blocks', 'location_url');
+            }
+        }
+
+        return array_values($media);
     }
 
     private function harvest_media(&$media, $node, $source, $field = null) {
