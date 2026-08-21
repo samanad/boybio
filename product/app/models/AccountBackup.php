@@ -18,7 +18,7 @@ class AccountBackup extends Model {
         'payment_processors' => 'payment_processor_id',
         'notification_handlers' => 'notification_handler_id',
         'links' => 'link_id',
-        'biolink_blocks' => 'biolink_block_id',
+        'biolinks_blocks' => 'biolink_block_id',
         'qr_codes' => 'qr_code_id',
         'data' => 'datum_id',
     ];
@@ -35,6 +35,14 @@ class AccountBackup extends Model {
         $table = preg_replace('/[^a-z0-9_]/i', '', $table);
         $result = database()->query("SHOW TABLES LIKE '{$table}'");
         return $result && $result->num_rows > 0;
+    }
+
+    private function table_rows($tables, $table) {
+        if(!empty($tables[$table]['rows'])) return $tables[$table]['rows'];
+        if($table === 'biolinks_blocks' && !empty($tables['biolink_blocks']['rows'])) {
+            return $tables['biolink_blocks']['rows'];
+        }
+        return $tables[$table]['rows'] ?? [];
     }
 
     public function table_columns($table) {
@@ -129,7 +137,7 @@ class AccountBackup extends Model {
             }
         }
 
-        foreach(($tables['biolink_blocks']['rows'] ?? []) as $block) {
+        foreach($this->table_rows($tables, 'biolinks_blocks') as $block) {
             $settings = $this->decode_json($block['settings'] ?? null);
             foreach(['image', 'image_new', 'poster', 'video', 'audio'] as $field) {
                 $this->add_media_file($media, 'block_images', $settings->{$field} ?? null, 'blocks.' . $field);
@@ -138,6 +146,7 @@ class AccountBackup extends Model {
             $this->add_media_file($media, 'files', $settings->file ?? ($settings->video ?? ($settings->audio ?? null)), 'blocks.file');
             $this->add_media_file($media, 'products_files', $settings->file ?? null, 'blocks.product_file');
             $this->add_media_file($media, 'avatars', $settings->avatar ?? ($settings->vcard_avatar ?? null), 'blocks.avatar');
+            $this->add_media_from_string($media, $block['location_url'] ?? '', 'blocks', 'location_url');
         }
 
         foreach(($tables['qr_codes']['rows'] ?? []) as $qr) {
@@ -326,7 +335,7 @@ class AccountBackup extends Model {
             'source_email' => $user->email,
             'counts' => [
                 'links' => count($tables['links']['rows'] ?? []),
-                'biolink_blocks' => count($tables['biolink_blocks']['rows'] ?? []),
+                'biolink_blocks' => count($this->table_rows($tables, 'biolinks_blocks')),
                 'media' => count($media),
             ],
             'offload' => [
@@ -432,20 +441,34 @@ class AccountBackup extends Model {
 
     private function download_offload_object($item, $dest) {
         if(!$this->offload_is_ready()) return false;
-        $key = $item['s3_key'] ?? (UPLOADS_URL_PATH . ($item['path'] ?? ''));
-        if($key === '' || $key === UPLOADS_URL_PATH) return false;
+        $keys = [];
+        foreach([$item['s3_key'] ?? null, UPLOADS_URL_PATH . ($item['path'] ?? ''), $item['path'] ?? ''] as $key) {
+            $key = ltrim((string) $key, '/');
+            if($key === '' || $key === rtrim(UPLOADS_URL_PATH, '/')) continue;
+            $keys[] = $key;
+            if(str_starts_with($key, 'uploads/')) $keys[] = mb_substr($key, mb_strlen('uploads/'));
+            else $keys[] = 'uploads/' . $key;
+        }
+        $keys = array_values(array_unique($keys));
+        if(!$keys) return false;
         try {
             $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
-            $s3->getObject([
-                'Bucket' => settings()->offload->storage_name,
-                'Key' => $key,
-                'SaveAs' => $dest,
-            ]);
-            return is_file($dest) && filesize($dest) > 0;
+            foreach($keys as $key) {
+                try {
+                    $s3->getObject([
+                        'Bucket' => settings()->offload->storage_name,
+                        'Key' => $key,
+                        'SaveAs' => $dest,
+                    ]);
+                    if(is_file($dest) && filesize($dest) > 0) return true;
+                } catch(\Exception $exception) {
+                    @unlink($dest);
+                }
+            }
         } catch(\Exception $exception) {
             @unlink($dest);
-            return false;
         }
+        return false;
     }
 
     private function download_offload_prefix($item, $target_dir) {
@@ -650,6 +673,10 @@ class AccountBackup extends Model {
         foreach(self::TABLES as $table => $pk) {
             $path = $dir . '/tables/' . $table . '.json';
             $tables[$table] = is_file($path) ? json_decode(file_get_contents($path), true) : ['pk' => $pk, 'rows' => []];
+        }
+        $legacy_blocks = $dir . '/tables/biolink_blocks.json';
+        if(empty($tables['biolinks_blocks']['rows']) && is_file($legacy_blocks)) {
+            $tables['biolinks_blocks'] = json_decode(file_get_contents($legacy_blocks), true) ?: $tables['biolinks_blocks'];
         }
         return compact('manifest', 'account', 'tables', 'media_index');
     }
@@ -1018,6 +1045,7 @@ class AccountBackup extends Model {
         $replaced = 0;
         $skipped = 0;
         $new_ids = 0;
+        $target_id = (int) $target_user->user_id;
 
         $own_action = $decisions['id_exists_own'] ?? 'replace';
         $other_action = $decisions['id_exists_other'] ?? 'new_id';
@@ -1028,13 +1056,7 @@ class AccountBackup extends Model {
             $old_id = $row[$pk] ?? null;
             $row['user_id'] = $target_user->user_id;
 
-            if(in_array($table, ['biolink_blocks', 'data', 'qr_codes']) && !empty($row['link_id']) && $table !== 'qr_codes') {
-                if(!empty($row['link_id']) && !isset($remap['links'][$row['link_id']]) && $table === 'biolink_blocks') {
-                    $skipped++;
-                    continue;
-                }
-            }
-            if($table === 'data' && !empty($row['link_id']) && !isset($remap['links'][$row['link_id']])) {
+            if(in_array($table, ['biolinks_blocks', 'data']) && !empty($row['link_id']) && !isset($remap['links'][$row['link_id']])) {
                 $skipped++;
                 continue;
             }
@@ -1120,9 +1142,9 @@ class AccountBackup extends Model {
     private function apply_fk_remap($table, $row, $remap, $decisions) {
         $map = [
             'links' => ['project_id' => 'projects', 'splash_page_id' => 'splash_pages'],
-            'biolink_blocks' => ['link_id' => 'links'],
+            'biolinks_blocks' => ['link_id' => 'links'],
             'qr_codes' => ['project_id' => 'projects'],
-            'data' => ['link_id' => 'links', 'biolink_block_id' => 'biolink_blocks', 'project_id' => 'projects'],
+            'data' => ['link_id' => 'links', 'biolink_block_id' => 'biolinks_blocks', 'project_id' => 'projects'],
             'splash_pages' => ['project_id' => 'projects'],
         ];
         foreach(($map[$table] ?? []) as $field => $source_table) {
