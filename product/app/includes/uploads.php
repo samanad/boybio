@@ -49,6 +49,11 @@ return [
         'path' => 'users/',
     ],
 
+    'account_backups' => [
+        'whitelisted_file_extensions' => ['zip'],
+        'path' => 'account_backups/',
+    ],
+
     /* PWA plugin */
     'app_icon' => [
         'whitelisted_file_extensions' => ['png'],

@@ -19,6 +19,7 @@
     <?php endif ?>
 
     <option value="<?= url('account-logs') ?>" <?= \Altum\Router::$controller_key == 'account-logs' ? 'selected="selected"' : null ?>>🧾 <?= l('account_logs.menu') ?></option>
+    <option value="<?= url('account-backup') ?>" <?= \Altum\Router::$controller_key == 'account-backup' ? 'selected="selected"' : null ?>>💾 <?= l('account_backup.menu') ?></option>
 
     <?php if(settings()->main->api_is_enabled): ?>
         <option value="<?= url('account-api') ?>" <?= \Altum\Router::$controller_key == 'account-api' ? 'selected="selected"' : null ?>>🔌 <?= l('account_api.menu') ?></option>
@@ -84,6 +85,12 @@
     <div class="col-lg-4 p-2 text-truncate">
         <a class="btn btn-block btn-custom text-truncate  <?= \Altum\Router::$controller_key == 'account-logs' ? 'active' : null ?>" href="<?= url('account-logs') ?>">
             <i class="fas fa-fw fa-sm fa-scroll mr-2"></i> <?= l('account_logs.menu') ?>
+        </a>
+    </div>
+
+    <div class="col-lg-4 p-2 text-truncate">
+        <a class="btn btn-block btn-custom text-truncate  <?= \Altum\Router::$controller_key == 'account-backup' ? 'active' : null ?>" href="<?= url('account-backup') ?>">
+            <i class="fas fa-fw fa-sm fa-file-archive mr-2"></i> <?= l('account_backup.menu') ?>
         </a>
     </div>
 

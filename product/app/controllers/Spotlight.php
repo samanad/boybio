@@ -392,6 +392,11 @@ class Spotlight extends Controller {
             ];
 
             $available_pages[] = [
+                'name' => l('account_backup.title'),
+                'url' => 'account-backup'
+            ];
+
+            $available_pages[] = [
                 'name' => l('account_delete.title'),
                 'url' => 'account-delete'
             ];

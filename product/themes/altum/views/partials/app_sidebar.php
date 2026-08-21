@@ -249,6 +249,8 @@
 
                     <?php if(settings()->main->api_is_enabled): ?>
                         <a class="dropdown-item <?= in_array(\Altum\Router::$controller, ['AccountApi']) ? 'active' : null ?>" href="<?= url('account-api') ?>"><i class="fas fa-fw fa-sm fa-code mr-2"></i> <?= l('account_api.menu') ?></a>
+
+                    <a class="dropdown-item <?= in_array(\Altum\Router::$controller, ['AccountBackup']) ? 'active' : null ?>" href="<?= url('account-backup') ?>"><i class="fas fa-fw fa-sm fa-file-archive mr-2"></i> <?= l('account_backup.menu') ?></a>
                     <?php endif ?>
 
                     <?php if(\Altum\Plugin::is_active('teams')): ?>
