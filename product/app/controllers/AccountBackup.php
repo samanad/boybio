@@ -31,7 +31,7 @@ class AccountBackup extends Controller {
             session_write_close();
         }
 
-        $cloud_packages = $offload_ready ? $backup->list_offload_packages($this->user->user_id) : [];
+        $cloud_packages = [];
         $local_packages = $backup->list_local_packages($this->user->user_id);
 
         $menu = new \Altum\View('partials/account_header_menu', (array) $this);
@@ -139,7 +139,12 @@ class AccountBackup extends Controller {
         if($destination === 'offload' && !$backup->offload_is_ready()) {
             throw new \RuntimeException('offload_not_ready');
         }
-        $_SESSION['account_backup_export'] = $backup->prepare_export($this->user, $destination);
+        if(session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        $preview = $backup->prepare_export($this->user, $destination);
+        session_start();
+        $_SESSION['account_backup_export'] = $preview;
         redirect('account-backup');
     }
 

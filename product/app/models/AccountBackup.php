@@ -180,94 +180,39 @@ class AccountBackup extends Model {
     }
 
     public function prepare_export($user, $destination) {
-        @set_time_limit(30);
         $uid = (int) $user->user_id;
-        $limit = self::LARGE_FILE_BYTES;
         $links = 0;
         $blocks = 0;
+        $files = 0;
 
         if($this->table_exists('links')) {
             $row = database()->query("SELECT COUNT(*) AS `t` FROM `links` WHERE `user_id` = {$uid}")->fetch_object();
             $links = (int) ($row->t ?? 0);
+            $row = database()->query("SELECT COUNT(*) AS `t` FROM `links` WHERE `user_id` = {$uid} AND `type` IN ('file','static')")->fetch_object();
+            $files += (int) ($row->t ?? 0);
         }
         if($this->table_exists('biolinks_blocks')) {
             $row = database()->query("SELECT COUNT(*) AS `t` FROM `biolinks_blocks` WHERE `user_id` = {$uid}")->fetch_object();
             $blocks = (int) ($row->t ?? 0);
+            $row = database()->query("SELECT COUNT(*) AS `t` FROM `biolinks_blocks` WHERE `user_id` = {$uid} AND `type` IN ('file','video','audio','pdf_document','powerpoint_presentation','excel_spreadsheet','product')")->fetch_object();
+            $files += (int) ($row->t ?? 0);
         }
-
-        $candidates = $this->collect_large_candidates($uid);
-        $total = 0;
-        $unknown = 0;
-        $large = [];
-        foreach($candidates as $item) {
-            $would_pack = $destination === 'pc' || !empty($item['on_server']);
-            if(!$would_pack) {
-                $unknown++;
-                continue;
-            }
-            $size = $this->media_item_bytes($item, true);
-            if($size === null) {
-                $unknown++;
-                continue;
-            }
-            $total += $size;
-            if($size > $limit) {
-                $large[] = [
-                    'path' => $item['path'] ?? ($item['filename'] ?? ''),
-                    'bytes' => $size,
-                    'source' => $item['source'] ?? '',
-                ];
-            }
-        }
-
-        usort($large, function($a, $b) {
-            return ($b['bytes'] ?? 0) <=> ($a['bytes'] ?? 0);
-        });
-        $large_bytes = 0;
-        foreach($large as $row) $large_bytes += $row['bytes'];
 
         return [
             'destination' => $destination,
             'links' => $links,
             'blocks' => $blocks,
-            'media' => count($candidates),
-            'packable' => count($candidates),
-            'total_bytes' => $total,
-            'unknown' => $unknown,
-            'large' => array_slice($large, 0, 40),
-            'large_count' => count($large),
-            'large_bytes' => $large_bytes,
-            'limit_bytes' => $limit,
-            'size_without_large' => max(0, $total - $large_bytes),
+            'media' => $files,
+            'packable' => $files,
+            'total_bytes' => 0,
+            'unknown' => 0,
+            'large' => [],
+            'large_count' => 0,
+            'large_bytes' => 0,
+            'limit_bytes' => self::LARGE_FILE_BYTES,
+            'size_without_large' => 0,
+            'counts_only' => true,
         ];
-    }
-
-    private function collect_large_candidates($user_id) {
-        $media = [];
-        $user_id = (int) $user_id;
-
-        if($this->table_exists('links')) {
-            $result = database()->query("SELECT `settings` FROM `links` WHERE `user_id` = {$user_id} AND `type` IN ('file','static')");
-            while($result && $row = $result->fetch_assoc()) {
-                $settings = $this->decode_json($row['settings'] ?? null);
-                $this->add_media_file($media, 'files', $settings->file ?? null, 'links.file');
-                if(!empty($settings->static_folder)) {
-                    $this->add_media_folder($media, 'static', $settings->static_folder, 'links.static_folder');
-                }
-            }
-        }
-
-        if($this->table_exists('biolinks_blocks')) {
-            $result = database()->query("SELECT `type`, `settings`, `location_url` FROM `biolinks_blocks` WHERE `user_id` = {$user_id} AND `type` IN ('file','video','audio','pdf_document','powerpoint_presentation','excel_spreadsheet','product')");
-            while($result && $row = $result->fetch_assoc()) {
-                $settings = $this->decode_json($row['settings'] ?? null);
-                $this->add_media_file($media, 'files', $settings->file ?? ($settings->video ?? ($settings->audio ?? null)), 'blocks.file');
-                $this->add_media_file($media, 'products_files', $settings->file ?? null, 'blocks.product_file');
-                $this->add_media_from_string($media, $row['location_url'] ?? '', 'blocks', 'location_url');
-            }
-        }
-
-        return array_values($media);
     }
 
     private function harvest_media(&$media, $node, $source, $field = null) {

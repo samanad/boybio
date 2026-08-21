@@ -129,14 +129,15 @@
                         <tr><th><?= l('account_backup.review.media') ?></th><td><?= (int) ($preview['media'] ?? 0) ?></td></tr>
                         <tr>
                             <th><?= l('account_backup.export.preview.size') ?></th>
-                            <td class="font-weight-bold"><?= htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($preview['total_bytes'] ?? 0)) ?></td>
+                            <td><?= !empty($preview['counts_only']) ? l('account_backup.export.preview.counts_note') : htmlspecialchars(\Altum\Models\AccountBackup::format_bytes($preview['total_bytes'] ?? 0)) ?></td>
                         </tr>
-                        <?php if(!empty($preview['unknown'])): ?>
+                        <?php if(empty($preview['counts_only']) && !empty($preview['unknown'])): ?>
                             <tr>
                                 <th><?= l('account_backup.export.preview.other') ?></th>
                                 <td><?= sprintf(l('account_backup.export.preview.size_unknown'), (int) $preview['unknown']) ?></td>
                             </tr>
                         <?php endif ?>
+                        <?php if(empty($preview['counts_only'])): ?>
                         <tr>
                             <th><?= l('account_backup.export.preview.large_header') ?></th>
                             <td>
@@ -147,6 +148,7 @@
                                 <?php endif ?>
                             </td>
                         </tr>
+                        <?php endif ?>
                         <?php if(!empty($preview['large_count'])): ?>
                             <tr>
                                 <th><?= l('account_backup.export.preview.size_if_excluded') ?></th>
