@@ -104,6 +104,34 @@
     border-radius: .4rem;
 }
 
+img.biolink-social-fa-img {
+    width: 1em;
+    height: 1em;
+    object-fit: contain;
+    vertical-align: -0.125em;
+    display: inline-block;
+}
+img.biolink-social-fa-img.fa-sm {
+    width: 0.875em;
+    height: 0.875em;
+}
+img.biolink-social-fa-img.fa-xs {
+    width: 0.75em;
+    height: 0.75em;
+}
+img.biolink-social-fa-img.fa-lg {
+    width: 1.33333em;
+    height: 1.33333em;
+}
+img.biolink-social-fa-img.fa-2x {
+    width: 2em;
+    height: 2em;
+}
+img.biolink-social-fa-img.fa-3x {
+    width: 3em;
+    height: 3em;
+}
+
 .link-avatar-straight {
     border-radius: 0;
 }

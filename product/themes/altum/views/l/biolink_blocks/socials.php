@@ -28,7 +28,11 @@ switch ($data->link->settings->size) {
             <?php if($value): ?>
                 <div class="my-2 mx-2 p-2 <?= 'link-btn-' . ($data->link->settings->border_radius ?? 'rounded') ?>" style="background: <?= $data->link->settings->background_color ?: '#FFFFFF00' ?>" data-toggle="tooltip" title="<?= l('biolink_socials.' . $key . '.name') ?>" data-border-radius data-background-color>
                     <a href="<?= sprintf($biolink_socials[$key]['format'], $value) ?>" target="_blank" rel="noreferrer" class="<?= ($data->biolink->settings->hover_animation ?? 'smooth') != 'false' ? 'link-hover-animation-' . ($data->biolink->settings->hover_animation ?? 'smooth') : null ?>">
-                        <i class="<?= $biolink_socials[$key]['icon'] ?> <?= $size ?> fa-fw" style="color: <?= $data->link->settings->color ?>" data-color></i>
+                        <?php if(!empty($biolink_socials[$key]['icon_image'])): ?>
+                            <img src="<?= ASSETS_FULL_URL . 'images/' . $biolink_socials[$key]['icon_image'] ?>" class="biolink-social-fa-img <?= $size ?> fa-fw" alt="<?= l('biolink_socials.' . $key . '.name') ?>" />
+                        <?php else: ?>
+                            <i class="<?= $biolink_socials[$key]['icon'] ?> <?= $size ?> fa-fw" style="color: <?= $data->link->settings->color ?>" data-color></i>
+                        <?php endif ?>
                     </a>
                 </div>
             <?php endif ?>

@@ -2519,6 +2519,12 @@ return [
     'biolink_socials.bluesky.placeholder' => 'Bluesky username',
     'biolink_socials.mastodon.name' => 'Mastodon',
     'biolink_socials.mastodon.placeholder' => 'Mastodon username',
+    'biolink_socials.bale.name' => 'Bale',
+    'biolink_socials.bale.placeholder' => 'Bale username',
+    'biolink_socials.rubika.name' => 'Rubika',
+    'biolink_socials.rubika.placeholder' => 'Rubika username',
+    'biolink_socials.eitaa.name' => 'Eitaa',
+    'biolink_socials.eitaa.placeholder' => 'Eitaa username',
 
 
     'biolink_image.header' => 'Add an image',

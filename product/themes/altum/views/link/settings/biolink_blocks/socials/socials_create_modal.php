@@ -23,9 +23,14 @@
 
                     <?php $biolink_socials = require APP_PATH . 'includes/biolink_socials.php'; ?>
                     <?php foreach($biolink_socials as $key => $value): ?>
+                        <?php
+                        $social_label_icon = !empty($value['icon_image'])
+                            ? '<img src="' . ASSETS_FULL_URL . 'images/' . $value['icon_image'] . '" class="biolink-social-fa-img fa-fw fa-sm mr-1" alt="">'
+                            : '<i class="' . $value['icon'] . ' fa-fw fa-sm text-muted mr-1"></i>';
+                        ?>
                         <?php if($value['input_group']): ?>
                             <div class="form-group">
-                                <label for="<?= 'socials_' . $key ?>"><i class="<?= $value['icon'] ?> fa-fw fa-sm text-muted mr-1"></i> <?= l('biolink_socials.' . $key . '.name') ?></label>
+                                <label for="<?= 'socials_' . $key ?>"><?= $social_label_icon ?> <?= l('biolink_socials.' . $key . '.name') ?></label>
                                 <div class="input-group">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?= remove_url_protocol_from_url(str_replace('%s', '', $value['format'])) ?></span>
@@ -35,7 +40,7 @@
                             </div>
                         <?php else: ?>
                             <div class="form-group">
-                                <label for="<?= 'socials_' . $key ?>"><i class="<?= $value['icon'] ?> fa-fw fa-sm text-muted mr-1"></i> <?= l('biolink_socials.' . $key . '.name') ?></label>
+                                <label for="<?= 'socials_' . $key ?>"><?= $social_label_icon ?> <?= l('biolink_socials.' . $key . '.name') ?></label>
                                 <input id="<?= 'socials_' . $key ?>" type="text" class="form-control" name="socials[<?= $key ?>]" placeholder="<?= l('biolink_socials.' . $key . '.placeholder') ?>" value="" maxlength="<?= $value['max_length'] ?>" />
                             </div>
                         <?php endif ?>

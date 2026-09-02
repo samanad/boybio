@@ -191,4 +191,25 @@ return [
         'max_length' => 256,
         'icon' => 'fas fa-map-marker-alt'
     ],
+    'bale'=> [
+        'format' => 'https://ble.ir/%s',
+        'input_group' => true,
+        'max_length' => 128,
+        'icon' => '',
+        'icon_image' => 'biolink_socials/bale.png',
+    ],
+    'rubika'=> [
+        'format' => 'https://rubika.ir/%s',
+        'input_group' => true,
+        'max_length' => 128,
+        'icon' => '',
+        'icon_image' => 'biolink_socials/rubika.png',
+    ],
+    'eitaa'=> [
+        'format' => 'https://eitaa.com/%s',
+        'input_group' => true,
+        'max_length' => 128,
+        'icon' => '',
+        'icon_image' => 'biolink_socials/eitaa.png',
+    ],
 ];
