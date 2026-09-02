@@ -25,7 +25,7 @@
                     <?php foreach($biolink_socials as $key => $value): ?>
                         <?php
                         $social_label_icon = !empty($value['icon_image'])
-                            ? '<img src="' . ASSETS_FULL_URL . 'images/' . $value['icon_image'] . '" class="biolink-social-fa-img fa-fw fa-sm mr-1" alt="">'
+                            ? '<i class="biolink-social-fa-img fa-fw fa-sm mr-1 text-muted" style="--biolink-social-mask: url(\'' . ASSETS_FULL_URL . 'images/' . $value['icon_image'] . '\')"></i>'
                             : '<i class="' . $value['icon'] . ' fa-fw fa-sm text-muted mr-1"></i>';
                         ?>
                         <?php if($value['input_group']): ?>

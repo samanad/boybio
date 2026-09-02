@@ -604,16 +604,17 @@ input[type="radio"]:checked ~ .link-biolink-theme {
 	border-radius: .4rem;
 }
 
-img.biolink-social-fa-img {
-	width: 1em;
-	height: 1em;
-	object-fit: contain;
-	vertical-align: -0.125em;
+.biolink-social-fa-img {
 	display: inline-block;
+	width: 1.25em;
+	height: 1em;
+	vertical-align: -0.125em;
+	background-color: currentColor;
+	-webkit-mask: var(--biolink-social-mask) center / contain no-repeat;
+	mask: var(--biolink-social-mask) center / contain no-repeat;
 }
-img.biolink-social-fa-img.fa-sm {
-	width: 0.875em;
-	height: 0.875em;
+.biolink-social-fa-img::before {
+	content: none !important;
 }
 
 .biolink-switch-buttons .nav-link.active {
