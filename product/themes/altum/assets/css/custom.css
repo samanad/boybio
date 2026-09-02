@@ -604,17 +604,13 @@ input[type="radio"]:checked ~ .link-biolink-theme {
 	border-radius: .4rem;
 }
 
-.biolink-social-fa-img {
+svg.biolink-social-fa-img {
 	display: inline-block;
 	width: 1.25em;
 	height: 1em;
 	vertical-align: -0.125em;
-	background-color: currentColor;
-	-webkit-mask: var(--biolink-social-mask) center / contain no-repeat;
-	mask: var(--biolink-social-mask) center / contain no-repeat;
-}
-.biolink-social-fa-img::before {
-	content: none !important;
+	fill: currentColor;
+	overflow: visible;
 }
 
 .biolink-switch-buttons .nav-link.active {

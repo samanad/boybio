@@ -28,6 +28,30 @@ if(!function_exists('str_starts_with')) {
     }
 }
 
+function biolink_social_icon_html($relative_path, $extra_class = '', $color = null) {
+    $file = ASSETS_PATH . 'images/' . $relative_path;
+    if(!is_readable($file)) {
+        return '';
+    }
+
+    $svg = file_get_contents($file);
+    $svg = preg_replace('/<\?xml[^>]*\?>/i', '', $svg);
+    $svg = preg_replace('/<!DOCTYPE[^>]*>/i', '', $svg);
+    $svg = preg_replace('#<script\b[^>]*>.*?</script>#is', '', $svg);
+    $svg = preg_replace('/\sfill="(?!none)[^"]*"/i', ' fill="currentColor"', $svg);
+    $svg = preg_replace("/\sfill='(?!none)[^']*'/i", " fill='currentColor'", $svg);
+    $svg = preg_replace('/\sstroke="(?!none)[^"]*"/i', ' stroke="currentColor"', $svg);
+    $svg = preg_replace('/fill\s*:\s*(?!none)[^;}]+/i', 'fill:currentColor', $svg);
+
+    $class = trim('biolink-social-fa-img ' . $extra_class);
+    $style = $color ? 'color:' . htmlspecialchars($color, ENT_QUOTES, 'UTF-8') : '';
+
+    return preg_replace_callback('/<svg\b([^>]*)>/i', function ($match) use ($class, $style) {
+        $attrs = preg_replace('/\s(class|style|width|height)="[^"]*"/i', '', $match[1]);
+        return '<svg' . $attrs . ' class="' . $class . '" width="1em" height="1em" fill="currentColor" style="' . $style . '" data-color aria-hidden="true">';
+    }, $svg, 1);
+}
+
 function get_custom_image_if_any($image_key) {
     $image_key_id = str_replace('.', '_', get_slug($image_key));
 
