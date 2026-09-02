@@ -196,20 +196,20 @@ return [
         'input_group' => true,
         'max_length' => 128,
         'icon' => '',
-        'icon_image' => 'biolink_socials/bale.png',
+        'icon_image' => 'biolink_socials/3.svg',
     ],
     'rubika'=> [
         'format' => 'https://rubika.ir/%s',
         'input_group' => true,
         'max_length' => 128,
         'icon' => '',
-        'icon_image' => 'biolink_socials/rubika.png',
+        'icon_image' => 'biolink_socials/2.svg',
     ],
     'eitaa'=> [
         'format' => 'https://eitaa.com/%s',
         'input_group' => true,
         'max_length' => 128,
         'icon' => '',
-        'icon_image' => 'biolink_socials/eitaa.png',
+        'icon_image' => 'biolink_socials/1.svg',
     ],
 ];
