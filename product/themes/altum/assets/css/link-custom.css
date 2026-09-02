@@ -112,6 +112,10 @@ svg.biolink-social-fa-img {
     fill: currentColor;
     overflow: visible;
 }
+svg.biolink-social-fa-img.biolink-social-eitaa {
+    transform: scale(1.5);
+    transform-origin: center;
+}
 
 .link-avatar-straight {
     border-radius: 0;
