@@ -700,6 +700,30 @@ class Router {
                 ]
             ],
 
+            'account-backup' => [
+                'controller' => 'AccountBackup',
+                'settings' => [
+                    'wrapper' => 'app_wrapper',
+                    'allow_team_access' => false,
+                ]
+            ],
+
+            'restore' => [
+                'controller' => 'AccountBackup',
+                'settings' => [
+                    'wrapper' => 'basic_wrapper',
+                    'allow_team_access' => false,
+                ]
+            ],
+
+            'account-restore' => [
+                'controller' => 'AccountBackup',
+                'settings' => [
+                    'wrapper' => 'basic_wrapper',
+                    'allow_team_access' => false,
+                ]
+            ],
+
             'referrals' => [
                 'controller' => 'Referrals',
                 'settings' => [

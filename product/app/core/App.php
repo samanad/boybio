@@ -162,7 +162,7 @@ class App {
                 cache()->deleteItemsByTag('user_id=' .  \Altum\Authentication::$user_id);
 
                 /* Make sure to redirect the person to the payment page and only let the person access the following pages */
-                if(!in_array(\Altum\Router::$controller_key, ['index', 'blog', 'affiliate', 'contact', 'page', 'pages', 'plan', 'pay', 'pay-billing', 'pay-thank-you', 'account', 'account-plan', 'account-payments', 'invoice', 'account-logs', 'account-preferences',  'account-delete', 'referrals', 'account-api', 'account-redeem-code', 'logout', 'register', 'teams-system', 'teams-member', 'teams-members']) && \Altum\Router::$path != 'admin') {
+                if(!in_array(\Altum\Router::$controller_key, ['index', 'blog', 'affiliate', 'contact', 'page', 'pages', 'plan', 'pay', 'pay-billing', 'pay-thank-you', 'account', 'account-plan', 'account-payments', 'invoice', 'account-logs', 'account-preferences',  'account-delete', 'account-backup', 'account-restore', 'restore', 'referrals', 'account-api', 'account-redeem-code', 'logout', 'register', 'teams-system', 'teams-member', 'teams-members']) && \Altum\Router::$path != 'admin') {
                     redirect('plan/new');
                 }
             }
@@ -244,7 +244,7 @@ class App {
         }
 
         /* Maintenance mode */
-        if(settings()->main->maintenance_is_enabled && (!is_logged_in() || $user->type != 1) && !in_array(\Altum\Router::$controller_key, ['maintenance', 'login', 'lost-password', 'reset-password'])) {
+        if(settings()->main->maintenance_is_enabled && (!is_logged_in() || $user->type != 1) && !in_array(\Altum\Router::$controller_key, ['maintenance', 'login', 'lost-password', 'reset-password', 'restore', 'account-restore'])) {
             header('HTTP/1.1 503 Service Unavailable');
             header('Retry-After: 3600');
             header('Location: ' . url('maintenance'));

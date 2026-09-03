@@ -133,6 +133,10 @@
     </div>
 <?php endif ?>
 
+    <div class="mt-3 text-center text-muted">
+        <a href="<?= url('restore') ?>" class="font-weight-bold"><?= l('account_backup.restore.submit') ?></a>
+    </div>
+
 <?php ob_start() ?>
     <script type="application/ld+json">
         {
