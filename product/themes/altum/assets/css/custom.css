@@ -352,8 +352,9 @@ body.app-sidebar-opened .app-sidebar {
 }
 
 .footer-logo {
-	max-height: 3rem;
-	height: 3rem;
+	max-height: 3rem !important;
+	height: 3rem !important;
+	width: auto !important;
 }
 
 .footer-heading {
@@ -467,13 +468,15 @@ img {
 }
 
 .navbar-logo {
-	max-height: 3rem;
-	height: 3rem;
+	max-height: 3rem !important;
+	height: 3rem !important;
+	width: auto !important;
 }
 
 .navbar-logo-mini {
-	max-height: 1.5rem;
-	height: 1.5rem;
+	max-height: 1.5rem !important;
+	height: 1.5rem !important;
+	width: auto !important;
 }
 
 .navbar-avatar {

@@ -195,8 +195,9 @@ body.admin-sidebar-opened .admin-sidebar {
 }
 
 .admin-navbar-logo {
-    max-height: 3rem;
-    height: 3rem;
+    max-height: 3rem !important;
+    height: 3rem !important;
+    width: auto !important;
 }
 
 .chart-container {
@@ -228,8 +229,9 @@ body.admin-sidebar-opened .admin-sidebar {
 }
 
 .admin-navbar-logo-top {
-    max-height: 2.4rem;
-    height: 2.4rem;
+    max-height: 2.4rem !important;
+    height: 2.4rem !important;
+    width: auto !important;
 }
 
 .navbar-custom-toggler {
@@ -384,8 +386,9 @@ footer button, footer button:hover {
 }
 
 .invoice-logo {
-    max-height: 3rem;
-    height: 3rem;
+    max-height: 3rem !important;
+    height: 3rem !important;
+    width: auto !important;
 }
 
 @media print {
