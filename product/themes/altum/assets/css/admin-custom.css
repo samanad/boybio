@@ -195,8 +195,8 @@ body.admin-sidebar-opened .admin-sidebar {
 }
 
 .admin-navbar-logo {
-    max-height: 2.5rem;
-    height: 2.5rem;
+    max-height: 3rem;
+    height: 3rem;
 }
 
 .chart-container {
@@ -228,8 +228,8 @@ body.admin-sidebar-opened .admin-sidebar {
 }
 
 .admin-navbar-logo-top {
-    max-height: 2rem;
-    height: 2rem;
+    max-height: 2.4rem;
+    height: 2.4rem;
 }
 
 .navbar-custom-toggler {
@@ -384,8 +384,8 @@ footer button, footer button:hover {
 }
 
 .invoice-logo {
-    max-height: 2.5rem;
-    height: 2.5rem;
+    max-height: 3rem;
+    height: 3rem;
 }
 
 @media print {
