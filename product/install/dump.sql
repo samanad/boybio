@@ -82,6 +82,23 @@ CONSTRAINT `users_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user
 
 -- SEPARATOR --
 
+CREATE TABLE `users_security_keys` (
+`security_key_id` int unsigned NOT NULL AUTO_INCREMENT,
+`user_id` int NOT NULL,
+`name` varchar(64) NOT NULL DEFAULT '',
+`credential_id` varchar(1024) NOT NULL,
+`public_key` text NOT NULL,
+`counter` int unsigned NOT NULL DEFAULT 0,
+`datetime` datetime DEFAULT NULL,
+`last_used_datetime` datetime DEFAULT NULL,
+PRIMARY KEY (`security_key_id`),
+UNIQUE KEY `credential_id` (`credential_id`(191)),
+KEY `user_id` (`user_id`),
+CONSTRAINT `users_security_keys_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- SEPARATOR --
+
 CREATE TABLE `plans` (
 `plan_id` int NOT NULL AUTO_INCREMENT,
 `name` varchar(64) NOT NULL DEFAULT '',

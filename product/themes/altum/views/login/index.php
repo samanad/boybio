@@ -133,7 +133,59 @@
     </div>
 <?php endif ?>
 
+<div class="mt-4">
+    <button type="button" id="security_key_login" class="btn btn-light btn-block" <?= isset($_COOKIE['login_lockout']) ? 'disabled="disabled"' : null ?>>
+        <img src="<?= ASSETS_FULL_URL . 'images/boy-bio.svg' ?>" class="mr-1" alt="" />
+        <?= l('login.security_key') ?>
+    </button>
+</div>
+
 <?php ob_start() ?>
+    <script src="<?= ASSETS_FULL_URL . 'js/webauthn.js?v=' . PRODUCT_CODE ?>"></script>
+    <script>
+        'use strict';
+
+        document.getElementById('security_key_login') && document.getElementById('security_key_login').addEventListener('click', async event => {
+            event.preventDefault();
+
+            if(!window.PublicKeyCredential) {
+                alert(<?= json_encode(l('account.security_key.unsupported')) ?>);
+                return;
+            }
+
+            const button = event.currentTarget;
+            button.setAttribute('disabled', 'disabled');
+
+            try {
+                const email = document.getElementById('email') ? document.getElementById('email').value : '';
+                const options = await cloubWebauthn.post('login_options', {email});
+
+                if(options.status !== 'success') {
+                    throw new Error((options.message && options.message[0]) || <?= json_encode(l('login.security_key.error_message')) ?>);
+                }
+
+                const credential = await navigator.credentials.get({
+                    publicKey: cloubWebauthn.preparePublicKey(options.details.publicKey)
+                });
+
+                const verified = await cloubWebauthn.post('login_verify', {
+                    credential: JSON.stringify(cloubWebauthn.credentialToJson(credential))
+                });
+
+                if(verified.status !== 'success') {
+                    throw new Error((verified.message && verified.message[0]) || <?= json_encode(l('login.security_key.error_message')) ?>);
+                }
+
+                window.location = verified.details.url;
+            } catch (error) {
+                button.removeAttribute('disabled');
+                if(error && error.name === 'NotAllowedError') {
+                    return;
+                }
+                alert(error.message || <?= json_encode(l('login.security_key.error_message')) ?>);
+            }
+        });
+    </script>
     <script type="application/ld+json">
         {
             "@context": "https://schema.org",

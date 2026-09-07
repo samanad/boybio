@@ -290,6 +290,9 @@ class Account extends Controller {
         /* Store the potential secret */
         $_SESSION['twofa_potential_secret'] = $twofa_secret;
 
+        \Altum\WebAuthn::ensure_table();
+        $security_keys = db()->where('user_id', $this->user->user_id)->orderBy('security_key_id', 'DESC')->get('users_security_keys', null, ['security_key_id', 'name', 'datetime', 'last_used_datetime']);
+
         /* Get the account header menu */
         $menu = new \Altum\View('partials/account_header_menu', (array) $this);
         $this->add_view_content('account_header_menu', $menu->run());
@@ -297,7 +300,8 @@ class Account extends Controller {
         /* Prepare the view */
         $data = [
             'twofa_secret'  => $twofa_secret,
-            'twofa_image'   => $twofa_image
+            'twofa_image'   => $twofa_image,
+            'security_keys' => $security_keys,
         ];
 
         $view = new \Altum\View('account/index', (array) $this);

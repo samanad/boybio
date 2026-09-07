@@ -286,6 +286,62 @@
 
         <div>
             <div class="d-flex align-items-center mb-3">
+                <h1 class="h4 m-0"><?= l('account.security_key.header') ?></h1>
+
+                <div class="ml-2">
+                    <span data-toggle="tooltip" title="<?= l('account.security_key.subheader') ?>">
+                        <i class="fas fa-fw fa-info-circle text-muted"></i>
+                    </span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted small"><?= l('account.security_key.subheader') ?></p>
+
+                    <?php if(empty($data->security_keys)): ?>
+                        <p class="text-muted mb-3"><?= l('account.security_key.empty') ?></p>
+                    <?php else: ?>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-custom table-borderless table-hover">
+                                <tbody>
+                                <?php foreach($data->security_keys as $security_key): ?>
+                                    <tr>
+                                        <td>
+                                            <div class="font-weight-bold"><?= e($security_key->name) ?></div>
+                                            <small class="text-muted">
+                                                <?= $security_key->last_used_datetime ? sprintf(l('account.security_key.last_used'), \Altum\Date::get($security_key->last_used_datetime, 2)) : l('account.security_key.never_used') ?>
+                                            </small>
+                                        </td>
+                                        <td class="text-right">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" data-security-key-delete="<?= $security_key->security_key_id ?>">
+                                                <?= l('global.delete') ?>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif ?>
+
+                    <div class="form-group">
+                        <label for="security_key_name"><?= l('account.security_key.name') ?></label>
+                        <input type="text" id="security_key_name" class="form-control" maxlength="64" placeholder="<?= l('account.security_key.name_placeholder') ?>" />
+                    </div>
+
+                    <button type="button" id="security_key_register" class="btn btn-light">
+                        <i class="fas fa-fw fa-usb mr-1"></i>
+                        <?= l('account.security_key.add') ?>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <hr class="border-gray-50 my-4" />
+
+        <div>
+            <div class="d-flex align-items-center mb-3">
                 <h1 class="h4 m-0"><?= l('account.change_password.header') ?></h1>
 
                 <div class="ml-2">
@@ -337,3 +393,69 @@
 <?php endif ?>
 
 <?php include_view(THEME_PATH . 'views/partials/clipboard_js.php') ?>
+
+<?php ob_start() ?>
+<script src="<?= ASSETS_FULL_URL . 'js/webauthn.js?v=' . PRODUCT_CODE ?>"></script>
+<script>
+    'use strict';
+
+    document.getElementById('security_key_register') && document.getElementById('security_key_register').addEventListener('click', async event => {
+        event.preventDefault();
+
+        if(!window.PublicKeyCredential) {
+            alert(<?= json_encode(l('account.security_key.unsupported')) ?>);
+            return;
+        }
+
+        const button = event.currentTarget;
+        button.setAttribute('disabled', 'disabled');
+
+        try {
+            const options = await cloubWebauthn.post('register_options');
+
+            if(options.status !== 'success') {
+                throw new Error((options.message && options.message[0]) || <?= json_encode(l('account.security_key.error_message.register')) ?>);
+            }
+
+            const credential = await navigator.credentials.create({
+                publicKey: cloubWebauthn.preparePublicKey(options.details.publicKey)
+            });
+
+            const verified = await cloubWebauthn.post('register_verify', {
+                name: document.getElementById('security_key_name').value,
+                credential: JSON.stringify(cloubWebauthn.credentialToJson(credential))
+            });
+
+            if(verified.status !== 'success') {
+                throw new Error((verified.message && verified.message[0]) || <?= json_encode(l('account.security_key.error_message.register')) ?>);
+            }
+
+            window.location.reload();
+        } catch (error) {
+            button.removeAttribute('disabled');
+            if(error && error.name === 'NotAllowedError') {
+                return;
+            }
+            alert(error.message || <?= json_encode(l('account.security_key.error_message.register')) ?>);
+        }
+    });
+
+    document.querySelectorAll('[data-security-key-delete]').forEach(element => {
+        element.addEventListener('click', async event => {
+            event.preventDefault();
+
+            if(!confirm(<?= json_encode(l('account.security_key.delete_confirm')) ?>)) {
+                return;
+            }
+
+            const result = await cloubWebauthn.post('delete', {
+                security_key_id: event.currentTarget.getAttribute('data-security-key-delete')
+            });
+
+            if(result.status === 'success') {
+                window.location.reload();
+            }
+        });
+    });
+</script>
+<?php \Altum\Event::add_content(ob_get_clean(), 'javascript') ?>

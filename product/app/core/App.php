@@ -244,7 +244,7 @@ class App {
         }
 
         /* Maintenance mode */
-        if(settings()->main->maintenance_is_enabled && (!is_logged_in() || $user->type != 1) && !in_array(\Altum\Router::$controller_key, ['maintenance', 'login', 'lost-password', 'reset-password', 'restore', 'account-restore'])) {
+        if(settings()->main->maintenance_is_enabled && (!is_logged_in() || $user->type != 1) && !in_array(\Altum\Router::$controller_key, ['maintenance', 'login', 'lost-password', 'reset-password', 'restore', 'account-restore', 'webauthn-ajax'])) {
             header('HTTP/1.1 503 Service Unavailable');
             header('Retry-After: 3600');
             header('Location: ' . url('maintenance'));
