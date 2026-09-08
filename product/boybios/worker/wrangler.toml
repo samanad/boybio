@@ -1,0 +1,15 @@
+name = "boybios"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+workers_dev = false
+
+routes = [
+  { pattern = "boybios.com/*", zone_name = "boybios.com" },
+  { pattern = "www.boybios.com/*", zone_name = "boybios.com" }
+]
+
+[vars]
+CLOUB_ORIGIN = "https://cloub.io"
+APP_NAME = "cloub"
+
+# wrangler secret put BOYBIOS_WORKER_SECRET

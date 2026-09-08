@@ -1,0 +1,9 @@
+.android-sdk/
+.gradle-dist/
+android/local.properties
+android/.gradle/
+android/app/build/
+site/logs/*
+site/downloads/*.apk
+!site/logs/.htaccess
+!site/downloads/.htaccess

@@ -578,6 +578,16 @@ class Router {
                 ]
             ],
 
+            'boybios-api' => [
+                'controller' => 'BoybiosApi',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'allow_indexing' => false,
+                    'no_browser_language_detection' => true,
+                ]
+            ],
+
             'affiliate' => [
                 'controller' => 'Affiliate'
             ],
