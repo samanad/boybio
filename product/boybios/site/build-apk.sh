@@ -103,7 +103,7 @@ EOF
 
 log "Compiling APK with 512MB Java heap (slow but safe on 4GB)"
 cd "$ANDROID_DIR"
-nice -n 15 "$GRADLE_DIR/bin/gradle" --no-daemon --max-workers=1 assembleDebug
+nice -n 15 "$GRADLE_DIR/bin/gradle" --no-daemon --max-workers=1 clean assembleDebug
 
 APK="$(find "$ANDROID_DIR/app/build/outputs/apk/debug" -name "*.apk" | head -n 1)"
 if [ -z "$APK" ]; then
