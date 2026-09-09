@@ -130,7 +130,8 @@ class ActivateUser extends Controller {
                 /* Clear the cache */
                 cache()->deleteItemsByTag('user_id=' . $user->user_id);
 
-                redirect($redirect . '&welcome=' . $user->user_id);
+                $welcome_sep = str_contains((string) $redirect, '?') ? '&' : '?';
+                redirect($redirect . $welcome_sep . 'welcome=' . $user->user_id);
 
                 break;
 
