@@ -114,8 +114,11 @@ class BoybiosApi extends Controller {
             $this->fail('registration_disabled', 403);
         }
 
-        $name = input_clean_name($input['name'] ?? '', 64);
         $email = input_clean_email($input['email'] ?? '');
+        $name = input_clean_name($input['name'] ?? '', 64);
+        if($name === '' && $email !== '') {
+            $name = input_clean_name(explode('@', $email)[0], 64);
+        }
         $password = (string) ($input['password'] ?? '');
         $newsletter = !empty($input['is_newsletter_subscribed']);
 
@@ -134,7 +137,18 @@ class BoybiosApi extends Controller {
             $fields['password'] = 'invalid_password';
         }
         if($fields) {
-            $this->fail('validation', 422, $fields);
+            $readable = [];
+            $map = [
+                'invalid_name' => 'Enter a name',
+                'invalid_email' => 'Enter a valid email',
+                'email_exists' => 'This email is already registered',
+                'email_aliases_not_allowed' => 'This email is not allowed',
+                'invalid_password' => 'Password must be 6 to 64 characters',
+            ];
+            foreach($fields as $code) {
+                $readable[] = $map[$code] ?? $code;
+            }
+            $this->fail(implode('. ', $readable), 422, $fields);
         }
 
         $email_domain = get_domain_from_email($email);

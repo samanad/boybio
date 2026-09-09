@@ -47,10 +47,15 @@ class BoybiosApi(private val context: Context) {
         }
         CloudflareClient.http.newCall(builder.build()).execute().use { response ->
             val text = response.body?.string().orEmpty()
+            val trimmed = text.trim()
             return try {
-                JSONObject(text)
+                if (!trimmed.startsWith("{")) {
+                    JSONObject().put("ok", false).put("error", "Could not create the account. Try again.")
+                } else {
+                    JSONObject(trimmed)
+                }
             } catch (_: Exception) {
-                JSONObject().put("ok", false).put("error", text.ifBlank { "http_${response.code}" })
+                JSONObject().put("ok", false).put("error", "Could not create the account. Try again.")
             }
         }
     }
