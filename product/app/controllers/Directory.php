@@ -25,7 +25,7 @@ class Directory extends Controller {
             redirect('not-found');
         }
 
-        if(settings()->links->directory_access == 'users') {
+        if((settings()->links->directory_access ?? 'everyone') == 'users') {
             \Altum\Authentication::guard();
         }
 
@@ -35,7 +35,7 @@ class Directory extends Controller {
         $filters->set_default_results_per_page($this->user->preferences->default_results_per_page ?? settings()->main->default_results_per_page);
 
         /* Which bio link pages to display? */
-        $directory_display_where = settings()->links->directory_display == 'all' ? null : 'AND `is_verified` = 1';
+        $directory_display_where = (settings()->links->directory_display ?? 'all') == 'all' ? null : 'AND `is_verified` = 1';
 
         /* Prepare the paginator */
         $total_rows = database()->query("SELECT COUNT(*) AS `total` FROM `links` WHERE `type` = 'biolink' AND `is_enabled` = 1 AND `links`.`directory_is_enabled` = 1 {$directory_display_where} {$filters->get_sql_where()}")->fetch_object()->total ?? 0;
