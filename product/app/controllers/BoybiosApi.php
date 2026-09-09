@@ -156,13 +156,14 @@ class BoybiosApi extends Controller {
             $this->fail('blacklisted_domain', 422, ['email' => 'blacklisted_domain']);
         }
 
+        $email_code = md5($email . microtime());
         $registered_user = (new User())->create(
             $email,
             $password,
             $name,
             (int) !settings()->users->email_confirmation,
             'boybios',
-            md5($email . microtime()),
+            $email_code,
             null,
             $newsletter,
             'free',
@@ -177,8 +178,36 @@ class BoybiosApi extends Controller {
         $payload = $this->user_payload($user);
 
         if(!(int) $user->status) {
+            $email_template = get_email_template(
+                [
+                    '{{NAME}}' => str_replace('.', '. ', $name),
+                ],
+                l('global.emails.user_activation.subject'),
+                [
+                    '{{ACTIVATION_LINK}}' => url('activate-user?email=' . md5($email) . '&email_activation_code=' . $email_code . '&type=user_activation'),
+                    '{{NAME}}' => str_replace('.', '. ', $name),
+                ],
+                l('global.emails.user_activation.body')
+            );
+
+            send_mail($email, $email_template->subject, $email_template->body);
+
             unset($payload['api_key']);
             $this->ok(['needs_email_confirmation' => true, 'user' => $payload]);
+        }
+
+        if(settings()->users->welcome_email_is_enabled) {
+            $email_template = get_email_template(
+                [],
+                l('global.emails.user_welcome.subject'),
+                [
+                    '{{NAME}}' => $name,
+                    '{{URL}}' => url(),
+                    '{{DASHBOARD_LINK}}' => url('dashboard'),
+                ],
+                l('global.emails.user_welcome.body')
+            );
+            send_mail($email, $email_template->subject, $email_template->body);
         }
 
         $this->ok(['needs_email_confirmation' => false, 'user' => $payload]);
