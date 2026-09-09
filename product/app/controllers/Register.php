@@ -257,7 +257,8 @@ class Register extends Controller {
 
                     Logger::users($registered_user['user_id'], 'login.success');
 
-                    redirect($redirect . '&welcome=' . $registered_user['user_id']);
+                    $welcome_sep = str_contains((string) $redirect, '?') ? '&' : '?';
+                    redirect($redirect . $welcome_sep . 'welcome=' . $registered_user['user_id']);
                 } else {
 
                     /* Prepare the email */
