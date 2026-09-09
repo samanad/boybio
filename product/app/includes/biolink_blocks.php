@@ -228,10 +228,20 @@ if(settings()->links->google_static_maps_is_enabled) {
     ];
 }
 
-return array_merge(
+$blocks = array_merge(
     $default_blocks,
     $pro_blocks,
     $ultimate_blocks,
     $payment_blocks,
 );
+
+if(isset($blocks['file']['whitelisted_file_extensions']) && !in_array('apk', $blocks['file']['whitelisted_file_extensions'], true)) {
+    $blocks['file']['whitelisted_file_extensions'][] = 'apk';
+}
+
+if(isset($blocks['audio']['whitelisted_file_extensions']) && !in_array('amr', $blocks['audio']['whitelisted_file_extensions'], true)) {
+    $blocks['audio']['whitelisted_file_extensions'][] = 'amr';
+}
+
+return $blocks;
 

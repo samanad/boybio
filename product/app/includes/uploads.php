@@ -113,7 +113,7 @@ return [
 
     /* File upload links */
     'files' => [
-        'whitelisted_file_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'pdf', 'zip', 'rar', 'doc', 'docx']
+        'whitelisted_file_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'pdf', 'zip', 'rar', 'doc', 'docx', 'apk']
     ],
 
     /* Static file links */
