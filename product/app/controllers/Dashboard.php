@@ -29,9 +29,18 @@ class Dashboard extends Controller {
 
         /* Prepare the filtering system */
         $filters = (new \Altum\Filters(['is_enabled', 'type'], ['url', 'location_url'], ['link_id', 'last_datetime', 'datetime', 'clicks', 'url']));
-        $preferences = isset($this->user->preferences) ? $this->user->preferences : null;
-        $filters->set_default_order_by(($preferences && isset($preferences->links_default_order_by)) ? $preferences->links_default_order_by : 'link_id', ($preferences && isset($preferences->default_order_type)) ? $preferences->default_order_type : settings()->main->default_order_type);
-        $filters->set_default_results_per_page(($preferences && isset($preferences->default_results_per_page)) ? $preferences->default_results_per_page : settings()->main->default_results_per_page);
+        $preferences = $this->user->preferences ?? null;
+        if(is_string($preferences)) {
+            $preferences = json_decode($preferences);
+        }
+        if(is_array($preferences)) {
+            $preferences = (object) $preferences;
+        }
+        $default_order_by = (is_object($preferences) && !empty($preferences->links_default_order_by)) ? $preferences->links_default_order_by : 'link_id';
+        $default_order_type = (is_object($preferences) && !empty($preferences->default_order_type)) ? $preferences->default_order_type : settings()->main->default_order_type;
+        $default_results_per_page = (is_object($preferences) && isset($preferences->default_results_per_page)) ? $preferences->default_results_per_page : settings()->main->default_results_per_page;
+        $filters->set_default_order_by($default_order_by, $default_order_type);
+        $filters->set_default_results_per_page($default_results_per_page);
 
         /* Prepare the paginator */
         $total_rows = \Altum\Cache::cache_function_result('links_total?user_id=' . $this->user->user_id, null, function() {
@@ -66,6 +75,9 @@ class Dashboard extends Controller {
             }
 
             $row->settings = json_decode($row->settings);
+            if(!is_object($row->settings)) {
+                $row->settings = new \stdClass();
+            }
 
             $links[] = $row;
         }

@@ -49,7 +49,7 @@
 
     <?= \Altum\Event::get_content('head') ?>
 
-        <?php if(is_logged_in() && !user()->plan_settings->export->pdf): ?>
+        <?php if(is_logged_in() && !(!empty(user()->plan_settings->export) && !empty(user()->plan_settings->export->pdf))): ?>
             <style>@media print { body { display: none; } }</style>
         <?php endif ?>
 
