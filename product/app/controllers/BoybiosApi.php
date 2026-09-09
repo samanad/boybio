@@ -114,7 +114,7 @@ class BoybiosApi extends Controller {
             $this->fail('registration_disabled', 403);
         }
 
-        $email = input_clean_email($input['email'] ?? '');
+        $email = trim(mb_strtolower((string) ($input['email'] ?? '')));
         $name = input_clean_name($input['name'] ?? '', 64);
         if($name === '' && $email !== '') {
             $name = input_clean_name(explode('@', $email)[0], 64);
@@ -126,7 +126,7 @@ class BoybiosApi extends Controller {
         if($name === '' || mb_strlen($name) > 64) {
             $fields['name'] = 'invalid_name';
         }
-        if(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if($email === '' || !preg_match('/^[^\s@]+@[^\s@]+\.[^\s@]+$/', $email)) {
             $fields['email'] = 'invalid_email';
         } elseif(db()->where('email', $email)->has('users')) {
             $fields['email'] = 'email_exists';
@@ -185,7 +185,7 @@ class BoybiosApi extends Controller {
     }
 
     private function login($input) {
-        $email = input_clean_email($input['email'] ?? '');
+        $email = trim(mb_strtolower((string) ($input['email'] ?? '')));
         $password = (string) ($input['password'] ?? '');
         $twofa_token = input_clean(str_replace(' ', '', $input['twofa_token'] ?? ''));
 

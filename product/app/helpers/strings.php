@@ -42,7 +42,10 @@ function input_clean_name($string, $max_characters = null) {
 }
 
 function input_clean_email($string) {
-    return mb_substr(mb_strtolower(filter_var($_POST['email'], FILTER_SANITIZE_EMAIL)), 0, 320);
+    $value = $string !== null && $string !== '' ? $string : ($_POST['email'] ?? '');
+    $value = trim(mb_strtolower((string) $value));
+
+    return mb_substr($value, 0, 320);
 }
 
 function query_clean($string, $max_characters = null) {
