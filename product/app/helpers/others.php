@@ -329,6 +329,25 @@ function parse_tags_list($tags) {
     }));
 }
 
+function get_first_words($string, $limit = 8) {
+    $string = trim(preg_replace('/\s+/u', ' ', strip_tags((string) $string)));
+    if($string === '') {
+        return '';
+    }
+
+    $words = preg_split('/\s+/u', $string, -1, PREG_SPLIT_NO_EMPTY);
+    if(!$words) {
+        return '';
+    }
+
+    $limit = max(1, (int) $limit);
+    if(count($words) <= $limit) {
+        return implode(' ', $words);
+    }
+
+    return implode(' ', array_slice($words, 0, $limit));
+}
+
 function get_ip() {
     static $cached_ip_address = null;
 
