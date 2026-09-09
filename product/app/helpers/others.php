@@ -296,6 +296,39 @@ function set_device_cookie($name, $value, $days = 3650) {
     return setcookie((string) $name, (string) $value, $options);
 }
 
+function parse_tags_list($tags) {
+    if($tags === null || $tags === '' || $tags === false) {
+        return [];
+    }
+
+    if(is_object($tags)) {
+        $tags = (array) $tags;
+    }
+
+    if(is_array($tags)) {
+        $out = [];
+        foreach($tags as $tag) {
+            if(is_array($tag) || is_object($tag)) {
+                continue;
+            }
+            $tag = trim((string) $tag);
+            if($tag !== '') {
+                $out[] = $tag;
+            }
+        }
+        return $out;
+    }
+
+    $decoded = json_decode((string) $tags, true);
+    if(is_array($decoded)) {
+        return parse_tags_list($decoded);
+    }
+
+    return array_values(array_filter(array_map('trim', explode(',', (string) $tags)), static function($tag) {
+        return $tag !== '';
+    }));
+}
+
 function get_ip() {
     static $cached_ip_address = null;
 
