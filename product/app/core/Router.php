@@ -980,6 +980,17 @@ class Router {
                 ]
             ],
 
+            /* Custom: signed admin SSO bridge for peer sites (shazdeha.com, etc.) */
+            'admin-bridge' => [
+                'controller' => 'AdminBridge',
+                'settings' => [
+                    'allow_team_access' => false,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+                ]
+            ],
+
             /* Webhooks */
             'webhook-paypal' => [
                 'controller' => 'WebhookPaypal',
