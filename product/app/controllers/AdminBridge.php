@@ -2,6 +2,10 @@
 /*
  * Custom admin bridge SSO for peer sites (e.g. shazdeha.com).
  * Issues a short-lived HMAC-signed token after Altum admin login.
+ *
+ * Config (preferred): .env next to the domain root, e.g.
+ *   /var/www/www-root/data/www/boybio.net/.env
+ * Also accepts process env / $_SERVER as fallback.
  */
 
 namespace Altum\Controllers;
@@ -9,6 +13,8 @@ namespace Altum\Controllers;
 defined('ALTUMCODE') || die();
 
 class AdminBridge extends Controller {
+
+    private static $env_cache = null;
 
     public function index() {
         throw_404();
@@ -20,7 +26,7 @@ class AdminBridge extends Controller {
         $secret = self::get_secret();
         if(!$secret) {
             http_response_code(500);
-            echo 'ADMIN_BRIDGE_SECRET is not configured.';
+            echo 'ADMIN_BRIDGE_SECRET is not configured (set it in /.env on the domain root).';
             die();
         }
 
@@ -56,19 +62,106 @@ class AdminBridge extends Controller {
         die();
     }
 
-    private static function get_secret() {
-        $secret = getenv('ADMIN_BRIDGE_SECRET');
-        if($secret === false || $secret === null || $secret === '') {
-            $secret = $_SERVER['ADMIN_BRIDGE_SECRET'] ?? '';
+    private static function env_value($key) {
+        $from_env = getenv($key);
+        if(is_string($from_env) && $from_env !== '') {
+            return $from_env;
         }
+        if(isset($_SERVER[$key]) && is_string($_SERVER[$key]) && $_SERVER[$key] !== '') {
+            return $_SERVER[$key];
+        }
+        $file = self::load_dotenv();
+        if(isset($file[$key]) && is_string($file[$key]) && $file[$key] !== '') {
+            return $file[$key];
+        }
+        return '';
+    }
+
+    private static function load_dotenv() {
+        if(self::$env_cache !== null) {
+            return self::$env_cache;
+        }
+
+        self::$env_cache = [];
+        foreach(self::dotenv_candidate_paths() as $path) {
+            if(!is_readable($path)) {
+                continue;
+            }
+            $parsed = self::parse_dotenv_file($path);
+            if($parsed) {
+                self::$env_cache = $parsed;
+                break;
+            }
+        }
+        return self::$env_cache;
+    }
+
+    private static function dotenv_candidate_paths() {
+        $paths = [];
+
+        /* Exact path you requested */
+        $paths[] = '/var/www/www-root/data/www/boybio.net/.env';
+
+        /* Domain root = parent of product/ (ROOT_PATH) */
+        if(defined('ROOT_PATH')) {
+            $paths[] = rtrim(dirname(rtrim(ROOT_PATH, '/\\')), '/\\') . '/.env';
+            $paths[] = rtrim(ROOT_PATH, '/\\') . '/.env';
+        }
+
+        /* Walk up from this controller file */
+        $dir = realpath(__DIR__ . '/../../..'); /* product/ */
+        if($dir) {
+            $paths[] = $dir . '/.env';
+            $parent = dirname($dir);
+            if($parent && $parent !== $dir) {
+                $paths[] = $parent . '/.env';
+            }
+        }
+
+        return array_values(array_unique($paths));
+    }
+
+    private static function parse_dotenv_file($path) {
+        $out = [];
+        $lines = @file($path, FILE_IGNORE_NEW_LINES);
+        if($lines === false) {
+            return [];
+        }
+        foreach($lines as $line) {
+            $line = trim($line);
+            if($line === '' || $line[0] === '#' || $line[0] === ';') {
+                continue;
+            }
+            if(stripos($line, 'export ') === 0) {
+                $line = trim(substr($line, 7));
+            }
+            $eq = strpos($line, '=');
+            if($eq === false) {
+                continue;
+            }
+            $key = trim(substr($line, 0, $eq));
+            $value = trim(substr($line, $eq + 1));
+            if($key === '') {
+                continue;
+            }
+            if(
+                (strlen($value) >= 2 && $value[0] === '"' && substr($value, -1) === '"') ||
+                (strlen($value) >= 2 && $value[0] === "'" && substr($value, -1) === "'")
+            ) {
+                $value = substr($value, 1, -1);
+            }
+            $out[$key] = $value;
+        }
+        return $out;
+    }
+
+    private static function get_secret() {
+        $secret = self::env_value('ADMIN_BRIDGE_SECRET');
         return is_string($secret) && strlen($secret) >= 16 ? $secret : '';
     }
 
     private static function get_peers() {
-        $raw = getenv('ADMIN_BRIDGE_PEERS');
-        if($raw === false || $raw === null || $raw === '') {
-            $raw = $_SERVER['ADMIN_BRIDGE_PEERS'] ?? '';
-        }
+        $raw = self::env_value('ADMIN_BRIDGE_PEERS');
         if(!is_string($raw) || trim($raw) === '') {
             $raw = 'https://www.shazdeha.com,https://shazdeha.com';
         }
@@ -106,7 +199,6 @@ class AdminBridge extends Controller {
         if(!in_array(strtolower($parts['scheme']), ['https', 'http'], true)) {
             return false;
         }
-        /* Disallow credentials / fragments in return */
         if(!empty($parts['user']) || !empty($parts['pass']) || isset($parts['fragment'])) {
             return false;
         }
