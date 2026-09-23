@@ -2,11 +2,12 @@
 
 Endpoint: `GET /admin-bridge/authorize`
 
-Requires Altum **admin** session (`Authentication::guard('admin')`).
+Requires Altum **admin** session. Misconfiguration or bad requests → normal **404** (no public hints).
 
-## Config via `.env` (preferred)
+## `.env` location
 
-Create on the server (do **not** commit this file):
+Altum app root = `product/`.  
+Put secrets in the **parent** folder:
 
 `/var/www/www-root/data/www/boybio.net/.env`
 
@@ -15,10 +16,19 @@ ADMIN_BRIDGE_SECRET=your-long-shared-secret-here
 ADMIN_BRIDGE_PEERS=https://www.shazdeha.com,https://shazdeha.com
 ```
 
-`ADMIN_BRIDGE_SECRET` must be ≥16 characters and **identical** to shazdeha’s `CLOUB_ADMIN_SSO_SECRET`.
+```bash
+chmod 600 /var/www/www-root/data/www/boybio.net/.env
+chown www-data:www-data /var/www/www-root/data/www/boybio.net/.env
+```
 
-Also accepts process env / `$_SERVER` if set, but `.env` is enough — no PHP-FPM `export` / pool env required.
+### If PHP still cannot read it (`open_basedir`)
 
-Files: `app/controllers/AdminBridge.php`, route in `app/core/Router.php`.
+Plesk often confines PHP to `product/`. Either:
 
-See peer docs: `sa/ADMIN_SSO.md`.
+1. Add the parent to open_basedir for the domain, e.g. include  
+   `/var/www/www-root/data/www/boybio.net`  
+   or
+
+2. Also place the same file at `product/.env` (allowed by open_basedir).
+
+`ADMIN_BRIDGE_SECRET` must match shazdeha `CLOUB_ADMIN_SSO_SECRET` (≥16 chars).

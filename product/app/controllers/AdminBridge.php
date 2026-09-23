@@ -3,9 +3,9 @@
  * Custom admin bridge SSO for peer sites (e.g. shazdeha.com).
  * Issues a short-lived HMAC-signed token after Altum admin login.
  *
- * Config (preferred): .env next to the domain root, e.g.
- *   /var/www/www-root/data/www/boybio.net/.env
- * Also accepts process env / $_SERVER as fallback.
+ * Secrets from .env (never expose errors to the public — always 404):
+ *   /var/www/www-root/data/www/boybio.net/.env   (parent of product/)
+ *   or product/.env if open_basedir blocks the parent
  */
 
 namespace Altum\Controllers;
@@ -21,25 +21,26 @@ class AdminBridge extends Controller {
     }
 
     public function authorize() {
-        \Altum\Authentication::guard('admin');
-
-        $secret = self::get_secret();
-        if(!$secret) {
-            http_response_code(500);
-            echo 'ADMIN_BRIDGE_SECRET is not configured (set it in /.env on the domain root).';
-            die();
+        /* Fail closed with a normal 404 — never leak config/SSO details */
+        if(!self::get_secret()) {
+            throw_404();
         }
+
+        \Altum\Authentication::guard('admin');
 
         $return_url = isset($_GET['return_url']) ? trim($_GET['return_url']) : '';
         $state = isset($_GET['state']) ? trim($_GET['state']) : '';
 
         if($return_url === '' || !self::is_allowed_return_url($return_url)) {
-            http_response_code(400);
-            echo 'Invalid or disallowed return_url.';
-            die();
+            throw_404();
         }
 
         $user = \Altum\Authentication::$user;
+        if(!$user || (int) ($user->type ?? 0) !== 1) {
+            throw_404();
+        }
+
+        $secret = self::get_secret();
         $aud = self::origin_from_url($return_url);
         $exp = time() + 120;
         $payload = [
@@ -84,10 +85,7 @@ class AdminBridge extends Controller {
 
         self::$env_cache = [];
         foreach(self::dotenv_candidate_paths() as $path) {
-            if(!is_readable($path)) {
-                continue;
-            }
-            $parsed = self::parse_dotenv_file($path);
+            $parsed = self::try_read_dotenv($path);
             if($parsed) {
                 self::$env_cache = $parsed;
                 break;
@@ -96,35 +94,53 @@ class AdminBridge extends Controller {
         return self::$env_cache;
     }
 
+    private static function try_read_dotenv($path) {
+        if(!$path) {
+            return [];
+        }
+        /* Suppress open_basedir / permission warnings — never show to clients */
+        $raw = @file_get_contents($path);
+        if($raw === false || $raw === '') {
+            return [];
+        }
+        return self::parse_dotenv_string($raw);
+    }
+
     private static function dotenv_candidate_paths() {
         $paths = [];
 
-        /* Exact path you requested */
+        /* App lives in product/; secrets live one level up (boybio.net/.env) */
+        if(defined('ROOT_PATH')) {
+            $product = rtrim(ROOT_PATH, '/\\');
+            $domain = dirname($product);
+            if($domain && $domain !== $product) {
+                $paths[] = $domain . '/.env';
+            }
+            $paths[] = $product . '/.env';
+        }
+
         $paths[] = '/var/www/www-root/data/www/boybio.net/.env';
 
-        /* Domain root = parent of product/ (ROOT_PATH) */
-        if(defined('ROOT_PATH')) {
-            $paths[] = rtrim(dirname(rtrim(ROOT_PATH, '/\\')), '/\\') . '/.env';
-            $paths[] = rtrim(ROOT_PATH, '/\\') . '/.env';
+        /* DOCUMENT_ROOT is usually .../product — parent is boybio.net */
+        if(!empty($_SERVER['DOCUMENT_ROOT'])) {
+            $doc = realpath($_SERVER['DOCUMENT_ROOT']) ?: $_SERVER['DOCUMENT_ROOT'];
+            $paths[] = rtrim($doc, '/\\') . '/.env';
+            $paths[] = dirname(rtrim($doc, '/\\')) . '/.env';
         }
 
-        /* Walk up from this controller file */
-        $dir = realpath(__DIR__ . '/../../..'); /* product/ */
-        if($dir) {
-            $paths[] = $dir . '/.env';
-            $parent = dirname($dir);
-            if($parent && $parent !== $dir) {
-                $paths[] = $parent . '/.env';
-            }
+        $product_from_file = realpath(__DIR__ . '/../../..');
+        if($product_from_file) {
+            $paths[] = dirname($product_from_file) . '/.env';
+            $paths[] = $product_from_file . '/.env';
         }
 
-        return array_values(array_unique($paths));
+        return array_values(array_unique(array_filter($paths)));
     }
 
-    private static function parse_dotenv_file($path) {
+    private static function parse_dotenv_string($raw) {
         $out = [];
-        $lines = @file($path, FILE_IGNORE_NEW_LINES);
-        if($lines === false) {
+        $lines = preg_split('/\r\n|\r|\n/', $raw);
+        if(!$lines) {
             return [];
         }
         foreach($lines as $line) {
