@@ -17,13 +17,20 @@ class AdminBridge extends Controller {
     private static $env_cache = null;
 
     public function index() {
-        throw_404();
+        self::deny_public();
+    }
+
+    private static function deny_public() {
+        http_response_code(403);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo "you can't access this page";
+        die();
     }
 
     public function authorize() {
-        /* Fail closed with a normal 404 — never leak config/SSO details */
+        /* Never leak config details — plain denial for outsiders */
         if(!self::get_secret()) {
-            throw_404();
+            self::deny_public();
         }
 
         \Altum\Authentication::guard('admin');
@@ -32,12 +39,12 @@ class AdminBridge extends Controller {
         $state = isset($_GET['state']) ? trim($_GET['state']) : '';
 
         if($return_url === '' || !self::is_allowed_return_url($return_url)) {
-            throw_404();
+            self::deny_public();
         }
 
         $user = \Altum\Authentication::$user;
         if(!$user || (int) ($user->type ?? 0) !== 1) {
-            throw_404();
+            self::deny_public();
         }
 
         $secret = self::get_secret();
