@@ -116,30 +116,33 @@ class AdminBridge extends Controller {
     private static function dotenv_candidate_paths() {
         $paths = [];
 
-        /* App lives in product/; secrets live one level up (boybio.net/.env) */
+        /*
+         * product/ is the PHP app root; open_basedir usually allows only this tree.
+         * Prefer product/.env — parent boybio.net/.env is often unreadable.
+         */
         if(defined('ROOT_PATH')) {
             $product = rtrim(ROOT_PATH, '/\\');
+            $paths[] = $product . '/.env';
             $domain = dirname($product);
             if($domain && $domain !== $product) {
                 $paths[] = $domain . '/.env';
             }
-            $paths[] = $product . '/.env';
-        }
-
-        $paths[] = '/var/www/www-root/data/www/boybio.net/.env';
-
-        /* DOCUMENT_ROOT is usually .../product — parent is boybio.net */
-        if(!empty($_SERVER['DOCUMENT_ROOT'])) {
-            $doc = realpath($_SERVER['DOCUMENT_ROOT']) ?: $_SERVER['DOCUMENT_ROOT'];
-            $paths[] = rtrim($doc, '/\\') . '/.env';
-            $paths[] = dirname(rtrim($doc, '/\\')) . '/.env';
         }
 
         $product_from_file = realpath(__DIR__ . '/../../..');
         if($product_from_file) {
-            $paths[] = dirname($product_from_file) . '/.env';
             $paths[] = $product_from_file . '/.env';
+            $paths[] = dirname($product_from_file) . '/.env';
         }
+
+        if(!empty($_SERVER['DOCUMENT_ROOT'])) {
+            $doc = realpath($_SERVER['DOCUMENT_ROOT']) ?: rtrim($_SERVER['DOCUMENT_ROOT'], '/\\');
+            $paths[] = $doc . '/.env';
+            $paths[] = dirname($doc) . '/.env';
+        }
+
+        $paths[] = '/var/www/www-root/data/www/boybio.net/product/.env';
+        $paths[] = '/var/www/www-root/data/www/boybio.net/.env';
 
         return array_values(array_unique(array_filter($paths)));
     }
@@ -180,7 +183,11 @@ class AdminBridge extends Controller {
 
     private static function get_secret() {
         $secret = self::env_value('ADMIN_BRIDGE_SECRET');
-        return is_string($secret) && strlen($secret) >= 16 ? $secret : '';
+        if(is_string($secret) && strlen($secret) >= 16) {
+            return $secret;
+        }
+        @error_log('AdminBridge: ADMIN_BRIDGE_SECRET missing or unreadable. Tried: ' . implode(' | ', self::dotenv_candidate_paths()));
+        return '';
     }
 
     private static function get_peers() {
