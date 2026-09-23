@@ -2,33 +2,27 @@
 
 Endpoint: `GET /admin-bridge/authorize`
 
-Requires Altum **admin** session. Misconfiguration or bad requests → normal **404** (no public hints).
+Bad/missing access → plain text: `you can't access this page` (no secrets leaked).
 
-## `.env` location
+## `.env` (important)
 
-Altum app root = `product/`.  
-Put secrets in the **parent** folder:
+PHP document root is **`product/`**. Plesk `open_basedir` usually **cannot** read the parent folder, so put the file here:
 
-`/var/www/www-root/data/www/boybio.net/.env`
+`/var/www/www-root/data/www/boybio.net/product/.env`
 
 ```env
 ADMIN_BRIDGE_SECRET=your-long-shared-secret-here
 ADMIN_BRIDGE_PEERS=https://www.shazdeha.com,https://shazdeha.com
 ```
 
+If you already created it in `boybio.net/.env`, copy it:
+
 ```bash
-chmod 600 /var/www/www-root/data/www/boybio.net/.env
-chown www-data:www-data /var/www/www-root/data/www/boybio.net/.env
+cp /var/www/www-root/data/www/boybio.net/.env /var/www/www-root/data/www/boybio.net/product/.env
+chmod 600 /var/www/www-root/data/www/boybio.net/product/.env
+chown www-data:www-data /var/www/www-root/data/www/boybio.net/product/.env
 ```
 
-### If PHP still cannot read it (`open_basedir`)
-
-Plesk often confines PHP to `product/`. Either:
-
-1. Add the parent to open_basedir for the domain, e.g. include  
-   `/var/www/www-root/data/www/boybio.net`  
-   or
-
-2. Also place the same file at `product/.env` (allowed by open_basedir).
-
 `ADMIN_BRIDGE_SECRET` must match shazdeha `CLOUB_ADMIN_SSO_SECRET` (≥16 chars).
+
+You must also be **logged in as admin** on cloub.io when authorize runs (otherwise login redirect, then continue).
