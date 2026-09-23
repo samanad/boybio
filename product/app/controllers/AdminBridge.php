@@ -1,11 +1,10 @@
 <?php
 /*
  * Custom admin bridge SSO for peer sites (e.g. shazdeha.com).
- * Issues a short-lived HMAC-signed token after Altum admin login.
  *
- * Secrets from .env (never expose errors to the public — always 404):
- *   /var/www/www-root/data/www/boybio.net/.env   (parent of product/)
- *   or product/.env if open_basedir blocks the parent
+ * Keep secrets in boybio.net/.env (parent of product/) — not inside product/.
+ * Allow PHP to read that file by adding the parent path to open_basedir
+ * (Plesk → PHP Settings). No HTTP proxy of secrets.
  */
 
 namespace Altum\Controllers;
@@ -28,7 +27,6 @@ class AdminBridge extends Controller {
     }
 
     public function authorize() {
-        /* Never leak config details — plain denial for outsiders */
         if(!self::get_secret()) {
             self::deny_public();
         }
@@ -93,7 +91,7 @@ class AdminBridge extends Controller {
         self::$env_cache = [];
         foreach(self::dotenv_candidate_paths() as $path) {
             $parsed = self::try_read_dotenv($path);
-            if($parsed) {
+            if(!empty($parsed['ADMIN_BRIDGE_SECRET'])) {
                 self::$env_cache = $parsed;
                 break;
             }
@@ -105,7 +103,6 @@ class AdminBridge extends Controller {
         if(!$path) {
             return [];
         }
-        /* Suppress open_basedir / permission warnings — never show to clients */
         $raw = @file_get_contents($path);
         if($raw === false || $raw === '') {
             return [];
@@ -116,13 +113,9 @@ class AdminBridge extends Controller {
     private static function dotenv_candidate_paths() {
         $paths = [];
 
-        /*
-         * product/ is the PHP app root; open_basedir usually allows only this tree.
-         * Prefer product/.env — parent boybio.net/.env is often unreadable.
-         */
+        /* boybio.net/.env — parent of product/ (preferred; requires open_basedir allow) */
         if(defined('ROOT_PATH')) {
             $product = rtrim(ROOT_PATH, '/\\');
-            $paths[] = $product . '/.env';
             $domain = dirname($product);
             if($domain && $domain !== $product) {
                 $paths[] = $domain . '/.env';
@@ -131,17 +124,14 @@ class AdminBridge extends Controller {
 
         $product_from_file = realpath(__DIR__ . '/../../..');
         if($product_from_file) {
-            $paths[] = $product_from_file . '/.env';
             $paths[] = dirname($product_from_file) . '/.env';
         }
 
         if(!empty($_SERVER['DOCUMENT_ROOT'])) {
             $doc = realpath($_SERVER['DOCUMENT_ROOT']) ?: rtrim($_SERVER['DOCUMENT_ROOT'], '/\\');
-            $paths[] = $doc . '/.env';
             $paths[] = dirname($doc) . '/.env';
         }
 
-        $paths[] = '/var/www/www-root/data/www/boybio.net/product/.env';
         $paths[] = '/var/www/www-root/data/www/boybio.net/.env';
 
         return array_values(array_unique(array_filter($paths)));
@@ -186,7 +176,7 @@ class AdminBridge extends Controller {
         if(is_string($secret) && strlen($secret) >= 16) {
             return $secret;
         }
-        @error_log('AdminBridge: ADMIN_BRIDGE_SECRET missing or unreadable. Tried: ' . implode(' | ', self::dotenv_candidate_paths()));
+        @error_log('AdminBridge: cannot read ADMIN_BRIDGE_SECRET from boybio.net/.env (check open_basedir)');
         return '';
     }
 

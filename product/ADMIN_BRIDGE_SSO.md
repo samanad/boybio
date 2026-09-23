@@ -1,28 +1,42 @@
-# Admin Bridge SSO (hub side)
+# Admin Bridge SSO — `.env` in boybio.net (not product/)
 
-Endpoint: `GET /admin-bridge/authorize`
+Keep:
 
-Bad/missing access → plain text: `you can't access this page` (no secrets leaked).
-
-## `.env` (important)
-
-PHP document root is **`product/`**. Plesk `open_basedir` usually **cannot** read the parent folder, so put the file here:
-
-`/var/www/www-root/data/www/boybio.net/product/.env`
+`/var/www/www-root/data/www/boybio.net/.env`
 
 ```env
 ADMIN_BRIDGE_SECRET=your-long-shared-secret-here
 ADMIN_BRIDGE_PEERS=https://www.shazdeha.com,https://shazdeha.com
 ```
 
-If you already created it in `boybio.net/.env`, copy it:
+Do **not** put `.env` inside `product/`.
 
-```bash
-cp /var/www/www-root/data/www/boybio.net/.env /var/www/www-root/data/www/boybio.net/product/.env
-chmod 600 /var/www/www-root/data/www/boybio.net/product/.env
-chown www-data:www-data /var/www/www-root/data/www/boybio.net/product/.env
+## Why another domain alone is not enough
+
+A second domain rooted on `boybio.net` does **not** let the cloub/`product` PHP process read that file by itself. Each domain has its own `open_basedir`. Serving `.env` over HTTP from that domain would expose secrets — we do **not** do that.
+
+## Correct fix: allow reading the parent folder
+
+For the **cloub.io / product** domain in Plesk → PHP Settings → `open_basedir`, include the parent directory, for example:
+
+```text
+{DOCROOT}:/tmp:/var/www/www-root/data/www/boybio.net
 ```
 
-`ADMIN_BRIDGE_SECRET` must match shazdeha `CLOUB_ADMIN_SSO_SECRET` (≥16 chars).
+(or whatever your panel shows now, **plus** `/var/www/www-root/data/www/boybio.net`)
 
-You must also be **logged in as admin** on cloub.io when authorize runs (otherwise login redirect, then continue).
+Then PHP in `product/` can read `../.env` safely. No secrets in `product/`, no public env URL.
+
+Reload PHP after changing open_basedir:
+
+```bash
+sudo systemctl reload plesk-php82-fpm
+# or your php*-fpm service
+```
+
+## Permissions
+
+```bash
+chmod 600 /var/www/www-root/data/www/boybio.net/.env
+chown www-data:www-data /var/www/www-root/data/www/boybio.net/.env
+```
