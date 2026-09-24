@@ -87,9 +87,18 @@ body.app-sidebar-opened .app-sidebar {
 	padding: .5rem;
 	margin: .5rem;
 	height: 75px;
+	min-width: 0;
+	overflow: visible;
 }
 
-.app-sidebar-title a {
+.app-sidebar-title a,
+.app-sidebar-title .app-sidebar-logo-link {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 100%;
+	min-width: 0;
+	overflow: visible;
 	font-size: 1.4rem;
 	color: var(--gray-900);
 	font-weight: 600;
@@ -97,6 +106,15 @@ body.app-sidebar-opened .app-sidebar {
 
 .app-sidebar-title a:hover {
 	text-decoration: none;
+}
+
+.app-sidebar-title .navbar-logo {
+	display: block;
+	max-width: min(100%, 180px);
+	width: auto;
+	height: auto;
+	max-height: 3rem;
+	object-fit: contain;
 }
 
 .app-sidebar-footer {
@@ -468,7 +486,12 @@ img {
 
 .navbar-logo {
 	max-height: 2.5rem;
-	height: 2.5rem;
+	height: auto;
+	max-width: 100%;
+	width: auto;
+	object-fit: contain;
+	display: inline-block;
+	vertical-align: middle;
 }
 
 .navbar-logo-mini {

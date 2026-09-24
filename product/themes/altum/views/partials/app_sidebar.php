@@ -1,10 +1,10 @@
 <?php defined('ALTUMCODE') || die() ?>
 
 <div class="app-sidebar">
-    <div class="app-sidebar-title text-truncate">
+    <div class="app-sidebar-title">
         <a
                 href="<?= url() ?>"
-                class="text-truncate"
+                class="app-sidebar-logo-link d-flex align-items-center justify-content-center"
                 data-logo
             data-light-value="<?= !empty(settings()->main->logo_light) ? settings()->main->logo_light_full_url : settings()->main->title ?>"
             data-light-class="<?= !empty(settings()->main->logo_light) ? 'img-fluid navbar-logo' : '' ?>"
@@ -16,7 +16,7 @@
             <?php if(!empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get()}) && !empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'})): ?>
                 <img src="<?= settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?>" class="img-fluid navbar-logo" alt="<?= l('global.accessibility.logo_alt') ?>" />
             <?php else: ?>
-                <?= settings()->main->title ?>
+                <span class="text-truncate"><?= settings()->main->title ?></span>
             <?php endif ?>
         </a>
     </div>
