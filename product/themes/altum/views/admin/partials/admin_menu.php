@@ -1,16 +1,27 @@
 <?php defined('ALTUMCODE') || die() ?>
 
+<?php
+$admin_logo_light = function_exists('get_main_logo_embed') ? get_main_logo_embed('light') : (settings()->main->logo_light_full_url ?? '');
+$admin_logo_dark = function_exists('get_main_logo_embed') ? get_main_logo_embed('dark') : (settings()->main->logo_dark_full_url ?? '');
+$admin_logo_has_light = $admin_logo_light !== '';
+$admin_logo_has_dark = $admin_logo_dark !== '';
+$admin_logo_theme = \Altum\ThemeStyle::get();
+$admin_logo_src = $admin_logo_theme === 'dark'
+    ? ($admin_logo_has_dark ? $admin_logo_dark : $admin_logo_light)
+    : ($admin_logo_has_light ? $admin_logo_light : $admin_logo_dark);
+?>
+
 <div class="p-3 mt-3 p-lg-0 mt-lg-0">
     <nav class="navbar navbar-expand-lg navbar-light rounded admin-navbar-top">
         <div
             class="navbar-brand text-truncate"
             data-logo
-            data-light-value="<?= !empty(settings()->main->logo_light) ? settings()->main->logo_light_full_url : settings()->main->title ?>"
-            data-light-class="<?= !empty(settings()->main->logo_light) ? 'img-fluid admin-navbar-logo-top' : '' ?>"
-            data-light-tag="<?= !empty(settings()->main->logo_light) ? 'img' : 'span' ?>"
-            data-dark-value="<?= !empty(settings()->main->logo_dark) ? settings()->main->logo_dark_full_url : settings()->main->title ?>"
-            data-dark-class="<?= !empty(settings()->main->logo_dark) ? 'img-fluid admin-navbar-logo-top' : '' ?>"
-            data-dark-tag="<?= !empty(settings()->main->logo_dark) ? 'img' : 'span' ?>"
+            data-light-value="<?= $admin_logo_has_light ? $admin_logo_light : settings()->main->title ?>"
+            data-light-class="<?= $admin_logo_has_light ? 'img-fluid admin-navbar-logo-top' : '' ?>"
+            data-light-tag="<?= $admin_logo_has_light ? 'img' : 'span' ?>"
+            data-dark-value="<?= $admin_logo_has_dark ? $admin_logo_dark : settings()->main->title ?>"
+            data-dark-class="<?= $admin_logo_has_dark ? 'img-fluid admin-navbar-logo-top' : '' ?>"
+            data-dark-tag="<?= $admin_logo_has_dark ? 'img' : 'span' ?>"
             
             id="sidebar_title"
             tabindex="0"
@@ -26,8 +37,8 @@
             </div>
             "
         >
-            <?php if(!empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get()}) && !empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'})): ?>
-                <img src="<?= settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?>" class="img-fluid admin-navbar-logo-top" alt="<?= l('global.accessibility.logo_alt') ?>" />
+            <?php if($admin_logo_src !== ''): ?>
+                <img src="<?= $admin_logo_src ?>" class="img-fluid admin-navbar-logo-top" alt="<?= l('global.accessibility.logo_alt') ?>" />
             <?php else: ?>
                 <span><?= settings()->main->title ?></span>
             <?php endif ?>

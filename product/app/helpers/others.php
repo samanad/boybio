@@ -204,6 +204,15 @@ function get_main_logo_data_uri(?string $theme = null): string {
     return get_uploads_file_data_uri($key, $file);
 }
 
+/** Prefer data-URI, fall back to public CDN URL. */
+function get_main_logo_embed(?string $theme = null): string {
+    $data_uri = get_main_logo_data_uri($theme);
+    if($data_uri !== '') {
+        return $data_uri;
+    }
+    return get_main_logo_url($theme);
+}
+
 function main_logo_is_available(?string $theme = null): bool {
     return get_main_logo_filename($theme) !== '';
 }
@@ -317,11 +326,19 @@ function get_chart_data(array $main_array) {
 
 function get_user_avatar($avatar, $email) {
     if($avatar) {
+        $data_uri = function_exists('get_uploads_file_data_uri') ? get_uploads_file_data_uri('users', $avatar) : '';
+        if($data_uri !== '') {
+            return $data_uri;
+        }
         return \Altum\Uploads::get_full_url('users') . $avatar;
     }
 
     $default_avatar = trim((string) (settings()->main->default_avatar ?? ''));
     if($default_avatar !== '') {
+        $data_uri = function_exists('get_uploads_file_data_uri') ? get_uploads_file_data_uri('default_avatar', $default_avatar) : '';
+        if($data_uri !== '') {
+            return $data_uri;
+        }
         return \Altum\Uploads::get_full_url('default_avatar') . $default_avatar;
     }
 

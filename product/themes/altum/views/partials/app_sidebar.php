@@ -98,20 +98,21 @@
                 href="<?= url() ?>"
                 class="app-sidebar-logo-link d-flex align-items-center justify-content-center"
                 data-logo
-            data-light-value="<?= !empty(settings()->main->logo_light) ? settings()->main->logo_light_full_url : settings()->main->title ?>"
-            data-light-class="<?= !empty(settings()->main->logo_light) ? 'navbar-logo' : '' ?>"
-            data-light-tag="<?= !empty(settings()->main->logo_light) ? 'img' : 'span' ?>"
-            data-dark-value="<?= !empty(settings()->main->logo_dark) ? settings()->main->logo_dark_full_url : settings()->main->title ?>"
-            data-dark-class="<?= !empty(settings()->main->logo_dark) ? 'navbar-logo' : '' ?>"
-            data-dark-tag="<?= !empty(settings()->main->logo_dark) ? 'img' : 'span' ?>"
-        >
             <?php
+            $logo_light_embed = function_exists('get_main_logo_embed') ? get_main_logo_embed('light') : (settings()->main->logo_light_full_url ?? '');
+            $logo_dark_embed = function_exists('get_main_logo_embed') ? get_main_logo_embed('dark') : (settings()->main->logo_dark_full_url ?? '');
             $logo_theme = \Altum\ThemeStyle::get();
-            $logo_src = function_exists('get_main_logo_data_uri') ? get_main_logo_data_uri($logo_theme) : '';
-            if($logo_src === '') {
-                $logo_src = settings()->main->{'logo_' . $logo_theme . '_full_url'} ?? '';
-            }
+            $logo_src = $logo_theme === 'dark'
+                ? ($logo_dark_embed !== '' ? $logo_dark_embed : $logo_light_embed)
+                : ($logo_light_embed !== '' ? $logo_light_embed : $logo_dark_embed);
             ?>
+            data-light-value="<?= $logo_light_embed !== '' ? $logo_light_embed : settings()->main->title ?>"
+            data-light-class="<?= $logo_light_embed !== '' ? 'navbar-logo' : '' ?>"
+            data-light-tag="<?= $logo_light_embed !== '' ? 'img' : 'span' ?>"
+            data-dark-value="<?= $logo_dark_embed !== '' ? $logo_dark_embed : settings()->main->title ?>"
+            data-dark-class="<?= $logo_dark_embed !== '' ? 'navbar-logo' : '' ?>"
+            data-dark-tag="<?= $logo_dark_embed !== '' ? 'img' : 'span' ?>"
+        >
             <?php if($logo_src !== ''): ?>
                 <img
                     src="<?= $logo_src ?>"
