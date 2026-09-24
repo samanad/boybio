@@ -38,6 +38,42 @@ function get_custom_image_if_any($image_key) {
     }
 }
 
+/**
+ * Resolve site logo filename for a theme, falling back to the other theme when missing.
+ */
+function get_main_logo_filename(?string $theme = null): string {
+    $theme = $theme ?: (class_exists('\Altum\ThemeStyle') ? \Altum\ThemeStyle::get() : 'light');
+    $theme = $theme === 'dark' ? 'dark' : 'light';
+    $other = $theme === 'dark' ? 'light' : 'dark';
+
+    $primary = trim((string) (settings()->main->{'logo_' . $theme} ?? ''));
+    if($primary !== '') {
+        return $primary;
+    }
+
+    return trim((string) (settings()->main->{'logo_' . $other} ?? ''));
+}
+
+/**
+ * Same-origin logo URL so the browser never depends on a broken/legacy uploads CDN host.
+ * Falls back across light/dark when one logo is missing.
+ */
+function get_main_logo_url(?string $theme = null): string {
+    $theme = $theme ?: (class_exists('\Altum\ThemeStyle') ? \Altum\ThemeStyle::get() : 'light');
+    $theme = $theme === 'dark' ? 'dark' : 'light';
+    $file = get_main_logo_filename($theme);
+    if($file === '') {
+        return '';
+    }
+
+    $version = substr(md5($file), 0, 10);
+    return url('site-logo/' . $theme) . '?v=' . $version;
+}
+
+function main_logo_is_available(?string $theme = null): bool {
+    return get_main_logo_filename($theme) !== '';
+}
+
 function output_alert($type, $message, $icon = true, $dismissable = true) {
 
     switch($type) {

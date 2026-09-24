@@ -885,6 +885,16 @@ class Router {
                 ]
             ],
 
+            'site-logo' => [
+                'controller' => 'SiteLogo',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+                ]
+            ],
+
             'official' => [
                 'controller' => 'Official',
                 'settings' => [
