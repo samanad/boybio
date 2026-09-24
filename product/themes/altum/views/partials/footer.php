@@ -13,8 +13,20 @@
             data-dark-class="<?= !empty(settings()->main->logo_dark) ? 'mb-2 footer-logo' : 'mb-2' ?>"
             data-dark-tag="<?= !empty(settings()->main->logo_dark) ? 'img' : 'span' ?>"
         >
-            <?php if(!empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get()}) && !empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'})): ?>
-                <img src="<?= settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?>" class="mb-2 footer-logo" alt="<?= l('global.accessibility.logo_alt') ?>" />
+            <?php
+            $footer_logo_theme = \Altum\ThemeStyle::get();
+            $footer_logo_src = function_exists('get_main_logo_data_uri') ? get_main_logo_data_uri($footer_logo_theme) : '';
+            if($footer_logo_src === '') {
+                $footer_logo_src = settings()->main->{'logo_' . $footer_logo_theme . '_full_url'} ?? '';
+            }
+            ?>
+            <?php if($footer_logo_src !== ''): ?>
+                <img
+                    src="<?= $footer_logo_src ?>"
+                    class="mb-2 footer-logo"
+                    alt="<?= l('global.accessibility.logo_alt') ?>"
+                    style="display:block;max-height:2.5rem;width:auto;height:auto;object-fit:contain;background:none;box-shadow:none;filter:none;padding:0;border-radius:0;"
+                />
             <?php else: ?>
                 <span class="mb-2"><?= settings()->main->title ?></span>
             <?php endif ?>
