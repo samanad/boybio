@@ -2422,3 +2422,38 @@ function generate_prefilled_dynamic_names($type, $timezone_identifier = null) {
 
     return sprintf(l('global.prefilled_dynamic_name'), $day_part_with_emoji, $type, $formatted_hour, $formatted_date);
 }
+
+/**
+ * Render a biolink social network icon for admin forms / blocks.
+ * Supports: biolink_social_icon_html($key), biolink_social_icon_html($key, $config), biolink_social_icon_html($config).
+ */
+function biolink_social_icon_html($key_or_config, $config = null, $classes = 'fa-fw fa-sm text-muted mr-1') {
+    if(is_array($key_or_config)) {
+        $value = $key_or_config;
+    } elseif(is_array($config)) {
+        $value = $config;
+    } else {
+        static $biolink_socials = null;
+        if($biolink_socials === null) {
+            $biolink_socials = require APP_PATH . 'includes/biolink_socials.php';
+        }
+        $value = $biolink_socials[$key_or_config] ?? null;
+        if(is_string($config) && $config !== '') {
+            $classes = $config;
+        }
+    }
+
+    if(empty($value) || !is_array($value)) {
+        return '';
+    }
+
+    if(!empty($value['svg'])) {
+        return $value['svg'];
+    }
+
+    if(empty($value['icon'])) {
+        return '';
+    }
+
+    return '<i class="' . $value['icon'] . ' ' . $classes . '"></i>';
+}
