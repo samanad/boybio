@@ -92,7 +92,7 @@
 
                 <div class="mb-5 text-center">
                     <a href="<?= url() ?>" class="text-decoration-none text-dark">
-                        <?php if(settings()->main->{'logo_' . \Altum\ThemeStyle::get()} != ''): ?>
+                        <?php if(!empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get()}) && !empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'})): ?>
                             <img src="<?= settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?>" class="img-fluid navbar-logo" alt="<?= l('global.accessibility.logo_alt') ?>" />
                         <?php else: ?>
                             <span class="h3"><?= settings()->main->title ?></span>

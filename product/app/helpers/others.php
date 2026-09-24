@@ -55,19 +55,24 @@ function get_main_logo_filename(?string $theme = null): string {
 }
 
 /**
- * Same-origin logo URL so the browser never depends on a broken/legacy uploads CDN host.
- * Falls back across light/dark when one logo is missing.
+ * Public logo URL from configured uploads/CDN (linkofbio / offload), with light↔dark fallback.
  */
 function get_main_logo_url(?string $theme = null): string {
     $theme = $theme ?: (class_exists('\Altum\ThemeStyle') ? \Altum\ThemeStyle::get() : 'light');
     $theme = $theme === 'dark' ? 'dark' : 'light';
-    $file = get_main_logo_filename($theme);
+    $other = $theme === 'dark' ? 'light' : 'dark';
+
+    $file = trim((string) (settings()->main->{'logo_' . $theme} ?? ''));
+    $key = 'logo_' . $theme;
+    if($file === '') {
+        $file = trim((string) (settings()->main->{'logo_' . $other} ?? ''));
+        $key = 'logo_' . $other;
+    }
     if($file === '') {
         return '';
     }
 
-    $version = substr(md5($file), 0, 10);
-    return url('site-logo/' . $theme) . '?v=' . $version;
+    return \Altum\Uploads::get_full_url($key) . $file;
 }
 
 function main_logo_is_available(?string $theme = null): bool {

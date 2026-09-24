@@ -5,12 +5,12 @@
         <div
             class="navbar-brand text-truncate"
             data-logo
-            data-light-value="<?= settings()->main->logo_light != '' ? settings()->main->logo_light_full_url : settings()->main->title ?>"
-            data-light-class="<?= settings()->main->logo_light != '' ? 'img-fluid admin-navbar-logo-top' : '' ?>"
-            data-light-tag="<?= settings()->main->logo_light != '' ? 'img' : 'span' ?>"
-            data-dark-value="<?= settings()->main->logo_dark != '' ? settings()->main->logo_dark_full_url : settings()->main->title ?>"
-            data-dark-class="<?= settings()->main->logo_dark != '' ? 'img-fluid admin-navbar-logo-top' : '' ?>"
-            data-dark-tag="<?= settings()->main->logo_dark != '' ? 'img' : 'span' ?>"
+            data-light-value="<?= !empty(settings()->main->logo_light) ? settings()->main->logo_light_full_url : settings()->main->title ?>"
+            data-light-class="<?= !empty(settings()->main->logo_light) ? 'img-fluid admin-navbar-logo-top' : '' ?>"
+            data-light-tag="<?= !empty(settings()->main->logo_light) ? 'img' : 'span' ?>"
+            data-dark-value="<?= !empty(settings()->main->logo_dark) ? settings()->main->logo_dark_full_url : settings()->main->title ?>"
+            data-dark-class="<?= !empty(settings()->main->logo_dark) ? 'img-fluid admin-navbar-logo-top' : '' ?>"
+            data-dark-tag="<?= !empty(settings()->main->logo_dark) ? 'img' : 'span' ?>"
             
             id="sidebar_title"
             tabindex="0"
@@ -26,7 +26,7 @@
             </div>
             "
         >
-            <?php if(settings()->main->{'logo_' . \Altum\ThemeStyle::get()} != ''): ?>
+            <?php if(!empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get()}) && !empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'})): ?>
                 <img src="<?= settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?>" class="img-fluid admin-navbar-logo-top" alt="<?= l('global.accessibility.logo_alt') ?>" />
             <?php else: ?>
                 <span><?= settings()->main->title ?></span>

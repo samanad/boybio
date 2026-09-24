@@ -120,22 +120,21 @@ class App {
         /* Affiliate check */
         Affiliate::initiate();
 
-        /* Full URL for ease of use — same-origin proxy + light/dark fallback */
-        if(function_exists('get_main_logo_url')) {
-            settings()->main->logo_light_full_url = get_main_logo_url('light');
-            settings()->main->logo_dark_full_url = get_main_logo_url('dark');
-            /* Keep logo_* non-empty when falling back so views render <img>, not title text */
-            if(empty(settings()->main->logo_light) && !empty(settings()->main->logo_dark)) {
-                settings()->main->logo_light = settings()->main->logo_dark;
-            }
-            if(empty(settings()->main->logo_dark) && !empty(settings()->main->logo_light)) {
-                settings()->main->logo_dark = settings()->main->logo_light;
-            }
-        } else {
-            settings()->main->logo_light_full_url = \Altum\Uploads::get_full_url('logo_light') . settings()->main->logo_light;
-            settings()->main->logo_dark_full_url = \Altum\Uploads::get_full_url('logo_dark') . settings()->main->logo_dark;
+        /* Full URL for ease of use — prefer real uploads/CDN URLs, fall back light↔dark */
+        settings()->main->logo_light_full_url = function_exists('get_main_logo_url')
+            ? get_main_logo_url('light')
+            : (\Altum\Uploads::get_full_url('logo_light') . (settings()->main->logo_light ?? ''));
+        settings()->main->logo_dark_full_url = function_exists('get_main_logo_url')
+            ? get_main_logo_url('dark')
+            : (\Altum\Uploads::get_full_url('logo_dark') . (settings()->main->logo_dark ?? ''));
+        /* Normalize empty/null so theme checks use !empty-safe values */
+        if(!strlen(trim((string) (settings()->main->logo_light ?? ''))) && strlen(trim((string) (settings()->main->logo_dark ?? '')))) {
+            settings()->main->logo_light = settings()->main->logo_dark;
         }
-        settings()->main->favicon_full_url = \Altum\Uploads::get_full_url('favicon') . settings()->main->favicon;
+        if(!strlen(trim((string) (settings()->main->logo_dark ?? ''))) && strlen(trim((string) (settings()->main->logo_light ?? '')))) {
+            settings()->main->logo_dark = settings()->main->logo_light;
+        }
+        settings()->main->favicon_full_url = \Altum\Uploads::get_full_url('favicon') . (settings()->main->favicon ?? '');
 
         /* Check for a potential logged in account and do some extra checks */
         if(is_logged_in()) {
@@ -234,29 +233,33 @@ class App {
             /* Store all the details of the user in the Authentication static class as well */
             \Altum\Authentication::$user = $user;
 
-            /* White label */
+            /* White label — only override when a real logo filename is set */
             if(settings()->main->white_labeling_is_enabled && $user->plan_settings->white_labeling_is_enabled && \Altum\Router::$controller_key != 'invoice' && \Altum\Router::$path != 'admin') {
-                if($user->preferences->white_label_title) settings()->main->title = $user->preferences->white_label_title;
+                if(!empty($user->preferences->white_label_title)) {
+                    settings()->main->title = $user->preferences->white_label_title;
+                }
 
-                if($user->preferences->white_label_logo_light) {
+                if(!empty($user->preferences->white_label_logo_light)) {
                     settings()->main->logo_light = $user->preferences->white_label_logo_light;
                     settings()->main->logo_light_full_url = \Altum\Uploads::get_full_url('users') . settings()->main->logo_light;
-                    if(empty(settings()->main->logo_dark)) {
-                        settings()->main->logo_dark = settings()->main->logo_light;
-                        settings()->main->logo_dark_full_url = settings()->main->logo_light_full_url;
-                    }
                 }
 
-                if($user->preferences->white_label_logo_dark) {
+                if(!empty($user->preferences->white_label_logo_dark)) {
                     settings()->main->logo_dark = $user->preferences->white_label_logo_dark;
                     settings()->main->logo_dark_full_url = \Altum\Uploads::get_full_url('users') . settings()->main->logo_dark;
-                    if(empty(settings()->main->logo_light)) {
-                        settings()->main->logo_light = settings()->main->logo_dark;
-                        settings()->main->logo_light_full_url = settings()->main->logo_dark_full_url;
-                    }
                 }
 
-                if($user->preferences->white_label_favicon) {
+                /* Cross-fill so a missing white-label theme still shows the other */
+                if(empty(settings()->main->logo_light) && !empty(settings()->main->logo_dark)) {
+                    settings()->main->logo_light = settings()->main->logo_dark;
+                    settings()->main->logo_light_full_url = settings()->main->logo_dark_full_url;
+                }
+                if(empty(settings()->main->logo_dark) && !empty(settings()->main->logo_light)) {
+                    settings()->main->logo_dark = settings()->main->logo_light;
+                    settings()->main->logo_dark_full_url = settings()->main->logo_light_full_url;
+                }
+
+                if(!empty($user->preferences->white_label_favicon)) {
                     settings()->main->favicon = $user->preferences->white_label_favicon;
                     settings()->main->favicon_full_url = \Altum\Uploads::get_full_url('users') . settings()->main->favicon;
                 }

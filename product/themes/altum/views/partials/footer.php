@@ -6,14 +6,14 @@
             class="h5 footer-heading"
             href="<?= url() ?>"
             data-logo
-            data-light-value="<?= settings()->main->logo_light != '' ? settings()->main->logo_light_full_url : settings()->main->title ?>"
-            data-light-class="<?= settings()->main->logo_light != '' ? 'mb-2 footer-logo' : 'mb-2' ?>"
-            data-light-tag="<?= settings()->main->logo_light != '' ? 'img' : 'span' ?>"
-            data-dark-value="<?= settings()->main->logo_dark != '' ? settings()->main->logo_dark_full_url : settings()->main->title ?>"
-            data-dark-class="<?= settings()->main->logo_dark != '' ? 'mb-2 footer-logo' : 'mb-2' ?>"
-            data-dark-tag="<?= settings()->main->logo_dark != '' ? 'img' : 'span' ?>"
+            data-light-value="<?= !empty(settings()->main->logo_light) ? settings()->main->logo_light_full_url : settings()->main->title ?>"
+            data-light-class="<?= !empty(settings()->main->logo_light) ? 'mb-2 footer-logo' : 'mb-2' ?>"
+            data-light-tag="<?= !empty(settings()->main->logo_light) ? 'img' : 'span' ?>"
+            data-dark-value="<?= !empty(settings()->main->logo_dark) ? settings()->main->logo_dark_full_url : settings()->main->title ?>"
+            data-dark-class="<?= !empty(settings()->main->logo_dark) ? 'mb-2 footer-logo' : 'mb-2' ?>"
+            data-dark-tag="<?= !empty(settings()->main->logo_dark) ? 'img' : 'span' ?>"
         >
-            <?php if(settings()->main->{'logo_' . \Altum\ThemeStyle::get()} != ''): ?>
+            <?php if(!empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get()}) && !empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'})): ?>
                 <img src="<?= settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?>" class="mb-2 footer-logo" alt="<?= l('global.accessibility.logo_alt') ?>" />
             <?php else: ?>
                 <span class="mb-2"><?= settings()->main->title ?></span>
