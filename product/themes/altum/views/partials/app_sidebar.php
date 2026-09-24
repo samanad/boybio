@@ -5,7 +5,7 @@
 	display:flex!important;
 	align-items:center!important;
 	justify-content:center!important;
-	height:96px!important;
+	height:118px!important;
 	overflow:visible!important;
 }
 .app-sidebar-title a.app-sidebar-logo-link,
@@ -14,52 +14,63 @@
 	align-items:center!important;
 	justify-content:center!important;
 	position:relative!important;
-	width:88px!important;
-	height:88px!important;
-	max-width:88px!important;
-	min-width:88px!important;
-	padding:0!important;
+	/* night-sky ring ≈ 1.5mm (~6px) around the sun */
+	width:118px!important;
+	height:118px!important;
+	max-width:118px!important;
+	min-width:118px!important;
+	padding:6px!important;
+	box-sizing:border-box!important;
 	border-radius:50%!important;
 	overflow:visible!important;
 	white-space:normal!important;
 	text-overflow:clip!important;
-	/* cream / milk sun disc — not yellow */
+	/* night sky */
 	background:
-		radial-gradient(circle at 50% 42%,
-			rgba(255,255,255,.98) 0%,
-			rgba(255,252,245,.95) 28%,
-			rgba(250,243,230,.78) 52%,
-			rgba(245,235,216,.35) 72%,
-			rgba(245,235,216,0) 100%)!important;
+		radial-gradient(circle at 50% 50%,
+			transparent 0 52%,
+			#3a3f4b 53%,
+			#2c3038 72%,
+			#1e2229 100%)!important;
 	box-shadow:
-		0 0 0 1px rgba(255,252,245,.9),
-		0 0 12px 4px rgba(255,250,240,.85),
-		0 0 28px 10px rgba(250,240,220,.55),
-		0 0 48px 18px rgba(245,235,216,.28)!important;
-	animation: cloub-logo-sun-pulse 4.5s ease-in-out infinite;
+		inset 0 0 0 1px rgba(90,96,110,.45),
+		0 0 0 1px rgba(30,34,41,.35)!important;
+	animation:none!important;
 }
 .app-sidebar-title a.app-sidebar-logo-link::before,
 .app-sidebar-title a[data-logo]::before{
 	content:""!important;
 	position:absolute!important;
-	inset:-14px!important;
+	/* sun disc inside the night ring */
+	inset:6px!important;
 	border-radius:50%!important;
 	z-index:0!important;
 	pointer-events:none!important;
-	background:radial-gradient(circle,
-		rgba(255,252,245,.55) 0%,
-		rgba(250,240,220,.22) 45%,
-		rgba(250,240,220,0) 70%)!important;
+	background:
+		radial-gradient(circle at 50% 42%,
+			rgba(255,255,255,.98) 0%,
+			rgba(255,252,245,.95) 28%,
+			rgba(250,243,230,.78) 52%,
+			rgba(245,235,216,.4) 72%,
+			rgba(245,235,216,.12) 88%,
+			rgba(245,235,216,0) 100%)!important;
+	box-shadow:
+		0 0 0 1px rgba(255,252,245,.85),
+		0 0 10px 3px rgba(255,250,240,.75),
+		0 0 22px 8px rgba(250,240,220,.45),
+		0 0 36px 14px rgba(245,235,216,.22)!important;
+	animation: cloub-logo-sun-pulse 4.5s ease-in-out infinite;
 }
 .app-sidebar-title img.navbar-logo,
 .app-sidebar-title a[data-logo] img{
 	position:relative!important;
 	z-index:1!important;
 	display:block!important;
-	width:58px!important;
-	max-width:58px!important;
+	/* 1.2× previous 58×40 */
+	width:70px!important;
+	max-width:70px!important;
 	height:auto!important;
-	max-height:40px!important;
+	max-height:48px!important;
 	object-fit:contain!important;
 	opacity:1!important;
 	visibility:visible!important;
@@ -69,15 +80,15 @@
 }
 @keyframes cloub-logo-sun-pulse{
 	0%,100%{ box-shadow:
-		0 0 0 1px rgba(255,252,245,.9),
-		0 0 12px 4px rgba(255,250,240,.85),
-		0 0 28px 10px rgba(250,240,220,.55),
-		0 0 48px 18px rgba(245,235,216,.28); }
+		0 0 0 1px rgba(255,252,245,.85),
+		0 0 10px 3px rgba(255,250,240,.75),
+		0 0 22px 8px rgba(250,240,220,.45),
+		0 0 36px 14px rgba(245,235,216,.22); }
 	50%{ box-shadow:
 		0 0 0 1px rgba(255,255,255,.95),
-		0 0 16px 6px rgba(255,252,245,.95),
-		0 0 34px 14px rgba(250,242,225,.65),
-		0 0 56px 22px rgba(245,235,216,.34); }
+		0 0 14px 5px rgba(255,252,245,.9),
+		0 0 28px 11px rgba(250,242,225,.55),
+		0 0 44px 18px rgba(245,235,216,.3); }
 }
 </style>
 
@@ -106,8 +117,8 @@
                     src="<?= $logo_src ?>"
                     class="navbar-logo"
                     alt="<?= l('global.accessibility.logo_alt') ?>"
-                    width="58"
-                    height="40"
+                    width="70"
+                    height="48"
                     decoding="async"
                 />
             <?php else: ?>

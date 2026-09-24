@@ -25,9 +25,9 @@
                     src="<?= $logo_src ?>"
                     class="navbar-logo"
                     alt="<?= l('global.accessibility.logo_alt') ?>"
-                    width="58"
-                    height="40"
-                    style="width:58px!important;max-width:58px!important;height:auto!important;max-height:40px!important;display:block!important;object-fit:contain!important;padding:10px;border-radius:50%;background:radial-gradient(circle,rgba(255,252,245,.98) 0%,rgba(250,243,230,.7) 55%,rgba(245,235,216,0) 100%);box-shadow:0 0 16px 6px rgba(255,250,240,.8),0 0 32px 12px rgba(250,240,220,.4);"
+                    width="70"
+                    height="48"
+                    style="width:70px!important;max-width:70px!important;height:auto!important;max-height:48px!important;display:block!important;object-fit:contain!important;padding:6px;border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(255,252,245,.98) 0 48%,#3a3f4b 55%,#1e2229 100%);box-shadow:0 0 14px 5px rgba(255,250,240,.75),0 0 28px 10px rgba(250,240,220,.35);"
                 />
             <?php else: ?>
                 <?= settings()->main->title ?>
