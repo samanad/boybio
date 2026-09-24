@@ -611,7 +611,7 @@
                                                         class="custom-control-input"
                                                         id="pwa_is_enabled"
                                                         name="pwa_is_enabled"
-													<?= $data->link->settings->pwa_is_enabled ? 'checked="checked"' : null ?>
+													<?= ($data->link->settings->pwa_is_enabled ?? false) ? 'checked="checked"' : null ?>
 													<?= !$this->user->plan_settings->custom_pwa_is_enabled ? 'disabled="disabled"' : null ?>
                                                 >
                                                 <label class="custom-control-label" for="pwa_is_enabled"><?= l('link.settings.pwa_is_enabled') ?></label>
@@ -623,7 +623,7 @@
                                                         class="custom-control-input"
                                                         id="pwa_display_install_bar"
                                                         name="pwa_display_install_bar"
-													<?= $data->link->settings->pwa_display_install_bar ? 'checked="checked"' : null ?>
+													<?= ($data->link->settings->pwa_display_install_bar ?? false) ? 'checked="checked"' : null ?>
 													<?= !$this->user->plan_settings->custom_pwa_is_enabled ? 'disabled="disabled"' : null ?>
                                                 >
                                                 <label class="custom-control-label" for="pwa_display_install_bar"><?= l('link.settings.pwa_display_install_bar') ?></label>

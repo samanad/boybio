@@ -1300,7 +1300,7 @@ class LinkAjax extends Controller {
                         $result = $s3->putObject([
                             'Bucket' => settings()->offload->storage_name,
                             'Key' => 'uploads/' . $image_upload_path[$image_key] . $image_new_name,
-                            'ContentType' => mime_content_type($file_temp),
+                            'ContentType' => mime_content_type($file_temp) ?: 'application/octet-stream',
                             'SourceFile' => $file_temp,
                             'ACL' => 'public-read'
                         ]);
@@ -1434,7 +1434,7 @@ class LinkAjax extends Controller {
                             $result = $s3->putObject([
                                 'Bucket' => settings()->offload->storage_name,
                                 'Key' => 'uploads/backgrounds/' . $background_new_name,
-                                'ContentType' => mime_content_type($background_file_temp),
+                                'ContentType' => mime_content_type($background_file_temp) ?: 'application/octet-stream',
                                 'SourceFile' => $background_file_temp,
                                 'ACL' => 'public-read'
                             ]);

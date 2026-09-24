@@ -6501,7 +6501,7 @@ class BiolinkBlockAjax extends Controller {
                     $result = $s3->putObject([
                         'Bucket' => settings()->offload->storage_name,
                         'Key' => UPLOADS_URL_PATH . $upload_folder . $file_new_name,
-                        'ContentType' => mime_content_type($file_temp),
+                        'ContentType' => mime_content_type($file_temp) ?: 'application/octet-stream',
                         'SourceFile' => $file_temp,
                         'ACL' => 'public-read'
                     ]);

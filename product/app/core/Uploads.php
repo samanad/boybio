@@ -116,7 +116,7 @@ class Uploads {
                     $result = $s3->putObject([
                         'Bucket' => settings()->offload->storage_name,
                         'Key' => UPLOADS_URL_PATH . Uploads::get_path($uploads_file_key) . $image_new_name,
-                        'ContentType' => mime_content_type($file_temp),
+                        'ContentType' => mime_content_type($file_temp) ?: 'application/octet-stream',
                         'SourceFile' => $file_temp,
                         'ACL' => 'public-read'
                     ]);
@@ -227,7 +227,7 @@ class Uploads {
                         $result = $s3->putObject([
                             'Bucket' => settings()->offload->storage_name,
                             'Key' => UPLOADS_URL_PATH . Uploads::get_path($uploads_file_key) . $image_new_name,
-                            'ContentType' => mime_content_type($file_temp),
+                            'ContentType' => mime_content_type($file_temp) ?: 'application/octet-stream',
                             'SourceFile' => $file_temp,
                             'ACL' => 'public-read'
                         ]);
