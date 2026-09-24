@@ -25,9 +25,9 @@
                     src="<?= $logo_src ?>"
                     class="navbar-logo"
                     alt="<?= l('global.accessibility.logo_alt') ?>"
-                    width="150"
-                    height="48"
-                    style="width:150px!important;max-width:150px!important;height:auto!important;max-height:48px!important;display:block!important;object-fit:contain!important;background:#111827;padding:4px;border-radius:6px;"
+                    width="58"
+                    height="40"
+                    style="width:58px!important;max-width:58px!important;height:auto!important;max-height:40px!important;display:block!important;object-fit:contain!important;padding:10px;border-radius:50%;background:radial-gradient(circle,rgba(255,252,245,.98) 0%,rgba(250,243,230,.7) 55%,rgba(245,235,216,0) 100%);box-shadow:0 0 16px 6px rgba(255,250,240,.8),0 0 32px 12px rgba(250,240,220,.4);"
                 />
             <?php else: ?>
                 <?= settings()->main->title ?>

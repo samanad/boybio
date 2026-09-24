@@ -86,7 +86,7 @@ body.app-sidebar-opened .app-sidebar {
 	align-items: center;
 	padding: .5rem;
 	margin: .5rem;
-	height: 75px;
+	height: 96px;
 	min-width: 0;
 	overflow: visible;
 }
@@ -96,22 +96,40 @@ body.app-sidebar-opened .app-sidebar {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 100%;
-	max-width: 100%;
-	min-width: 0;
+	position: relative;
+	width: 88px;
+	height: 88px;
+	max-width: 88px;
+	min-width: 88px;
+	padding: 0;
 	overflow: visible;
 	font-size: 1.4rem;
 	color: var(--gray-900);
 	font-weight: 600;
-	padding: .35rem .5rem;
-	border-radius: var(--border-radius);
-	/* Pale CDN logos vanish on white; give a stable contrast plate */
-	background: #111827;
+	border-radius: 50%;
+	background:
+		radial-gradient(circle at 50% 42%,
+			rgba(255,255,255,.98) 0%,
+			rgba(255,252,245,.95) 28%,
+			rgba(250,243,230,.78) 52%,
+			rgba(245,235,216,.35) 72%,
+			rgba(245,235,216,0) 100%);
+	box-shadow:
+		0 0 0 1px rgba(255,252,245,.9),
+		0 0 12px 4px rgba(255,250,240,.85),
+		0 0 28px 10px rgba(250,240,220,.55),
+		0 0 48px 18px rgba(245,235,216,.28);
 }
 
 [data-theme-style="dark"] .app-sidebar-title a,
 [data-theme-style="dark"] .app-sidebar-title .app-sidebar-logo-link {
-	background: #111827;
+	background:
+		radial-gradient(circle at 50% 42%,
+			rgba(255,255,255,.98) 0%,
+			rgba(255,252,245,.95) 28%,
+			rgba(250,243,230,.78) 52%,
+			rgba(245,235,216,.35) 72%,
+			rgba(245,235,216,0) 100%);
 }
 
 .app-sidebar-title a:hover {
@@ -120,10 +138,12 @@ body.app-sidebar-opened .app-sidebar {
 
 .app-sidebar-title .navbar-logo {
 	display: block !important;
-	width: 150px !important;
-	max-width: 150px !important;
+	position: relative;
+	z-index: 1;
+	width: 58px !important;
+	max-width: 58px !important;
 	height: auto !important;
-	max-height: 48px !important;
+	max-height: 40px !important;
 	object-fit: contain !important;
 	opacity: 1 !important;
 	visibility: visible !important;

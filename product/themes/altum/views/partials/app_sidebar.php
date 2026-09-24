@@ -5,7 +5,7 @@
 	display:flex!important;
 	align-items:center!important;
 	justify-content:center!important;
-	height:75px!important;
+	height:96px!important;
 	overflow:visible!important;
 }
 .app-sidebar-title a.app-sidebar-logo-link,
@@ -13,30 +13,71 @@
 	display:flex!important;
 	align-items:center!important;
 	justify-content:center!important;
-	width:100%!important;
-	max-width:100%!important;
-	min-width:0!important;
+	position:relative!important;
+	width:88px!important;
+	height:88px!important;
+	max-width:88px!important;
+	min-width:88px!important;
+	padding:0!important;
+	border-radius:50%!important;
 	overflow:visible!important;
 	white-space:normal!important;
 	text-overflow:clip!important;
-	padding:.4rem .6rem!important;
-	border-radius:8px!important;
-	background:#111827!important;
+	/* cream / milk sun disc — not yellow */
+	background:
+		radial-gradient(circle at 50% 42%,
+			rgba(255,255,255,.98) 0%,
+			rgba(255,252,245,.95) 28%,
+			rgba(250,243,230,.78) 52%,
+			rgba(245,235,216,.35) 72%,
+			rgba(245,235,216,0) 100%)!important;
+	box-shadow:
+		0 0 0 1px rgba(255,252,245,.9),
+		0 0 12px 4px rgba(255,250,240,.85),
+		0 0 28px 10px rgba(250,240,220,.55),
+		0 0 48px 18px rgba(245,235,216,.28)!important;
+	animation: cloub-logo-sun-pulse 4.5s ease-in-out infinite;
+}
+.app-sidebar-title a.app-sidebar-logo-link::before,
+.app-sidebar-title a[data-logo]::before{
+	content:""!important;
+	position:absolute!important;
+	inset:-14px!important;
+	border-radius:50%!important;
+	z-index:0!important;
+	pointer-events:none!important;
+	background:radial-gradient(circle,
+		rgba(255,252,245,.55) 0%,
+		rgba(250,240,220,.22) 45%,
+		rgba(250,240,220,0) 70%)!important;
 }
 .app-sidebar-title img.navbar-logo,
 .app-sidebar-title a[data-logo] img{
+	position:relative!important;
+	z-index:1!important;
 	display:block!important;
-	width:150px!important;
-	max-width:150px!important;
+	width:58px!important;
+	max-width:58px!important;
 	height:auto!important;
-	max-height:48px!important;
+	max-height:40px!important;
 	object-fit:contain!important;
 	opacity:1!important;
 	visibility:visible!important;
-	position:static!important;
 	filter:none!important;
 	clip:auto!important;
 	clip-path:none!important;
+}
+@keyframes cloub-logo-sun-pulse{
+	0%,100%{ box-shadow:
+		0 0 0 1px rgba(255,252,245,.9),
+		0 0 12px 4px rgba(255,250,240,.85),
+		0 0 28px 10px rgba(250,240,220,.55),
+		0 0 48px 18px rgba(245,235,216,.28); }
+	50%{ box-shadow:
+		0 0 0 1px rgba(255,255,255,.95),
+		0 0 16px 6px rgba(255,252,245,.95),
+		0 0 34px 14px rgba(250,242,225,.65),
+		0 0 56px 22px rgba(245,235,216,.34); }
 }
 </style>
 
@@ -52,7 +93,6 @@
             data-dark-value="<?= !empty(settings()->main->logo_dark) ? settings()->main->logo_dark_full_url : settings()->main->title ?>"
             data-dark-class="<?= !empty(settings()->main->logo_dark) ? 'navbar-logo' : '' ?>"
             data-dark-tag="<?= !empty(settings()->main->logo_dark) ? 'img' : 'span' ?>"
-            style="background:#111827;padding:.4rem .6rem;border-radius:8px;"
         >
             <?php
             $logo_theme = \Altum\ThemeStyle::get();
@@ -66,13 +106,12 @@
                     src="<?= $logo_src ?>"
                     class="navbar-logo"
                     alt="<?= l('global.accessibility.logo_alt') ?>"
-                    width="150"
-                    height="48"
+                    width="58"
+                    height="40"
                     decoding="async"
-                    style="width:150px!important;max-width:150px!important;height:auto!important;max-height:48px!important;display:block!important;object-fit:contain!important;opacity:1!important;visibility:visible!important;"
                 />
             <?php else: ?>
-                <span class="text-truncate" style="color:#fff;"><?= settings()->main->title ?></span>
+                <span class="text-truncate" style="color:#5c5346;font-size:.85rem;"><?= settings()->main->title ?></span>
             <?php endif ?>
         </a>
     </div>
