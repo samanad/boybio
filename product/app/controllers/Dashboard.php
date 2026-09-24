@@ -69,7 +69,7 @@ class Dashboard extends Controller {
             }
 
             $row->settings = json_decode($row->settings);
-            $row->tags = parse_tags_list($row->tags ?? []);
+            $row->tags = function_exists('parse_tags_list') ? parse_tags_list($row->tags ?? []) : [];
 
             $links[] = $row;
         }
@@ -99,6 +99,7 @@ class Dashboard extends Controller {
             'pagination'        => $pagination,
             'filters'           => $filters,
             'projects'          => $projects,
+            'domains'           => $domains,
             'links_types'       => require APP_PATH . 'includes/links_types.php',
         ];
         $view = new \Altum\View('links/links_content', (array) $this);

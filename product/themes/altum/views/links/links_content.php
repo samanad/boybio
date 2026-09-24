@@ -203,7 +203,7 @@
                                 </div>
                                 <select name="domain_id" id="filters_domain_id" class="custom-select custom-select-sm">
                                     <option value=""><?= l('global.all') ?></option>
-                                    <?php foreach($data->domains as $domain_id => $domain): ?>
+                                    <?php foreach(($data->domains ?? []) as $domain_id => $domain): ?>
                                         <option value="<?= $domain_id ?>" <?= isset($data->filters->filters['domain_id']) && $data->filters->filters['domain_id'] == $domain_id ? 'selected="selected"' : null ?>><?= $domain->host ?></option>
                                     <?php endforeach ?>
                                 </select>
@@ -368,7 +368,14 @@
 
                         <td class="text-nowrap">
                             <?php
-                            $row_tags = is_array($row->tags ?? null) ? $row->tags : parse_tags_list($row->tags ?? []);
+                            if(is_array($row->tags ?? null)) {
+                                $row_tags = $row->tags;
+                            } elseif(function_exists('parse_tags_list')) {
+                                $row_tags = parse_tags_list($row->tags ?? []);
+                            } else {
+                                $raw = trim((string) ($row->tags ?? ''));
+                                $row_tags = $raw === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $raw))));
+                            }
                             ?>
                             <?php if(!empty($row_tags)): ?>
                                 <div class="d-flex flex-wrap" style="max-width: 12rem; gap: 0.25rem;">
@@ -382,7 +389,11 @@
                         </td>
 
                         <td>
-                            <?php $description_preview = get_first_words($row->description ?? '', 3); ?>
+                            <?php
+                            $description_preview = function_exists('get_first_words')
+                                ? get_first_words($row->description ?? '', 3)
+                                : trim(implode(' ', array_slice(preg_split('/\s+/u', (string) ($row->description ?? ''), -1, PREG_SPLIT_NO_EMPTY) ?: [], 0, 3)));
+                            ?>
                             <?php if($description_preview !== ''): ?>
                                 <span class="text-muted"><?= e($description_preview) ?></span>
                             <?php else: ?>

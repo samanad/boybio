@@ -59,7 +59,7 @@ class Links extends Controller {
         while($row = $links_result->fetch_object()) {
             $row->full_url = $row->domain_id && isset($domains[$row->domain_id]) ? $domains[$row->domain_id]->scheme . $domains[$row->domain_id]->host . '/' . ($domains[$row->domain_id]->link_id == $row->link_id ? null : $row->url) : SITE_URL . $row->url;
             $row->settings = json_decode($row->settings);
-            $row->tags = parse_tags_list($row->tags ?? []);
+            $row->tags = function_exists('parse_tags_list') ? parse_tags_list($row->tags ?? []) : [];
             $links[] = $row;
         }
 
