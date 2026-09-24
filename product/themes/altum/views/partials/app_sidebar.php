@@ -54,9 +54,16 @@
             data-dark-tag="<?= !empty(settings()->main->logo_dark) ? 'img' : 'span' ?>"
             style="background:#111827;padding:.4rem .6rem;border-radius:8px;"
         >
-            <?php if(!empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get()}) && !empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'})): ?>
+            <?php
+            $logo_theme = \Altum\ThemeStyle::get();
+            $logo_src = function_exists('get_main_logo_data_uri') ? get_main_logo_data_uri($logo_theme) : '';
+            if($logo_src === '') {
+                $logo_src = settings()->main->{'logo_' . $logo_theme . '_full_url'} ?? '';
+            }
+            ?>
+            <?php if($logo_src !== ''): ?>
                 <img
-                    src="<?= settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?>"
+                    src="<?= $logo_src ?>"
                     class="navbar-logo"
                     alt="<?= l('global.accessibility.logo_alt') ?>"
                     width="150"

@@ -75,6 +75,125 @@ function get_main_logo_url(?string $theme = null): string {
     return \Altum\Uploads::get_full_url($key) . $file;
 }
 
+/**
+ * Inline data-URI for the site logo so the browser never needs a cross-origin CDN request.
+ * (Some clients load View-Image fine but block/hide third-party <img> subresources.)
+ */
+function get_main_logo_data_uri(?string $theme = null): string {
+    $theme = $theme ?: (class_exists('\Altum\ThemeStyle') ? \Altum\ThemeStyle::get() : 'light');
+    $theme = $theme === 'dark' ? 'dark' : 'light';
+    $other = $theme === 'dark' ? 'light' : 'dark';
+
+    $file = trim((string) (settings()->main->{'logo_' . $theme} ?? ''));
+    $key = 'logo_' . $theme;
+    if($file === '') {
+        $file = trim((string) (settings()->main->{'logo_' . $other} ?? ''));
+        $key = 'logo_' . $other;
+    }
+    if($file === '' || preg_match('/[\\\\\\/]/', $file)) {
+        return '';
+    }
+
+    $cache_key = 'main_logo_data_uri_' . md5($key . '|' . $file);
+    try {
+        if(function_exists('cache')) {
+            $item = cache()->getItem($cache_key);
+            if($item->isHit()) {
+                $cached = $item->get();
+                if(is_string($cached) && str_starts_with($cached, 'data:image/')) {
+                    return $cached;
+                }
+            }
+        }
+    } catch(\Throwable $e) {
+        /* ignore cache */
+    }
+
+    $body = null;
+    $content_type = 'image/png';
+
+    $local_path = (defined('UPLOADS_PATH') ? UPLOADS_PATH : '') . \Altum\Uploads::get_path($key) . $file;
+    if($local_path && is_file($local_path)) {
+        $body = @file_get_contents($local_path);
+        $detected = @mime_content_type($local_path);
+        if(is_string($detected) && $detected !== '') {
+            $content_type = $detected;
+        }
+    }
+
+    if(($body === null || $body === false || $body === '')) {
+        $remote_url = \Altum\Uploads::get_full_url($key) . $file;
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 8,
+                'follow_location' => 1,
+                'user_agent' => 'CloubLogoEmbed/1.0',
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+        $body = @file_get_contents($remote_url, false, $context);
+        if(isset($http_response_header) && is_array($http_response_header)) {
+            foreach($http_response_header as $header_line) {
+                if(stripos($header_line, 'Content-Type:') === 0) {
+                    $content_type = trim(substr($header_line, strlen('Content-Type:')));
+                    break;
+                }
+            }
+        }
+    }
+
+    /* cURL fallback when allow_url_fopen is off */
+    if(($body === null || $body === false || $body === '') && function_exists('curl_init')) {
+        $remote_url = \Altum\Uploads::get_full_url($key) . $file;
+        $ch = curl_init($remote_url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_USERAGENT => 'CloubLogoEmbed/1.0',
+        ]);
+        $body = curl_exec($ch);
+        $ctype = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        curl_close($ch);
+        if(is_string($ctype) && $ctype !== '') {
+            $content_type = explode(';', $ctype)[0];
+        }
+    }
+
+    if($body === null || $body === false || $body === '') {
+        return '';
+    }
+
+    if(!$content_type || $content_type === 'application/octet-stream') {
+        $ext = mb_strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $content_type = match($ext) {
+            'svg' => 'image/svg+xml',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'avif' => 'image/avif',
+            default => 'image/png',
+        };
+    }
+
+    $data_uri = 'data:' . $content_type . ';base64,' . base64_encode($body);
+
+    try {
+        if(function_exists('cache')) {
+            $item = cache()->getItem($cache_key);
+            $item->set($data_uri)->expiresAfter(60 * 60 * 24);
+            cache()->save($item);
+        }
+    } catch(\Throwable $e) {
+        /* ignore */
+    }
+
+    return $data_uri;
+}
+
 function main_logo_is_available(?string $theme = null): bool {
     return get_main_logo_filename($theme) !== '';
 }
