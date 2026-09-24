@@ -96,12 +96,22 @@ body.app-sidebar-opened .app-sidebar {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	width: 100%;
 	max-width: 100%;
 	min-width: 0;
 	overflow: visible;
 	font-size: 1.4rem;
 	color: var(--gray-900);
 	font-weight: 600;
+	padding: .35rem .5rem;
+	border-radius: var(--border-radius);
+	/* Pale CDN logos vanish on white; give a stable contrast plate */
+	background: #111827;
+}
+
+[data-theme-style="dark"] .app-sidebar-title a,
+[data-theme-style="dark"] .app-sidebar-title .app-sidebar-logo-link {
+	background: #111827;
 }
 
 .app-sidebar-title a:hover {
@@ -109,12 +119,15 @@ body.app-sidebar-opened .app-sidebar {
 }
 
 .app-sidebar-title .navbar-logo {
-	display: block;
-	max-width: min(100%, 180px);
-	width: auto;
-	height: auto;
-	max-height: 3rem;
-	object-fit: contain;
+	display: block !important;
+	width: 150px !important;
+	max-width: 150px !important;
+	height: auto !important;
+	max-height: 48px !important;
+	object-fit: contain !important;
+	opacity: 1 !important;
+	visibility: visible !important;
+	filter: none !important;
 }
 
 .app-sidebar-footer {

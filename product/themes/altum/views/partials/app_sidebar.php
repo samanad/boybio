@@ -14,7 +14,15 @@
             data-dark-tag="<?= !empty(settings()->main->logo_dark) ? 'img' : 'span' ?>"
         >
             <?php if(!empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get()}) && !empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'})): ?>
-                <img src="<?= settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?>" class="img-fluid navbar-logo" alt="<?= l('global.accessibility.logo_alt') ?>" />
+                <img
+                    src="<?= settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?>"
+                    class="navbar-logo"
+                    alt="<?= l('global.accessibility.logo_alt') ?>"
+                    width="150"
+                    height="48"
+                    decoding="async"
+                    style="width:150px;max-width:150px;height:auto;max-height:48px;display:block;object-fit:contain;"
+                />
             <?php else: ?>
                 <span class="text-truncate"><?= settings()->main->title ?></span>
             <?php endif ?>
