@@ -885,6 +885,21 @@ class Router {
                 ]
             ],
 
+            'official' => [
+                'controller' => 'Official',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'allow_indexing' => true,
+                ]
+            ],
+
+            'account-sessions' => [
+                'controller' => 'AccountSessions',
+                'settings' => [
+                    'allow_team_access' => false,
+                ]
+            ],
+
             'spotlight' => [
                 'controller' => 'Spotlight',
                 'settings' => [

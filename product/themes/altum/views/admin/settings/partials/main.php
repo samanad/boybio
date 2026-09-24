@@ -256,6 +256,12 @@
         </div>
 
         <div class="form-group">
+            <label for="official_hosts"><i class="fas fa-fw fa-sm fa-shield-alt text-muted mr-1"></i> <?= l('admin_settings.main.official_hosts') ?></label>
+            <textarea id="official_hosts" name="official_hosts" class="form-control" rows="3" placeholder="cloub.io&#10;boy.bio"><?= e(settings()->main->official_hosts ?? '') ?></textarea>
+            <small class="form-text text-muted"><?= l('admin_settings.main.official_hosts_help') ?></small>
+        </div>
+
+        <div class="form-group">
             <label for="referrer_policy"><i class="fas fa-fw fa-sm fa-share-alt text-muted mr-1"></i> <?= l('admin_settings.main.referrer_policy') ?></label>
             <select id="referrer_policy" name="referrer_policy" class="custom-select">
                 <optgroup label="🛡️ strict-origin-when-cross-origin">

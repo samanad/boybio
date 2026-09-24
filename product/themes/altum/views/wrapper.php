@@ -113,6 +113,7 @@
         <?= \Altum\Event::get_content('modals') ?>
 
         <?php require THEME_PATH . 'views/partials/js_global_variables.php' ?>
+        <?php require THEME_PATH . 'views/partials/resilience.php' ?>
 
         <?php foreach(['libraries/jquery.min.js', 'libraries/popper.min.js', 'libraries/bootstrap.min.js', 'custom.js'] as $file): ?>
             <script src="<?= ASSETS_FULL_URL ?>js/<?= $file ?>?v=<?= PRODUCT_CODE ?>"></script>

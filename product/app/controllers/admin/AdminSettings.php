@@ -142,6 +142,8 @@ class AdminSettings extends Controller {
             $_POST['ai_scraping_is_allowed'] = isset($_POST['ai_scraping_is_allowed']);
             $_POST['se_indexing'] = isset($_POST['se_indexing']);
             $_POST['iframe_embedding'] = trim(preg_replace('/\s+/', ' ', $_POST['iframe_embedding']));
+            $_POST['official_hosts'] = trim(preg_replace('/\s+/', "\n", str_replace([',', ';'], "\n", $_POST['official_hosts'] ?? '')));
+            $_POST['official_hosts'] = implode("\n", array_values(array_filter(array_map('trim', explode("\n", $_POST['official_hosts'])))));
 
             if(!is_writable(ROOT_PATH . 'robots.txt')) {
                 Alerts::add_info(sprintf(l('global.error_message.directory_not_writable'), ROOT_PATH . 'robots.txt'));
@@ -190,6 +192,7 @@ class AdminSettings extends Controller {
                 'ai_scraping_is_allowed' => $_POST['ai_scraping_is_allowed'],
                 'se_indexing' => $_POST['se_indexing'],
                 'iframe_embedding' => $_POST['iframe_embedding'],
+                'official_hosts' => $_POST['official_hosts'],
                 'display_index_plans' => isset($_POST['display_index_plans']),
                 'display_index_testimonials' => isset($_POST['display_index_testimonials']),
                 'display_index_faq' => isset($_POST['display_index_faq']),

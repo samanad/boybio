@@ -192,4 +192,40 @@ class UsersSessions extends Model {
         }
         return $rows;
     }
+
+    public static function get_all_for_user(int $user_id, int $limit = 50): array {
+        self::ensure_table();
+        $user_id = (int) $user_id;
+        $limit = max(1, min(200, (int) $limit));
+        $rows = [];
+        $result = database()->query("
+            SELECT *
+            FROM `users_sessions`
+            WHERE `user_id` = {$user_id}
+            ORDER BY `last_activity` DESC
+            LIMIT {$limit}
+        ");
+        while($row = $result->fetch_object()) {
+            $rows[] = $row;
+        }
+        return $rows;
+    }
+
+    public static function revoke_for_user(int $user_id, string $session_id): bool {
+        self::ensure_table();
+        $row = db()->where('user_id', $user_id)->where('session_id', $session_id)->getOne('users_sessions', ['id']);
+        if(!$row) {
+            return false;
+        }
+        db()->where('id', $row->id)->delete('users_sessions');
+        return true;
+    }
+
+    public static function revoke_others(int $user_id, string $keep_session_id): int {
+        self::ensure_table();
+        $user_id = (int) $user_id;
+        $keep_session_id = database()->real_escape_string($keep_session_id);
+        database()->query("DELETE FROM `users_sessions` WHERE `user_id` = {$user_id} AND `session_id` <> '{$keep_session_id}'");
+        return (int) database()->affected_rows;
+    }
 }

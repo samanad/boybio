@@ -673,6 +673,8 @@ return [
     'admin_settings.main.ai_scraping_is_allowed_help' => 'Allow AI to use your site scrapable content for their learning (OpenAI, Bing, Google).',
     'admin_settings.main.iframe_embedding' => 'Iframe embedding allowed domains',
     'admin_settings.main.iframe_embedding_help' => 'Allow your website to be embedded by specific domains. Use \'none\' to disable iframe embedding fully. Use \'all\' to allow embedding for all domains. Write URLs of the domains you want to allow, comma separated values.',
+    'admin_settings.main.official_hosts' => 'Official hosts (anti-mirror)',
+    'admin_settings.main.official_hosts_help' => 'Hostnames where the PWA / resilience client fully works (e.g. cloub.io, boy.bio). One per line or comma-separated. The main SITE_URL host is always included. Visitors on other domains see a mirror warning.',
     'admin_settings.main.se_indexing' => 'Allow search engines indexing',
     'admin_settings.main.display_index_plans' => 'Display plans on the index page',
     'admin_settings.main.display_index_testimonials' => 'Display testimonials on the index page',

@@ -19,6 +19,7 @@
     <?php endif ?>
 
     <option value="<?= url('account-logs') ?>" <?= \Altum\Router::$controller_key == 'account-logs' ? 'selected="selected"' : null ?>>🧾 <?= l('account_logs.menu') ?></option>
+    <option value="<?= url('account-sessions') ?>" <?= \Altum\Router::$controller_key == 'account-sessions' ? 'selected="selected"' : null ?>>📱 <?= l('account_sessions.menu') ?></option>
     <option value="<?= url('account-backup') ?>" <?= \Altum\Router::$controller_key == 'account-backup' ? 'selected="selected"' : null ?>>💾 <?= l('account_backup.menu') ?></option>
 
     <?php if(settings()->main->api_is_enabled): ?>
@@ -85,6 +86,10 @@
     <div class="col-lg-4 p-2 text-truncate">
         <a class="btn btn-block btn-custom text-truncate  <?= \Altum\Router::$controller_key == 'account-logs' ? 'active' : null ?>" href="<?= url('account-logs') ?>">
             <i class="fas fa-fw fa-sm fa-scroll mr-2"></i> <?= l('account_logs.menu') ?>
+        </a>
+
+        <a class="btn btn-block btn-custom text-truncate  <?= \Altum\Router::$controller_key == 'account-sessions' ? 'active' : null ?>" href="<?= url('account-sessions') ?>">
+            <i class="fas fa-fw fa-sm fa-mobile-alt mr-2"></i> <?= l('account_sessions.menu') ?>
         </a>
     </div>
 

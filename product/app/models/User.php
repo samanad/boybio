@@ -276,6 +276,9 @@ class User extends Model {
         $browser_language = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? mb_substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) : null;
         $device_type = get_this_device_type();
 
+        /* Snapshot before overwrite — used for login alerts */
+        $previous = db()->where('user_id', $user_id)->getOne('users', ['ip', 'total_logins', 'email', 'name', 'anti_phishing_code', 'language']);
+
         /* Database query */
         db()->where('user_id', $user_id)->update('users', [
             'ip' => $ip,
@@ -291,6 +294,11 @@ class User extends Model {
         ]);
 
         Logger::users($user_id, 'login.' . $method . '.success');
+
+        /* Telegram-like login alert when IP changes */
+        if(function_exists('resilience_send_login_alert') && $previous) {
+            resilience_send_login_alert((int) $user_id, (string) $method, (string) ($previous->ip ?? ''), (int) ($previous->total_logins ?? 0), $previous);
+        }
 
         /* Track alive session for admin users list */
         try {

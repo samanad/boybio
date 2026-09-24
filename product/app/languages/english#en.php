@@ -315,6 +315,9 @@ return [
     'global.emails.user_payment.subject' => 'Payment received - {{WEBSITE_TITLE}}',
     'global.emails.user_payment.body' => 'Hello, <strong>{{NAME}}</strong>,<br /><br />This is a confirmation that your payment has been received by us.<br /><br />You\'ve paid for the <strong>{{PLAN_NAME}}</strong> plan until <strong>{{PLAN_EXPIRATION_DATE}}</strong>.<br /><br />You can also check all the <a href="{{USER_PAYMENTS_LINK}}">payments</a> you made, <a href="{{USER_PLAN_LINK}}">change your plan</a> or <a href="{{USER_PLAN_LINK}}">cancel it</a>.<br /><br />Regards,<br />The {{WEBSITE_TITLE}} team.',
 
+    'global.emails.user_login_alert.subject' => 'New sign-in to your account - {{WEBSITE_TITLE}}',
+    'global.emails.user_login_alert.body' => 'Hello, <strong>{{NAME}}</strong>,<br /><br />We detected a new sign-in to your account.<br /><br /><strong>IP:</strong> {{IP}}<br /><strong>Device:</strong> {{DEVICE}}<br /><strong>Browser:</strong> {{BROWSER}} / {{OS}}<br /><strong>Method:</strong> {{METHOD}}<br /><strong>When:</strong> {{DATETIME}}<br /><br />If this was you, you can ignore this email. If not, <a href="{{SESSIONS_LINK}}">review and revoke active sessions</a> and change your password.<br /><br />Regards,<br />The {{WEBSITE_TITLE}} team.',
+
     'global.emails.user_data_collected.subject' => 'New data for \'{{BLOCK_TITLE}}\' - {{WEBSITE_TITLE}}',
     'global.emails.user_data_collected_phone_collector.body' => 'Hello, <strong>{{NAME}}</strong>,<br /><br />You just got a new <strong>Phone Collector</strong> data submission from one of your visitors.<br /><br /><strong>Phone:</strong> {{DATA_PHONE}}<br /><strong>Name:</strong> {{DATA_NAME}}<br /><br /><a href="{{DATA_LINK}}" class="cta">View all collected data</a><br /><br />Regards,<br />The {{WEBSITE_TITLE}} team.',
     'global.emails.user_data_collected_email_collector.body' => 'Hello, <strong>{{NAME}}</strong>,<br /><br />You just got a new <strong>Email Collector</strong> data submission from one of your visitors.<br /><br /><strong>Email:</strong> {{DATA_EMAIL}}<br /><strong>Name:</strong> {{DATA_NAME}}<br /><br /><a href="{{DATA_LINK}}" class="cta">View all collected data</a><br /><br />Regards,<br />The {{WEBSITE_TITLE}} team.',
@@ -1046,6 +1049,36 @@ return [
 
     'account_logs.logs.no_data' => 'Your account has no recorded logs',
     'account_logs.logs.no_data_help' => 'Here you will be able to find important log entries regarding your account.',
+
+
+    'account_sessions.title' => 'Active sessions',
+    'account_sessions.menu' => 'Sessions',
+    'account_sessions.header' => 'Active sessions',
+    'account_sessions.subheader' => 'Devices signed in to your account. Sessions with activity in the last %s minutes are considered active.',
+    'account_sessions.current' => 'This device',
+    'account_sessions.last_activity' => 'Last activity',
+    'account_sessions.revoke' => 'Revoke',
+    'account_sessions.revoke_others' => 'Sign out other devices',
+    'account_sessions.confirm_revoke_others' => 'Sign out all other devices?',
+    'account_sessions.success_revoked' => 'Session revoked.',
+    'account_sessions.success_revoked_others' => 'Other sessions were signed out.',
+    'account_sessions.error_current' => 'You cannot revoke the session you are using now.',
+    'account_sessions.passcode_header' => 'Local device passcode',
+    'account_sessions.passcode_help' => 'Optional lock screen for this browser only. The passcode stays on your device and is never sent to our servers.',
+    'account_sessions.passcode_placeholder' => 'Set a passcode',
+
+
+    'resilience.offline_banner' => 'Offline — showing saved content',
+    'resilience.updating_banner' => 'Updating…',
+    'resilience.mirror_warning' => 'This page is not on an official Cloub domain.',
+    'resilience.verify_link' => 'Verify authenticity',
+    'resilience.official_title' => 'Verify authenticity',
+    'resilience.official_subheader' => 'Confirm you are on an official Cloub domain — not a mirror or clone.',
+    'resilience.official_ok' => 'You are on an official host: %s',
+    'resilience.official_bad' => 'Warning: %s is not in the official domain list.',
+    'resilience.official_list_header' => 'Official domains',
+    'resilience.official_list_empty' => 'No extra hosts configured yet — the main site host is always treated as official.',
+    'resilience.official_help' => 'Bookmark only domains from this list. If something looks different or asks for your password on another domain, leave that site.',
 
 
     'account_api.title' => 'Account API',
