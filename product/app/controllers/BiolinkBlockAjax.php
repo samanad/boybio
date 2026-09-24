@@ -6489,15 +6489,7 @@ class BiolinkBlockAjax extends Controller {
                     $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
                     error_reporting($original_error_reporting);
 
-                    /* Delete current image */
-                    if(!empty($already_existing_file)) {
-                        $s3->deleteObject([
-                            'Bucket' => settings()->offload->storage_name,
-                            'Key' => UPLOADS_URL_PATH . $upload_folder . $already_existing_file,
-                        ]);
-                    }
-
-                    /* Upload image */
+                    /* Upload new file first so a failure does not orphan the current file */
                     $result = $s3->putObject([
                         'Bucket' => settings()->offload->storage_name,
                         'Key' => UPLOADS_URL_PATH . $upload_folder . $file_new_name,
@@ -6505,6 +6497,14 @@ class BiolinkBlockAjax extends Controller {
                         'SourceFile' => $file_temp,
                         'ACL' => 'public-read'
                     ]);
+
+                    /* Delete previous file only after successful upload */
+                    if(!empty($already_existing_file)) {
+                        $s3->deleteObject([
+                            'Bucket' => settings()->offload->storage_name,
+                            'Key' => UPLOADS_URL_PATH . $upload_folder . $already_existing_file,
+                        ]);
+                    }
                 } catch (\Exception $exception) {
                     Response::json($exception->getMessage(), 'error');
                 }

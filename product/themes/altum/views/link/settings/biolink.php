@@ -662,23 +662,23 @@
                             </button>
 
                             <div class="collapse" data-parent="#settings" id="branded_button_container">
-                                <div <?= !$this->user->plan_settings->branded_button_is_enabled ? get_plan_feature_disabled_info() : null ?>>
-                                    <div class="<?= !$this->user->plan_settings->branded_button_is_enabled ? 'container-disabled' : null ?>">
+                                <div <?= !($this->user->plan_settings->branded_button_is_enabled ?? false) ? get_plan_feature_disabled_info() : null ?>>
+                                    <div class="<?= !($this->user->plan_settings->branded_button_is_enabled ?? false) ? 'container-disabled' : null ?>">
                                         <div class="form-group custom-control custom-switch">
                                             <input
                                                     type="checkbox"
                                                     class="custom-control-input"
                                                     id="branded_button_is_enabled"
                                                     name="branded_button_is_enabled"
-												<?= $data->link->settings->branded_button_is_enabled ? 'checked="checked"' : null ?>
-												<?= !$this->user->plan_settings->branded_button_is_enabled ? 'disabled="disabled"' : null ?>
+												<?= ($data->link->settings->branded_button_is_enabled ?? false) ? 'checked="checked"' : null ?>
+												<?= !($this->user->plan_settings->branded_button_is_enabled ?? false) ? 'disabled="disabled"' : null ?>
                                             >
                                             <label class="custom-control-label" for="branded_button_is_enabled"><?= l('link.settings.branded_button_is_enabled') ?></label>
                                         </div>
 
                                         <div class="form-group" data-file-image-input-wrapper data-file-input-wrapper-size-limit="<?= settings()->links->favicon_size_limit ?>" data-file-input-wrapper-size-limit-error="<?= sprintf(l('global.error_message.file_size_limit'), settings()->links->favicon_size_limit) ?>">
                                             <label for="branded_button_icon"><i class="fas fa-fw fa-image fa-sm text-muted mr-1"></i> <?= l('link.settings.branded_button_icon') ?></label>
-											<?= include_view(THEME_PATH . 'views/partials/custom_file_image_input.php', ['uploads_file_key' => 'branded_button_icon', 'file_key' => 'branded_button_icon', 'already_existing_image' => $data->link->settings->branded_button_icon, 'image_container' => 'branded_button_icon']) ?>
+											<?= include_view(THEME_PATH . 'views/partials/custom_file_image_input.php', ['uploads_file_key' => 'branded_button_icon', 'file_key' => 'branded_button_icon', 'already_existing_image' => $data->link->settings->branded_button_icon ?? null, 'image_container' => 'branded_button_icon']) ?>
 											<?= \Altum\Alerts::output_field_error('branded_button_icon') ?>
                                             <small class="form-text text-muted"><?= l('link.settings.branded_button_icon_help') ?><?= sprintf(l('global.accessibility.whitelisted_file_extensions'), \Altum\Uploads::get_whitelisted_file_extensions_accept('branded_button_icon')) . ' ' . sprintf(l('global.accessibility.file_size_limit'), settings()->links->favicon_size_limit) ?></small>
                                         </div>
@@ -693,7 +693,7 @@
                                                 <span><i class="fab fa-fw fa-sm fa-html5 text-muted mr-1"></i> <?= l('link.settings.branded_button_content') ?></span>
                                                 <small class="text-muted" data-character-counter-wrapper></small>
                                             </label>
-                                            <textarea id="branded_button_content" class="form-control" name="branded_button_content" maxlength="10000"><?= $data->link->settings->branded_button_content ?></textarea>
+                                            <textarea id="branded_button_content" class="form-control" name="branded_button_content" maxlength="10000"><?= $data->link->settings->branded_button_content ?? '' ?></textarea>
                                             <small class="form-text text-muted"><?= l('link.settings.branded_button_content_help') ?></small>
                                         </div>
                                     </div>

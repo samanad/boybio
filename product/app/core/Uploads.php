@@ -44,15 +44,19 @@ class Uploads {
 
     public static function get_whitelisted_file_extensions($key) {
         self::initialize();
-        return self::$uploads[$key]['whitelisted_file_extensions'];
+        return self::$uploads[$key]['whitelisted_file_extensions'] ?? [];
     }
 
     public static function get_whitelisted_file_extensions_accept($key) {
         self::initialize();
-        return self::array_to_list_format(self::$uploads[$key]['whitelisted_file_extensions']);
+        return self::array_to_list_format(self::$uploads[$key]['whitelisted_file_extensions'] ?? []);
     }
 
     public static function array_to_list_format($array) {
+        if(!is_array($array)) {
+            return '';
+        }
+
         return implode(', ', array_map(function($value) { return '.' . $value; }, $array));
     }
 
@@ -215,15 +219,7 @@ class Uploads {
                     try {
                         $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
 
-                        /* Delete current file */
-                        if(!empty($already_existing_file_name)) {
-                            $s3->deleteObject([
-                                'Bucket' => settings()->offload->storage_name,
-                                'Key' => UPLOADS_URL_PATH . Uploads::get_path($uploads_file_key) . $already_existing_file_name,
-                            ]);
-                        }
-
-                        /* Upload image */
+                        /* Upload new file first so a failure does not orphan the current file */
                         $result = $s3->putObject([
                             'Bucket' => settings()->offload->storage_name,
                             'Key' => UPLOADS_URL_PATH . Uploads::get_path($uploads_file_key) . $image_new_name,
@@ -231,6 +227,14 @@ class Uploads {
                             'SourceFile' => $file_temp,
                             'ACL' => 'public-read'
                         ]);
+
+                        /* Delete previous file only after successful upload */
+                        if(!empty($already_existing_file_name)) {
+                            $s3->deleteObject([
+                                'Bucket' => settings()->offload->storage_name,
+                                'Key' => UPLOADS_URL_PATH . Uploads::get_path($uploads_file_key) . $already_existing_file_name,
+                            ]);
+                        }
                     } catch (\Exception $exception) {
                         $return_error($exception->getMessage());
                     }

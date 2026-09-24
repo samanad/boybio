@@ -1290,13 +1290,7 @@ class LinkAjax extends Controller {
                     try {
                         $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
 
-                        /* Delete current image */
-                        $s3->deleteObject([
-                            'Bucket' => settings()->offload->storage_name,
-                            'Key' => 'uploads/' . $image_upload_path[$image_key] . $image_uploaded_file[$image_key],
-                        ]);
-
-                        /* Upload image */
+                        /* Upload new image first so a failure does not orphan the current file */
                         $result = $s3->putObject([
                             'Bucket' => settings()->offload->storage_name,
                             'Key' => 'uploads/' . $image_upload_path[$image_key] . $image_new_name,
@@ -1304,6 +1298,14 @@ class LinkAjax extends Controller {
                             'SourceFile' => $file_temp,
                             'ACL' => 'public-read'
                         ]);
+
+                        /* Delete previous image only after successful upload */
+                        if(!empty($image_uploaded_file[$image_key])) {
+                            $s3->deleteObject([
+                                'Bucket' => settings()->offload->storage_name,
+                                'Key' => 'uploads/' . $image_upload_path[$image_key] . $image_uploaded_file[$image_key],
+                            ]);
+                        }
                     } catch (\Exception $exception) {
                         Response::json($exception->getMessage(), 'error');
                     }
@@ -1422,15 +1424,7 @@ class LinkAjax extends Controller {
                         try {
                             $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
 
-                            /* Delete current image */
-                            if(!$link->biolink_theme_id && is_string($link->settings->background)) {
-                                $s3->deleteObject([
-                                    'Bucket' => settings()->offload->storage_name,
-                                    'Key' => 'uploads/backgrounds/' . $link->settings->background,
-                                ]);
-                            }
-
-                            /* Upload image */
+                            /* Upload new background first so a failure does not orphan the current file */
                             $result = $s3->putObject([
                                 'Bucket' => settings()->offload->storage_name,
                                 'Key' => 'uploads/backgrounds/' . $background_new_name,
@@ -1438,6 +1432,14 @@ class LinkAjax extends Controller {
                                 'SourceFile' => $background_file_temp,
                                 'ACL' => 'public-read'
                             ]);
+
+                            /* Delete previous background only after successful upload */
+                            if(!$link->biolink_theme_id && is_string($link->settings->background) && !empty($link->settings->background)) {
+                                $s3->deleteObject([
+                                    'Bucket' => settings()->offload->storage_name,
+                                    'Key' => 'uploads/backgrounds/' . $link->settings->background,
+                                ]);
+                            }
                         } catch (\Exception $exception) {
                             Response::json($exception->getMessage(), 'error');
                         }

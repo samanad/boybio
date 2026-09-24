@@ -145,6 +145,11 @@ return [
         'path' => 'favicons/',
     ],
 
+    'branded_button_icon' => [
+        'whitelisted_file_extensions' => ['jpg', 'jpeg', 'png', 'ico', 'svg', 'gif', 'webp'],
+        'path' => 'favicons/',
+    ],
+
     'biolink_background' => [
         'whitelisted_file_extensions' => ['jpg', 'jpeg', 'png', 'svg', 'gif', 'webp', 'mp4', 'avif'],
         'path' => 'backgrounds/',
