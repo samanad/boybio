@@ -14,13 +14,16 @@
 
                 <?= \Altum\Alerts::output_alerts() ?>
 
-                <form action="" method="post" role="form">
+                <form action="" method="post" role="form" autocomplete="on">
                     <input type="hidden" name="token" value="<?= \Altum\Csrf::get() ?>" />
                     <input type="hidden" name="type" value="password" />
 
+                    <?php /* Help password managers / home-screen apps associate this unlock */ ?>
+                    <input type="text" name="username" value="<?= e($this->link->url ?? ('link-' . $this->link->link_id)) ?>" autocomplete="username" class="d-none" tabindex="-1" aria-hidden="true" />
+
                     <div class="form-group" data-password-toggle-view data-password-toggle-view-show="<?= l('global.show') ?>" data-password-toggle-view-hide="<?= l('global.hide') ?>">
                         <label for="password"><?= l('global.password') ?></label>
-                        <input type="password" id="password" name="password" value="" class="form-control <?= \Altum\Alerts::has_field_errors('password') ? 'is-invalid' : null ?>" required="required" />
+                        <input type="password" id="password" name="password" value="" class="form-control <?= \Altum\Alerts::has_field_errors('password') ? 'is-invalid' : null ?>" required="required" autocomplete="current-password" />
                         <?= \Altum\Alerts::output_field_error('password') ?>
                     </div>
 
@@ -31,5 +34,3 @@
         </div>
     </div>
 </body>
-
-

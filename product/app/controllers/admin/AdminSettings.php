@@ -35,39 +35,9 @@ class AdminSettings extends Controller {
         /* Set a custom title */
         Title::set(sprintf(l('admin_settings.title'), l('admin_settings.' . $method . '.tab')));
 
-        /* Get domains for directory guest links and claim URL (if links method) */
-        $domains = [];
-        $claim_url_domains = [];
-        if($method == 'links') {
-            /* Add main domain */
-            $site_url_parsed = parse_url(SITE_URL);
-            $main_domain = $site_url_parsed['host'] ?? '';
-            if($main_domain) {
-                $domains['main'] = [
-                    'host' => $main_domain,
-                    'label' => $main_domain . ' (Main)'
-                ];
-            }
-            
-            /* Get all enabled custom domains */
-            $domains_result = database()->query("SELECT `host` FROM `domains` WHERE `is_enabled` = 1 ORDER BY `host` ASC");
-            while($row = $domains_result->fetch_object()) {
-                $domains[$row->host] = [
-                    'host' => $row->host,
-                    'label' => $row->host
-                ];
-            }
-            
-            /* Get all enabled domains for claim URL dropdown */
-            $claim_url_domains_result = database()->query("SELECT `domain_id`, `host`, `scheme`, `type` FROM `domains` WHERE `is_enabled` = 1 ORDER BY `host` ASC");
-            while($row = $claim_url_domains_result->fetch_object()) {
-                $claim_url_domains[] = $row;
-            }
-        }
-
         /* Method View */
         $view = new \Altum\View('admin/settings/partials/' . $method, (array) $this);
-        $this->add_view_content('method', $view->run(['domains' => $domains, 'claim_url_domains' => $claim_url_domains]));
+        $this->add_view_content('method', $view->run());
 
         /* Main View */
         $view = new \Altum\View('admin/settings/index', (array) $this);
@@ -99,7 +69,18 @@ class AdminSettings extends Controller {
         \Altum\Language::clear_cache();
 
         /* Clear the cache */
-        cache()->deleteItem('settings');
+        try {
+            cache()->deleteItem('settings');
+        } catch(\Throwable $exception) {
+            /* ignore */
+        }
+
+        /* File cache may be owned by another user and ignore deleteItem() */
+        foreach(glob(UPLOADS_PATH . 'cache/*') ?: [] as $cache_file) {
+            if(is_file($cache_file)) {
+                @unlink($cache_file);
+            }
+        }
 
         /* Set a nice success message */
         Alerts::add_success(l('global.success_message.update2'));
@@ -227,11 +208,9 @@ class AdminSettings extends Controller {
                 'logo_email' => settings()->main->logo_email ?? '',
                 'opengraph' => settings()->main->opengraph ?? '',
                 'favicon' => settings()->main->favicon ?? '',
-                'broadcasts_is_enabled' => isset($_POST['broadcasts_is_enabled']),
                 'openai_api_key' => $_POST['openai_api_key'],
                 'openai_model' => $_POST['openai_model'],
                 'force_https_is_enabled' => $_POST['force_https_is_enabled'],
-                'referrer_policy' => $_POST['referrer_policy'],
                 'broadcasts_statistics_is_enabled' => isset($_POST['broadcasts_statistics_is_enabled']),
                 'breadcrumbs_is_enabled' => isset($_POST['breadcrumbs_is_enabled']),
                 'display_pagination_when_no_pages' => isset($_POST['display_pagination_when_no_pages']),
@@ -260,6 +239,41 @@ class AdminSettings extends Controller {
             $_POST['blacklisted_domains'] = array_filter(array_map('trim', explode(',', $_POST['blacklisted_domains'])));
             $_POST['blacklisted_countries'] = $_POST['blacklisted_countries'] ?? [];
 
+            /* Country ban bypass: keep every non-empty line (do not silently drop) */
+            $raw_chunks = [];
+            foreach(['country_ban_bypass_hostnames', 'country_ban_bypass_ips', 'allowed_hosts', 'allowed_ips', 'country_ban_bypass_hostname'] as $post_key) {
+                if(!isset($_POST[$post_key])) {
+                    continue;
+                }
+                $raw_chunks[] = is_array($_POST[$post_key]) ? implode("\n", $_POST[$post_key]) : (string) $_POST[$post_key];
+            }
+            $raw_entries = settings_list_to_array(implode("\n", $raw_chunks));
+
+            $valid_hostnames = [];
+            $valid_ips = [];
+            foreach($raw_entries as $entry) {
+                $entry = trim((string) $entry);
+                if($entry === '') {
+                    continue;
+                }
+                $entry = preg_replace('#^https?://#i', '', $entry);
+                $entry = rtrim(explode('/', $entry)[0] ?? $entry, '.');
+
+                if(is_valid_ip_allowlist_entry($entry) || preg_match('/^[0-9a-fA-F:.]*\*[0-9a-fA-F:.*]*$/', $entry)) {
+                    $valid_ips[] = $entry;
+                    continue;
+                }
+
+                $valid_hostnames[] = mb_strtolower($entry);
+            }
+
+            $valid_hostnames = array_values(array_unique($valid_hostnames));
+            $valid_ips = array_values(array_unique($valid_ips));
+
+            $_POST['country_ban_bypass_hostnames'] = $valid_hostnames;
+            $_POST['country_ban_bypass_ips'] = $valid_ips;
+            $_POST['country_ban_bypass_hostname'] = implode(',', $valid_hostnames);
+
             $value = json_encode([
                 'email_aliases_is_enabled' => isset($_POST['email_aliases_is_enabled']),
                 'email_confirmation' => isset($_POST['email_confirmation']),
@@ -276,6 +290,9 @@ class AdminSettings extends Controller {
                 'user_deletion_reminder' => (int) $_POST['user_deletion_reminder'],
                 'blacklisted_domains' => $_POST['blacklisted_domains'],
                 'blacklisted_countries' => $_POST['blacklisted_countries'],
+                'country_ban_bypass_hostname' => $_POST['country_ban_bypass_hostname'],
+                'country_ban_bypass_hostnames' => $_POST['country_ban_bypass_hostnames'],
+                'country_ban_bypass_ips' => $_POST['country_ban_bypass_ips'],
                 'login_lockout_is_enabled' => isset($_POST['login_lockout_is_enabled']),
                 'login_lockout_max_retries' => (int) $_POST['login_lockout_max_retries'] < 1 ? 1 : (int) $_POST['login_lockout_max_retries'],
                 'login_lockout_time' => (int) $_POST['login_lockout_time'] < 1 ? 1 : (int) $_POST['login_lockout_time'],
@@ -321,186 +338,17 @@ class AdminSettings extends Controller {
         }
     }
 
-    public function github() {
-        $this->process();
-
-        if(!empty($_POST)) {
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'client_id' => $_POST['client_id'],
-                'client_secret' => $_POST['client_secret'],
-            ]);
-
-            $this->update_settings('github', $value);
-        }
-    }
-
-    public function apple() {
-        $this->process();
-
-        if(!empty($_POST)) {
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'client_id' => $_POST['client_id'],
-                'team_id' => $_POST['team_id'],
-                'key_id' => $_POST['key_id'],
-                'key_content' => trim($_POST['key_content']),
-            ]);
-
-            $this->update_settings('apple', $value);
-        }
-    }
-
-    public function chrome_extension() {
-        $this->process();
-
-        if(!empty($_POST)) {
-
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            if(!\Altum\Plugin::is_active('chrome-extension')) {
-                redirect('admin/settings/chrome_extension');
-            }
-
-            /* :) */
-            $_POST['chrome_web_store_url'] = input_clean($_POST['chrome_web_store_url']);
-
-            $value = [
-                'is_enabled' => isset($_POST['is_enabled']),
-                'chrome_web_store_url' => $_POST['chrome_web_store_url'],
-            ];
-
-            $this->update_settings('chrome_extension', json_encode($value));
-        }
-    }
-
-    public function digital_wallets() {
-        $this->process();
-
-        if(!empty($_POST)) {
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-            $_POST['google_wallet_is_enabled'] = (int) isset($_POST['google_wallet_is_enabled']);
-            $_POST['google_wallet_issuer_id'] = trim($_POST['google_wallet_issuer_id']);
-            $_POST['google_wallet_class_suffix'] = trim($_POST['google_wallet_class_suffix']);
-            $_POST['google_wallet_origins'] = trim($_POST['google_wallet_origins']);
-            $_POST['apple_wallet_is_enabled'] = (int) isset($_POST['apple_wallet_is_enabled']);
-            $_POST['apple_wallet_pass_type_identifier'] = input_clean($_POST['apple_wallet_pass_type_identifier'] ?? '', 128);
-            $_POST['apple_wallet_team_identifier'] = input_clean($_POST['apple_wallet_team_identifier'] ?? '', 32);
-            $_POST['apple_wallet_organization_name'] = input_clean($_POST['apple_wallet_organization_name'] ?? '', 128);
-            $_POST['apple_wallet_certificate_password'] = $_POST['apple_wallet_certificate_password'] ?? '';
-            $_POST['logo_size_limit'] = $_POST['logo_size_limit'] ?? settings()->digital_wallets->logo_size_limit ?? get_max_upload();
-            $_POST['image_size_limit'] = $_POST['image_size_limit'] ?? settings()->digital_wallets->image_size_limit ?? get_max_upload();
-            $_POST['logo_size_limit'] = $_POST['logo_size_limit'] > get_max_upload() || $_POST['logo_size_limit'] < 0 ? get_max_upload() : (float) $_POST['logo_size_limit'];
-            $_POST['image_size_limit'] = $_POST['image_size_limit'] > get_max_upload() || $_POST['image_size_limit'] < 0 ? get_max_upload() : (float) $_POST['image_size_limit'];
-
-            settings()->digital_wallets->google_wallet_service_account = \Altum\Uploads::process_upload(settings()->digital_wallets->google_wallet_service_account, 'google_wallet_service_account', 'google_wallet_service_account', 'google_wallet_service_account_remove', null);
-
-            $apple_wallet_certificate_password = $_POST['apple_wallet_certificate_password'] !== ''
-                ? $_POST['apple_wallet_certificate_password']
-                : (settings()->digital_wallets->apple_wallet_certificate_password ?? '');
-
-            $apple_wallet_certificate = \Altum\Uploads::process_upload(settings()->digital_wallets->apple_wallet_certificate ?? null, 'apple_wallet_credentials', 'apple_wallet_certificate', 'apple_wallet_certificate_remove', null, force_local: true);
-            $apple_wallet_wwdr_certificate = \Altum\Uploads::process_upload(settings()->digital_wallets->apple_wallet_wwdr_certificate ?? null, 'apple_wallet_credentials', 'apple_wallet_wwdr_certificate', 'apple_wallet_wwdr_certificate_remove', null, force_local: true);
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-
-                'google_wallet_is_enabled' => $_POST['google_wallet_is_enabled'],
-                'google_wallet_issuer_id' => $_POST['google_wallet_issuer_id'],
-                'google_wallet_class_suffix' => $_POST['google_wallet_class_suffix'] ?: 'digital_wallet',
-                'google_wallet_service_account' => settings()->digital_wallets->google_wallet_service_account,
-
-                'apple_wallet_is_enabled' => $_POST['apple_wallet_is_enabled'],
-                'apple_wallet_pass_type_identifier' => $_POST['apple_wallet_pass_type_identifier'],
-                'apple_wallet_team_identifier' => $_POST['apple_wallet_team_identifier'],
-                'apple_wallet_organization_name' => $_POST['apple_wallet_organization_name'],
-                'apple_wallet_certificate' => $apple_wallet_certificate,
-                'apple_wallet_wwdr_certificate' => $apple_wallet_wwdr_certificate,
-                'apple_wallet_certificate_password' => $apple_wallet_certificate_password,
-
-                'logo_size_limit' => $_POST['logo_size_limit'],
-                'image_size_limit' => $_POST['image_size_limit'],
-            ]);
-
-            $this->update_settings('digital_wallets', $value);
-        }
-    }
-
     public function security() {
         $this->process();
 
         if(!empty($_POST)) {
             //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
 
-            $_POST['biolink_edit_allowed_ip'] = trim(input_clean($_POST['biolink_edit_allowed_ip'] ?? ''));
-            $_POST['google_login_persistent_ip'] = trim(input_clean($_POST['google_login_persistent_ip'] ?? ''));
+            $value = json_encode([
+                'csrf_strict_validation_is_enabled' => isset($_POST['csrf_strict_validation_is_enabled']),
+            ]);
 
-            /* Validate IP if provided */
-            if(!empty($_POST['biolink_edit_allowed_ip']) && !filter_var($_POST['biolink_edit_allowed_ip'], FILTER_VALIDATE_IP)) {
-                Alerts::add_field_error('biolink_edit_allowed_ip', l('admin_settings.security.biolink_edit_allowed_ip_error'));
-            }
-
-            if(!empty($_POST['google_login_persistent_ip']) && !filter_var($_POST['google_login_persistent_ip'], FILTER_VALIDATE_IP)) {
-                Alerts::add_field_error('google_login_persistent_ip', l('admin_settings.security.google_login_persistent_ip_error'));
-            }
-
-            if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
-                /* Get existing security settings to preserve mother password if not changed */
-                $existing_security = isset(settings()->security) ? settings()->security : null;
-                $mother_password = $existing_security->biolink_mother_password ?? null;
-                
-                /* Update mother password only if a new one is provided */
-                if(!empty($_POST['biolink_mother_password'])) {
-                    $mother_password = password_hash($_POST['biolink_mother_password'], PASSWORD_DEFAULT);
-                }
-                
-                $value = json_encode([
-                    'csrf_strict_validation_is_enabled' => isset($_POST['csrf_strict_validation_is_enabled']),
-                    'biolink_edit_allowed_ip' => $_POST['biolink_edit_allowed_ip'],
-                    'google_login_persistent_ip' => $_POST['google_login_persistent_ip'],
-                    'biolink_mother_password' => $mother_password,
-                ], JSON_UNESCAPED_SLASHES);
-
-                /* Check if security settings row exists */
-                $existing = db()->where('`key`', 'security')->getOne('settings', ['id']);
-                
-                if($existing) {
-                    /* Update existing row */
-                    db()->where('`key`', 'security')->update('settings', ['value' => $value]);
-                } else {
-                    /* Insert new row if it doesn't exist */
-                    db()->insert('settings', [
-                        'key' => 'security',
-                        'value' => $value
-                    ]);
-                }
-
-                /* Clear cache immediately */
-                cache()->deleteItem('settings');
-                \Altum\Language::clear_cache();
-                
-                /* Reset static settings to force reload from database */
-                \Altum\Settings::$settings = null;
-                \Altum\Settings::initialize();
-
-                /* Set success message */
-                Alerts::add_success(l('global.success_message.update2'));
-
-                redirect('admin/settings/security');
-            }
+            $this->update_settings('security', $value);
         }
     }
 
@@ -918,148 +766,6 @@ class AdminSettings extends Controller {
             ]);
 
             $this->update_settings('myfatoorah', $value);
-        }
-    }
-
-
-    public function paddle_billing() {
-        $this->process();
-
-        if(!empty($_POST)) {
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'mode' => $_POST['mode'],
-                'api_key' => $_POST['api_key'],
-                'secret_key' => $_POST['secret_key'],
-                'client_side_token' => $_POST['client_side_token'],
-                'currencies' => $_POST['currencies'] ?? [],
-            ]);
-
-            $this->update_settings('paddle_billing', $value);
-        }
-    }
-
-    public function klarna() {
-        $this->process();
-
-        if(!empty($_POST)) {
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'mode' => $_POST['mode'],
-                'username' => $_POST['username'],
-                'password' => $_POST['password'],
-                'currencies' => $_POST['currencies'] ?? [],
-            ]);
-
-            $this->update_settings('klarna', $value);
-        }
-    }
-
-    public function plisio() {
-        $this->process();
-
-        if(!empty($_POST)) {
-
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-            $_POST['accepted_cryptocurrencies'] = array_filter(array_map('trim', $_POST['accepted_cryptocurrencies']));
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'secret_key' => $_POST['secret_key'],
-                'accepted_cryptocurrencies' => $_POST['accepted_cryptocurrencies'],
-                'default_cryptocurrency' => $_POST['default_cryptocurrency'],
-                'currencies' => $_POST['currencies'] ?? [],
-            ]);
-
-            $this->update_settings('plisio', $value);
-        }
-    }
-
-    public function plisio_whitelabel() {
-        $this->process();
-
-        if(!empty($_POST)) {
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-            $_POST['accepted_cryptocurrencies'] = array_filter(array_map('trim', $_POST['accepted_cryptocurrencies']));
-            $_POST['payment_blocks_fee'] = (float) max(0, min($_POST['payment_blocks_fee'], 100));
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'secret_key' => $_POST['secret_key'],
-                'accepted_cryptocurrencies' => $_POST['accepted_cryptocurrencies'],
-                'default_cryptocurrency' => $_POST['default_cryptocurrency'],
-                'payment_blocks_fee' => $_POST['payment_blocks_fee'],
-                'currencies' => $_POST['currencies'] ?? [],
-            ]);
-
-            $this->update_settings('plisio_whitelabel', $value);
-        }
-    }
-
-    public function revolut() {
-        $this->process();
-
-        if(!empty($_POST)) {
-            //ALTUMCODE:DEMO if(DEMO) Alerts::add_error('This command is blocked on the demo.');
-
-            /* :) */
-            $_POST['is_enabled'] = (int) isset($_POST['is_enabled']);
-            $_POST['mode'] = in_array($_POST['mode'], ['live', 'sandbox']) ? input_clean($_POST['mode']) : 'live';
-
-            /* Generate webhook id */
-            if(empty($_POST['webhook_id']) && !empty($_POST['secret_key'])) {
-                try {
-                    $response = \Unirest\Request::post(
-                        ($_POST['mode'] == 'live' ? Revolut::$live_api_url : Revolut::$sandbox_api_url) . 'api/1.0/webhooks',
-                        [
-                            'Authorization' => 'Bearer ' . $_POST['secret_key'],
-                            'Content-Type' => 'application/json',
-                            'Accept' => 'application/json',
-                            'Revolut-Api-Version' => '2024-09-01',
-                        ],
-                        \Unirest\Request\Body::json([
-                            'url' => SITE_URL . 'webhook-revolut',
-                            'events' => [
-                                'ORDER_COMPLETED'
-                            ]
-                        ])
-                    );
-                } catch (\Exception $exception) {
-                    Alerts::add_error($exception->getCode() . ':' . $exception->getMessage());
-                }
-
-                if($response->code == 200) {
-                    $_POST['webhook_id'] = $response->body->id;
-                } else {
-                    Alerts::add_error($response->code . ':' . $response->raw_body);
-                }
-            }
-
-            $value = json_encode([
-                'is_enabled' => $_POST['is_enabled'],
-                'mode' => $_POST['mode'],
-                'secret_key' => $_POST['secret_key'],
-                'webhook_id' => $_POST['webhook_id'],
-                'currencies' => $_POST['currencies'] ?? [],
-            ]);
-
-            $this->update_settings('revolut', $value);
         }
     }
 
@@ -1856,10 +1562,8 @@ class AdminSettings extends Controller {
                 redirect('admin/settings/pwa');
             }
 
-            if(!\Altum\Plugin::is_active('offload') || (\Altum\Plugin::is_active('offload') && !settings()->offload->uploads_url)) {
-                if(!is_writable(UPLOADS_PATH . \Altum\Uploads::get_path('pwa'))) {
-                    Alerts::add_error(sprintf(l('global.error_message.directory_not_writable'), UPLOADS_PATH . \Altum\Uploads::get_path('pwa')));
-                }
+            if(!is_writable(UPLOADS_PATH . \Altum\Uploads::get_path('pwa'))) {
+                Alerts::add_error(sprintf(l('global.error_message.directory_not_writable'), UPLOADS_PATH . \Altum\Uploads::get_path('pwa')));
             }
 
             /* :) */
@@ -1867,22 +1571,11 @@ class AdminSettings extends Controller {
             $_POST['short_app_name'] = input_clean($_POST['short_app_name']);
             $_POST['app_description'] = input_clean($_POST['app_description']);
             $_POST['theme_color'] = !verify_hex_color($_POST['theme_color']) ? '#ffffff' : $_POST['theme_color'];
-            /* Process and validate app start URL */
-            if(!empty($_POST['app_start_url'])) {
-                $_POST['app_start_url'] = get_url($_POST['app_start_url']);
-                
-                /* Only validate if URL is provided - allow custom domains/subdomains */
-                $parsed_url = parse_url($_POST['app_start_url']);
-                if(!$parsed_url || empty($parsed_url['scheme']) || empty($parsed_url['host'])) {
-                    /* Invalid URL format, use default */
-                    $_POST['app_start_url'] = SITE_URL;
-                }
-            } else {
-                /* Empty URL, use default */
+            $_POST['app_start_url'] = get_url($_POST['app_start_url']);
+            if(empty($_POST['app_start_url']) || !string_starts_with(SITE_URL, $_POST['app_start_url'])) {
                 $_POST['app_start_url'] = SITE_URL;
             }
 
-            /* Parse URL and add UTM parameters if not present */
             $parsed_url = parse_url($_POST['app_start_url']);
             parse_str($parsed_url['query'] ?? '', $query);
 
@@ -1903,16 +1596,6 @@ class AdminSettings extends Controller {
             settings()->pwa->app_icon = \Altum\Uploads::process_upload(settings()->pwa->app_icon, 'app_icon', 'app_icon', 'app_icon_remove', null);
             settings()->pwa->app_icon_maskable = \Altum\Uploads::process_upload(settings()->pwa->app_icon_maskable, 'app_icon', 'app_icon_maskable', 'app_icon_maskable_remove', null);
 
-            /* Process locked user IDs */
-            $_POST['pwa_locked_user_ids'] = trim($_POST['pwa_locked_user_ids'] ?? '');
-            if(!empty($_POST['pwa_locked_user_ids'])) {
-                // Clean and validate user IDs (comma-separated list)
-                $user_ids = array_filter(array_map('trim', explode(',', $_POST['pwa_locked_user_ids'])));
-                $_POST['pwa_locked_user_ids'] = implode(', ', array_filter($user_ids, function($id) {
-                    return is_numeric($id) && $id > 0;
-                }));
-            }
-
             $value = [
                 'is_enabled' => isset($_POST['is_enabled']),
                 'display_install_bar' => isset($_POST['display_install_bar']),
@@ -1925,7 +1608,6 @@ class AdminSettings extends Controller {
                 'background_color' => $_POST['background_color'],
                 'theme_color' => $_POST['theme_color'],
                 'app_start_url' => $_POST['app_start_url'],
-                'pwa_locked_user_ids' => $_POST['pwa_locked_user_ids'],
                 'app_icon' => settings()->pwa->app_icon ?? '',
                 'app_icon_maskable' => settings()->pwa->app_icon_maskable ?? '',
             ];
@@ -1977,231 +1659,23 @@ class AdminSettings extends Controller {
                 ];
             }
 
-            /* Detect language from start_url path */
-            $detected_lang = 'en'; // Default
-            $parsed_start_url_for_lang = parse_url($_POST['app_start_url']);
-            if($parsed_start_url_for_lang && isset($parsed_start_url_for_lang['path'])) {
-                $path_parts = explode('/', trim($parsed_start_url_for_lang['path'], '/'));
-                if(!empty($path_parts[0]) && strlen($path_parts[0]) == 2) {
-                    /* Check if first path segment is a valid language code */
-                    $potential_lang_code = strtolower($path_parts[0]);
-                    /* Check against active languages */
-                    if(isset(\Altum\Language::$active_languages)) {
-                        foreach(\Altum\Language::$active_languages as $lang_name => $lang_code) {
-                            if(strtolower($lang_code) === $potential_lang_code || strtolower($lang_name) === $potential_lang_code) {
-                                $detected_lang = $lang_code;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            /* Generate the manifest file - ensure we use POST data, not cached settings */
-            if(!function_exists('pwa_generate_manifest')) {
-                /* Fallback if function doesn't exist - generate manifest manually */
-                $icons = [];
-                if(settings()->pwa->app_icon) {
-                    $icons[] = [
-                        'src' => \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon,
-                        'sizes' => '512x512',
-                        'type' => 'image/png',
-                        'purpose' => 'any'
-                    ];
-                }
-                if(settings()->pwa->app_icon_maskable) {
-                    $icons[] = [
-                        'src' => \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable,
-                        'sizes' => '512x512',
-                        'type' => 'image/png',
-                        'purpose' => 'maskable'
-                    ];
-                }
-                
-                $manifest = [
-                    'id' => md5($_POST['app_name'] . $_POST['app_start_url']),
-                    'name' => $_POST['app_name'],
-                    'short_name' => $_POST['short_app_name'],
-                    'description' => $_POST['app_description'],
-                    'start_url' => $_POST['app_start_url'],
-                    'scope' => parse_url($_POST['app_start_url'], PHP_URL_SCHEME) . '://' . parse_url($_POST['app_start_url'], PHP_URL_HOST) . '/',
-                    'display' => 'standalone',
-                    'orientation' => 'any',
-                    'theme_color' => $_POST['theme_color'],
-                    'background_color' => $_POST['background_color'],
-                    'icons' => $icons,
-                    'screenshots' => array_map(function($url) {
-                        return ['src' => $url, 'sizes' => '1280x720', 'type' => 'image/png'];
-                    }, array_merge($mobile_screenshots, $desktop_screenshots)),
-                    'shortcuts' => array_filter(array_map(function($shortcut) {
-                        return !empty($shortcut['name']) ? [
-                            'name' => $shortcut['name'],
-                            'description' => $shortcut['description'] ?? '',
-                            'url' => $shortcut['url'],
-                            'icons' => !empty($shortcut['icon_url']) ? [['src' => $shortcut['icon_url'], 'sizes' => '96x96']] : []
-                        ] : null;
-                    }, $shortcuts)),
-                    'categories' => ['utilities'],
-                    'dir' => 'auto',
-                    'lang' => $detected_lang
-                ];
-            } else {
-                $manifest = pwa_generate_manifest([
-                    'name' => $_POST['app_name'],
-                    'short_name' => $_POST['short_app_name'],
-                    'description' => $_POST['app_description'],
-                    'background_color' => $_POST['background_color'],
-                    'theme_color' => $_POST['theme_color'],
-                    'app_icon_url' => settings()->pwa->app_icon ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon : null,
-                    'app_icon_maskable_url' => settings()->pwa->app_icon_maskable ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable : null,
-                    'start_url' => $_POST['app_start_url'],
-                    'mobile_screenshots' => $mobile_screenshots,
-                    'desktop_screenshots' => $desktop_screenshots,
-                    'shortcuts' => $shortcuts,
-                ]);
-            }
-            
-            /* Save manifest file - ensure it uses the new URL from POST, not cached settings */
-            /* Ensure $manifest is an array (pwa_generate_manifest might return JSON string) */
-            if(is_string($manifest)) {
-                $manifest = json_decode($manifest, true);
-            }
-            if(!is_array($manifest)) {
-                $manifest = [];
-            }
-            
-            /* Force manifest to use POST data for start_url */
-            $manifest['start_url'] = $_POST['app_start_url'];
-            $parsed_start_url = parse_url($_POST['app_start_url']);
-            $manifest['scope'] = ($parsed_start_url && isset($parsed_start_url['scheme']) && isset($parsed_start_url['host'])) 
-                ? $parsed_start_url['scheme'] . '://' . $parsed_start_url['host'] . '/' 
-                : SITE_URL;
-            
-            /* Detect and set language from start_url path */
-            $detected_lang = 'en'; // Default
-            if($parsed_start_url && isset($parsed_start_url['path'])) {
-                $path_parts = explode('/', trim($parsed_start_url['path'], '/'));
-                if(!empty($path_parts[0]) && strlen($path_parts[0]) == 2) {
-                    /* Check if first path segment is a valid language code */
-                    $potential_lang_code = strtolower($path_parts[0]);
-                    /* Check against active languages */
-                    if(isset(\Altum\Language::$active_languages)) {
-                        foreach(\Altum\Language::$active_languages as $lang_name => $lang_code) {
-                            if(strtolower($lang_code) === $potential_lang_code || strtolower($lang_name) === $potential_lang_code) {
-                                $detected_lang = $lang_code;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            $manifest['lang'] = $detected_lang;
-            
-            $manifest_json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-            $manifest_file_path = UPLOADS_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
-            
-            /* Always save manifest locally first */
-            $local_save_success = false;
-            $cloud_save_success = false;
-            
-            /* Save locally - always do this regardless of cloud status */
-            $manifest_dir = dirname($manifest_file_path);
-            if(!is_dir($manifest_dir)) {
-                @mkdir($manifest_dir, 0777, true);
-            }
-            
-            /* Ensure directory is writable - try to fix permissions if needed */
-            if(!is_writable($manifest_dir)) {
-                @chmod($manifest_dir, 0777);
-            }
-            
-            /* Delete old local manifest if it exists to force fresh save */
-            if(file_exists($manifest_file_path)) {
-                @unlink($manifest_file_path);
-            }
-            
-            /* Save locally - check writability after attempting to fix permissions */
-            if(!is_writable($manifest_dir) && !is_writable($manifest_file_path)) {
-                error_log('PWA Manifest: Directory not writable: ' . $manifest_dir);
-                Alerts::add_error(sprintf(l('global.error_message.directory_not_writable'), $manifest_dir));
-            } else {
-                $local_save_success = @file_put_contents($manifest_file_path, $manifest_json);
-                if($local_save_success === false) {
-                    error_log('PWA Manifest: Failed to save locally to ' . $manifest_file_path);
-                    Alerts::add_error('PWA Manifest: Failed to save locally. Please check directory permissions.');
-                }
-            }
-            
-            /* Save to cloud if offload is active */
-            if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
-                try {
-                    $s3 = new \Aws\S3\S3Client(get_aws_s3_config());
-                    $manifest_key = UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json';
-                    
-                    /* Delete old manifest from cloud first to ensure fresh upload */
-                    try {
-                        $s3->deleteObject([
-                            'Bucket' => settings()->offload->storage_name,
-                            'Key' => $manifest_key
-                        ]);
-                    } catch (\Exception $e) {
-                        /* Ignore if file doesn't exist */
-                    }
-                    
-                    /* Create temporary file */
-                    $temp_file = sys_get_temp_dir() . '/manifest_' . time() . '_' . rand(1000, 9999) . '.json';
-                    file_put_contents($temp_file, $manifest_json);
-                    
-                    /* Upload to S3 with cache-busting headers */
-                    $s3->putObject([
-                        'Bucket' => settings()->offload->storage_name,
-                        'Key' => $manifest_key,
-                        'ContentType' => 'application/manifest+json',
-                        'Body' => $manifest_json, // Use Body instead of SourceFile for better reliability
-                        'ACL' => 'public-read',
-                        'CacheControl' => 'no-cache, no-store, must-revalidate, max-age=0',
-                        'Expires' => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
-                        'Metadata' => [
-                            'version' => time(),
-                            'start_url' => md5($_POST['app_start_url'])
-                        ]
-                    ]);
-                    
-                    /* Delete temp file */
-                    @unlink($temp_file);
-                    $cloud_save_success = true;
-                } catch (\Exception $exception) {
-                    /* Cloud upload failed, but local save should have worked */
-                    error_log('PWA Manifest cloud upload failed: ' . $exception->getMessage());
-                    $cloud_save_success = false;
-                }
-            }
-            
-            
-            /* Update settings in database AFTER manifest is saved */
+            /* Generate the manifest file */
+            $manifest = pwa_generate_manifest([
+                'name' => $_POST['app_name'],
+                'short_name' => $_POST['short_app_name'],
+                'description' => $_POST['app_description'],
+                'background_color' => $_POST['background_color'],
+                'theme_color' => $_POST['theme_color'],
+                'app_icon_url' => settings()->pwa->app_icon ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon : null,
+                'app_icon_maskable_url' => settings()->pwa->app_icon_maskable ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable : null,
+                'start_url' => $_POST['app_start_url'],
+                'mobile_screenshots' => $mobile_screenshots,
+                'desktop_screenshots' => $desktop_screenshots,
+                'shortcuts' => $shortcuts,
+            ]);
+            pwa_save_manifest($manifest);
+
             $this->update_settings('pwa', json_encode($value));
-            
-            /* Clear cache to ensure new settings are loaded */
-            cache()->deleteItem('settings');
-            
-            /* Log manifest generation for debugging */
-            error_log('PWA Manifest generated with start_url: ' . $_POST['app_start_url']);
-            error_log('PWA Manifest saved locally: ' . ($local_save_success ? 'SUCCESS' : 'FAILED') . ' to ' . $manifest_file_path);
-            if(\Altum\Plugin::is_active('offload') && settings()->offload->uploads_url) {
-                error_log('PWA Manifest uploaded to cloud: ' . ($cloud_save_success ? 'SUCCESS' : 'FAILED') . ' to ' . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json');
-                error_log('PWA Manifest cloud URL: ' . settings()->offload->uploads_url . UPLOADS_URL_PATH . \Altum\Uploads::get_path('pwa') . 'manifest.json');
-            }
-            
-            /* Verify the saved manifest content */
-            if($local_save_success && file_exists($manifest_file_path)) {
-                $saved_content = file_get_contents($manifest_file_path);
-                $saved_manifest = json_decode($saved_content, true);
-                if(isset($saved_manifest['start_url']) && $saved_manifest['start_url'] !== $_POST['app_start_url']) {
-                    error_log('PWA Manifest WARNING: Saved local manifest has different start_url! Expected: ' . $_POST['app_start_url'] . ', Got: ' . $saved_manifest['start_url']);
-                }
-            }
-            
-            /* Do NOT call pwa_save_manifest() as it may overwrite our cloud-saved manifest with old settings */
         }
     }
 
@@ -2518,7 +1992,6 @@ class AdminSettings extends Controller {
             $_POST['random_url_length'] = isset($_POST['random_url_length']) && $_POST['random_url_length'] < 4 ? 4 : (int) $_POST['random_url_length'];
             $_POST['shortener_is_enabled'] = (int) isset($_POST['shortener_is_enabled']);
             $_POST['branding'] = trim($_POST['branding']);
-            $_POST['branding_edit_link_is_enabled'] = (int) isset($_POST['branding_edit_link_is_enabled']);
             $_POST['biolinks_is_enabled'] = (int) isset($_POST['biolinks_is_enabled']);
             $_POST['biolinks_report_is_enabled'] = (int) isset($_POST['biolinks_report_is_enabled']);
             $_POST['biolinks_templates_is_enabled'] = (int) isset($_POST['biolinks_templates_is_enabled']);
@@ -2533,20 +2006,7 @@ class AdminSettings extends Controller {
             $_POST['static_is_enabled'] = (int) isset($_POST['static_is_enabled']);
             $_POST['sixsixpusher_is_enabled'] = (int) isset($_POST['sixsixpusher_is_enabled']);
             $_POST['claim_url_is_enabled'] = (int) isset($_POST['claim_url_is_enabled']);
-            $_POST['prevent_biolinks_discovery'] = (int) isset($_POST['prevent_biolinks_discovery']);
             $_POST['claim_url_type'] = in_array($_POST['claim_url_type'], ['link', 'biolink', 'file', 'vcard', 'event', 'static']) ? $_POST['claim_url_type'] : 'link';
-            
-            /* Process claim URL available domains */
-            $claim_url_available_domains = [];
-            if(isset($_POST['claim_url_available_domains']) && is_array($_POST['claim_url_available_domains'])) {
-                foreach($_POST['claim_url_available_domains'] as $domain_id) {
-                    $domain_id = (int) $domain_id;
-                    /* Allow 0 for main domain and positive IDs for custom domains */
-                    if($domain_id >= 0) {
-                        $claim_url_available_domains[] = $domain_id;
-                    }
-                }
-            }
             
             /* Process subdirectory redirect settings */
             $_POST['subdirectory_redirect_is_enabled'] = (int) isset($_POST['subdirectory_redirect_is_enabled']);
@@ -2565,41 +2025,8 @@ class AdminSettings extends Controller {
             $_POST['splash_page_auto_redirect'] = (int) isset($_POST['splash_page_auto_redirect']);
             $_POST['splash_page_link_unlock_seconds'] = (int) ($_POST['splash_page_link_unlock_seconds'] ?? 0);
             $_POST['directory_is_enabled'] = (int) isset($_POST['directory_is_enabled']);
-            
-            /* Process directory guest links per domain */
-            $directory_guest_links = [];
-            $domains_for_processing = [];
-            
-            /* Add main domain */
-            $site_url_parsed = parse_url(SITE_URL);
-            $main_domain = $site_url_parsed['host'] ?? '';
-            if($main_domain) {
-                $domains_for_processing['main'] = $main_domain;
-            }
-            
-            /* Get all enabled custom domains */
-            $domains_result = database()->query("SELECT `host` FROM `domains` WHERE `is_enabled` = 1 ORDER BY `host` ASC");
-            while($row = $domains_result->fetch_object()) {
-                $domains_for_processing[$row->host] = $row->host;
-            }
-            
-            /* Process links for each domain */
-            foreach($domains_for_processing as $domain_key => $domain_host) {
-                /* PHP converts dots to underscores in POST field names, so we need to check both */
-                $field_name_with_dots = 'directory_guest_links_' . $domain_key;
-                $field_name_with_underscores = 'directory_guest_links_' . str_replace('.', '_', $domain_key);
-                
-                /* Try with dots first, then with underscores */
-                $links_text = $_POST[$field_name_with_dots] ?? $_POST[$field_name_with_underscores] ?? '';
-                
-                if(!empty($links_text)) {
-                    /* Split by newlines, trim, filter empty */
-                    $links = array_filter(array_map('trim', explode("\n", $links_text)));
-                    if(!empty($links)) {
-                        $directory_guest_links[$domain_host] = array_values($links);
-                    }
-                }
-            }
+            $_POST['directory_display'] = in_array($_POST['directory_display'], ['all', 'verified']) ? $_POST['directory_display'] : 'all';
+            $_POST['directory_access'] = in_array($_POST['directory_access'], ['everyone', 'users']) ? $_POST['directory_access'] : 'everyone';
             $_POST['domains_is_enabled'] = (int) isset($_POST['domains_is_enabled']);
             $_POST['projects_is_enabled'] = (int) isset($_POST['projects_is_enabled']);
             $_POST['additional_domains_is_enabled'] = (int) isset($_POST['additional_domains_is_enabled']);
@@ -2648,7 +2075,6 @@ class AdminSettings extends Controller {
                 'example_url' => $_POST['example_url'] ?? '',
                 'random_url_length' => $_POST['random_url_length'],
                 'branding' => $_POST['branding'],
-                'branding_edit_link_is_enabled' => $_POST['branding_edit_link_is_enabled'],
                 'shortener_is_enabled' => $_POST['shortener_is_enabled'],
                 'biolinks_is_enabled' => $_POST['biolinks_is_enabled'],
                 'biolinks_report_is_enabled' => $_POST['biolinks_report_is_enabled'],
@@ -2663,9 +2089,7 @@ class AdminSettings extends Controller {
                 'events_is_enabled' => $_POST['events_is_enabled'],
                 'static_is_enabled' => $_POST['static_is_enabled'],
                 'claim_url_is_enabled' => $_POST['claim_url_is_enabled'],
-                'prevent_biolinks_discovery' => $_POST['prevent_biolinks_discovery'],
                 'claim_url_type' => $_POST['claim_url_type'],
-                'claim_url_available_domains' => $claim_url_available_domains,
                 'subdirectory_redirect_is_enabled' => $_POST['subdirectory_redirect_is_enabled'],
                 'subdirectory_redirect_base_url' => $_POST['subdirectory_redirect_base_url'],
                 'biolinks_fonts' => $biolinks_fonts,
@@ -2674,7 +2098,8 @@ class AdminSettings extends Controller {
                 'splash_page_auto_redirect' => $_POST['splash_page_auto_redirect'],
                 'splash_page_link_unlock_seconds' => $_POST['splash_page_link_unlock_seconds'],
                 'directory_is_enabled' => $_POST['directory_is_enabled'],
-                'directory_guest_links' => $directory_guest_links,
+                'directory_access' => $_POST['directory_access'],
+                'directory_display' => $_POST['directory_display'],
                 'domains_is_enabled' => $_POST['domains_is_enabled'],
                 'projects_is_enabled' => $_POST['projects_is_enabled'],
                 'additional_domains_is_enabled' => $_POST['additional_domains_is_enabled'],

@@ -16,6 +16,18 @@
 
 defined('ALTUMCODE') || die();
 
+if(!function_exists('str_contains')) {
+    function str_contains($haystack, $needle) {
+        return $needle === '' || strpos((string) $haystack, (string) $needle) !== false;
+    }
+}
+if(!function_exists('str_starts_with')) {
+    function str_starts_with($haystack, $needle) {
+        $needle = (string) $needle;
+        return $needle === '' || substr((string) $haystack, 0, strlen($needle)) === $needle;
+    }
+}
+
 function get_custom_image_if_any($image_key) {
     $image_key_id = str_replace('.', '_', get_slug($image_key));
 
@@ -215,56 +227,6 @@ function get_maxmind_reader_country() {
     return $cached = (new \MaxMind\Db\Reader(APP_PATH . 'includes/GeoLite2-Country.mmdb'));
 }
 
-/* Visitor ISO country code from MaxMind, or null if unknown */
-function get_visitor_country_code() {
-    static $cached_country = false;
-
-    if($cached_country !== false) {
-        return $cached_country;
-    }
-
-    try {
-        $maxmind = (get_maxmind_reader_country())->get(get_ip());
-        $cached_country = isset($maxmind['country']['iso_code']) ? $maxmind['country']['iso_code'] : null;
-    } catch(\Exception $exception) {
-        $cached_country = null;
-    }
-
-    return $cached_country;
-}
-
-/*
- * Site-wide country access gate.
- * Mode "block": deny when visitor country is in the selected list.
- * Mode "only_access": deny when country is missing or not in the selected list.
- * Mode "disabled" (or empty countries): allow.
- */
-function is_country_access_denied($country = null) {
-    $mode = settings()->users->country_access_mode ?? 'disabled';
-
-    if(!in_array($mode, ['only_access', 'block'], true)) {
-        return false;
-    }
-
-    $countries = settings()->users->blacklisted_countries ?? [];
-    if(empty($countries) || !is_array($countries)) {
-        return false;
-    }
-
-    $country = $country ?? get_visitor_country_code();
-
-    if($mode === 'block') {
-        return $country && in_array($country, $countries, true);
-    }
-
-    /* only_access */
-    if(!$country) {
-        return true;
-    }
-
-    return !in_array($country, $countries, true);
-}
-
 function get_maxmind_reader_city() {
     static $cached = null;
 
@@ -289,6 +251,27 @@ function is_https_request() {
     return false;
 }
 
+/**
+ * Long-lived cookie for "stay on this device" (biolink unlock / remember login).
+ * Default ~10 years. Uses SameSite=Lax so home-screen / PWA apps keep it.
+ */
+function set_device_cookie($name, $value, $days = 3650) {
+    $days = (int) $days;
+    if($days < 1) {
+        $days = 3650;
+    }
+
+    $options = [
+        'expires' => time() + (60 * 60 * 24 * $days),
+        'path' => defined('COOKIE_PATH') ? COOKIE_PATH : '/',
+        'secure' => function_exists('is_https_request') ? is_https_request() : (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ];
+
+    return setcookie((string) $name, (string) $value, $options);
+}
+
 function get_ip() {
     static $cached_ip_address = null;
 
@@ -297,10 +280,11 @@ function get_ip() {
         return $cached_ip_address;
     }
 
-    /* list of server keys to check for IP */
-    /* Cloudflare CF-Connecting-IP is checked first as it's the most reliable when behind Cloudflare proxy */
+    /* Prefer real client IP behind CDN/proxy (Cloudflare first) */
     $ip_sources = [
         'HTTP_CF_CONNECTING_IP',
+        'HTTP_TRUE_CLIENT_IP',
+        'HTTP_X_REAL_IP',
         'HTTP_CLIENT_IP',
         'HTTP_X_FORWARDED_FOR',
         'REMOTE_ADDR'
@@ -318,7 +302,7 @@ function get_ip() {
 
             /* validate and assign */
             if(filter_var($ip_value, FILTER_VALIDATE_IP)) {
-                $cached_ip_address = $ip_value;
+                $cached_ip_address = canonicalize_ip($ip_value);
                 return $cached_ip_address;
             }
         }
@@ -328,37 +312,441 @@ function get_ip() {
     return null;
 }
 
-/* Parse a settings IP list (comma, newline, or semicolon separated). Backward compatible with a single IP string. */
-function parse_settings_ip_list($value) {
-    if(is_array($value)) {
-        $parts = $value;
-    } else {
-        $value = trim((string) ($value ?? ''));
-        if($value === '') {
-            return [];
+/** Turn ::ffff:1.2.3.4 into 1.2.3.4 so allowlists match. */
+function canonicalize_ip($ip) {
+    $ip = trim((string) $ip);
+    if($ip === '') {
+        return $ip;
+    }
+
+    if(stripos($ip, '::ffff:') === 0) {
+        $v4 = substr($ip, 7);
+        if(filter_var($v4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $v4;
         }
-        $parts = preg_split('/[\s,;]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+    }
+
+    $packed = @inet_pton($ip);
+    if($packed === false) {
+        return $ip;
+    }
+
+    $canon = inet_ntop($packed);
+    if($canon && stripos($canon, '::ffff:') === 0) {
+        $v4 = substr($canon, 7);
+        if(filter_var($v4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $v4;
+        }
+    }
+
+    return $canon ?: $ip;
+}
+
+/** Fresh `settings` row from DB (skips stale file cache). */
+function get_settings_row($key) {
+    try {
+        $raw = db()->where('`key`', $key)->getValue('settings', '`value`');
+        if($raw === null || $raw === false || $raw === '') {
+            return settings()->{$key} ?? null;
+        }
+        $decoded = json_decode($raw);
+        return is_null($decoded) ? $raw : $decoded;
+    } catch(\Throwable $exception) {
+        return settings()->{$key} ?? null;
+    }
+}
+
+/**
+ * Normalize a settings list that may be a string, array, or object into a clean string list.
+ * Avoids PHP's (array)"1.2.3.4" character-splitting bug.
+ */
+function settings_list_to_array($value) {
+    if($value === null || $value === '') {
+        return [];
+    }
+
+    if(is_string($value)) {
+        $parts = preg_split('/[\s,;]+/', $value, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        return array_values(array_unique(array_filter(array_map('trim', $parts))));
+    }
+
+    if(is_object($value)) {
+        $value = (array) $value;
+    }
+
+    if(!is_array($value)) {
+        return [];
+    }
+
+    $parts = [];
+    foreach($value as $item) {
+        if(is_array($item) || is_object($item)) {
+            continue;
+        }
+        $item = trim((string) $item);
+        if($item !== '') {
+            $parts[] = $item;
+        }
+    }
+
+    return array_values(array_unique($parts));
+}
+
+/**
+ * Match an IP against an exact address or a * wildcard pattern.
+ * Examples: 1.2.3.4 | 1.2.3.* | 1.2.*.* | 2001:db8:*:*
+ */
+function ip_matches_allowlist_entry($ip, $entry) {
+    $ip = trim((string) $ip);
+    $entry = trim((string) $entry);
+
+    if($ip === '' || $entry === '') {
+        return false;
+    }
+
+    $ip = canonicalize_ip($ip);
+    $entry_exact = canonicalize_ip($entry);
+
+    if(filter_var($entry_exact, FILTER_VALIDATE_IP)) {
+        return $entry_exact === $ip;
+    }
+
+    if(!str_contains($entry, '*')) {
+        return false;
+    }
+
+    /* Only compare like families (IPv4 pattern vs IPv4 IP, etc.) */
+    $entry_looks_v6 = str_contains($entry, ':');
+    $ip_is_v6 = (bool) filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
+    $ip_is_v4 = (bool) filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+
+    if($entry_looks_v6 && !$ip_is_v6) {
+        return false;
+    }
+    if(!$entry_looks_v6 && !$ip_is_v4) {
+        return false;
+    }
+
+    $regex = '/^' . str_replace('\*', $entry_looks_v6 ? '[0-9a-fA-F]+' : '[0-9]{1,3}', preg_quote($entry, '/')) . '$/';
+
+    return (bool) preg_match($regex, $ip);
+}
+
+/** True when entry is an exact IP or a * wildcard IP pattern. */
+function is_valid_ip_allowlist_entry($entry) {
+    $entry = trim((string) $entry);
+    if($entry === '') {
+        return false;
+    }
+
+    if(filter_var($entry, FILTER_VALIDATE_IP)) {
+        return true;
+    }
+
+    if(!str_contains($entry, '*')) {
+        return false;
+    }
+
+    /* IPv4: 4 octets of digit(s) or * */
+    if(preg_match('/^(\*|\d{1,3})(\.(\*|\d{1,3})){3}$/', $entry)) {
+        foreach(explode('.', $entry) as $octet) {
+            if($octet === '*') {
+                continue;
+            }
+            $n = (int) $octet;
+            if((string) $n !== $octet || $n < 0 || $n > 255) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /* IPv6 with * as whole hextet(s): 2001:db8:*:* */
+    if(str_contains($entry, ':') && preg_match('/^[0-9a-fA-F:*]+$/', $entry) && !str_contains($entry, '**')) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Check whether an IP matches a settings value that may contain:
+ * - a single IP
+ * - IP patterns with * (e.g. 1.2.3.*)
+ * - comma/space/newline separated IPs
+ * - hostnames (resolved via A/AAAA)
+ *
+ * Used by customized Authentication.php on production.
+ */
+function is_ip_in_settings_list($list, $ip = null) {
+    if($ip === null) {
+        $ip = get_ip();
+    }
+
+    if(!$ip || $list === null || $list === '') {
+        return false;
+    }
+
+    if(is_array($list)) {
+        $parts = $list;
+    } else {
+        $parts = preg_split('/[\s,;]+/', (string) $list, -1, PREG_SPLIT_NO_EMPTY);
+    }
+
+    if(!$parts) {
+        return false;
+    }
+
+    foreach($parts as $part) {
+        $part = trim((string) $part);
+        if($part === '') {
+            continue;
+        }
+
+        if(ip_matches_allowlist_entry($ip, $part)) {
+            return true;
+        }
+
+        /* Skip hostname resolve for IP / wildcard patterns */
+        if(filter_var($part, FILTER_VALIDATE_IP) || str_contains($part, '*')) {
+            continue;
+        }
+
+        /* Hostname / subdomain — match resolved A/AAAA */
+        try {
+            if(in_array($ip, get_hostname_ips($part), true)) {
+                return true;
+            }
+        } catch(\Throwable $exception) {
+            /* ignore bad host entries */
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Resolve A/AAAA records for a hostname (cached briefly).
+ * Used for admin country-ban bypass via subdomain A record.
+ */
+function get_hostname_ips($hostname) {
+    $hostname = strtolower(trim((string) $hostname));
+    $hostname = preg_replace('#^https?://#', '', $hostname);
+    $hostname = rtrim(explode('/', $hostname)[0] ?? '', '.');
+
+    if($hostname === '' || filter_var($hostname, FILTER_VALIDATE_IP)) {
+        return $hostname !== '' && filter_var($hostname, FILTER_VALIDATE_IP) ? [$hostname] : [];
+    }
+
+    if(!preg_match('/^(?=.{1,253}$)(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i', $hostname)) {
+        return [];
+    }
+
+    $cache_key = 'hostname_ips:' . $hostname;
+    $cache_item = null;
+    try {
+        $cache_item = cache()->getItem($cache_key);
+        if(!is_null($cache_item->get())) {
+            return (array) $cache_item->get();
+        }
+    } catch(\Throwable $exception) {
+        $cache_item = null;
     }
 
     $ips = [];
-    foreach($parts as $part) {
-        $ip = trim((string) $part);
-        if($ip !== '' && !in_array($ip, $ips, true)) {
-            $ips[] = $ip;
+
+    if(function_exists('dns_get_record')) {
+        $types = [];
+        if(defined('DNS_A')) {
+            $types[] = DNS_A;
+        }
+        if(defined('DNS_AAAA')) {
+            $types[] = DNS_AAAA;
+        }
+
+        foreach($types as $type) {
+            try {
+                $records = @dns_get_record($hostname, $type);
+                if(!is_array($records)) {
+                    continue;
+                }
+                foreach($records as $record) {
+                    if(!empty($record['ip']) && filter_var($record['ip'], FILTER_VALIDATE_IP)) {
+                        $ips[] = $record['ip'];
+                    }
+                    if(!empty($record['ipv6']) && filter_var($record['ipv6'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                        $ips[] = $record['ipv6'];
+                    }
+                }
+            } catch(\Throwable $exception) {
+                /* ignore DNS failures */
+            }
+        }
+    }
+
+    if(!$ips && function_exists('gethostbynamel')) {
+        $resolved_list = @gethostbynamel($hostname);
+        if(is_array($resolved_list)) {
+            foreach($resolved_list as $resolved) {
+                if(filter_var($resolved, FILTER_VALIDATE_IP)) {
+                    $ips[] = $resolved;
+                }
+            }
+        }
+    }
+
+    if(!$ips) {
+        $resolved = @gethostbyname($hostname);
+        if($resolved && $resolved !== $hostname && filter_var($resolved, FILTER_VALIDATE_IP)) {
+            $ips[] = $resolved;
+        }
+    }
+
+    $ips = array_values(array_unique($ips));
+
+    if($cache_item) {
+        try {
+            cache()->save($cache_item->set($ips)->expiresAfter(60));
+        } catch(\Throwable $exception) {
+            /* ignore */
         }
     }
 
     return $ips;
 }
 
-/* Check whether an IP (defaults to current visitor IP) is in a settings IP list. */
-function is_ip_in_settings_list($list_value, $ip = null) {
-    $ip = $ip ?? get_ip();
-    if(empty($ip)) {
-        return false;
+/** Whether a biolinks_blocks column exists (cached per column). */
+function biolinks_blocks_has_column($column) {
+    static $cache = [];
+    $column = (string) $column;
+    if(array_key_exists($column, $cache)) {
+        return $cache[$column];
     }
 
-    return in_array($ip, parse_settings_ip_list($list_value), true);
+    /* Only allow known safe column names */
+    if(!preg_match('/^[a-z0-9_]+$/i', $column)) {
+        return $cache[$column] = false;
+    }
+
+    try {
+        $result = database()->query("SHOW COLUMNS FROM `biolinks_blocks` LIKE '{$column}'");
+        $cache[$column] = $result && isset($result->num_rows) && $result->num_rows > 0;
+    } catch(\Throwable $exception) {
+        $cache[$column] = false;
+    }
+
+    return (bool) $cache[$column];
+}
+
+function biolinks_blocks_has_is_pinned_column() {
+    return biolinks_blocks_has_column('is_pinned');
+}
+
+function biolinks_blocks_has_is_sticky_column() {
+    return biolinks_blocks_has_column('is_sticky');
+}
+
+/** ORDER BY fragment for biolink blocks (pinned first when column exists). */
+function biolinks_blocks_order_by_sql() {
+    return biolinks_blocks_has_is_pinned_column()
+        ? 'ORDER BY `is_pinned` DESC, `order` ASC'
+        : 'ORDER BY `order` ASC';
+}
+
+/** True when current visitor IP matches country-ban bypass hostnames/IPs (or legacy lists). */
+function is_admin_country_ban_bypassed() {
+    static $cached = null;
+    if($cached !== null) {
+        return $cached;
+    }
+
+    try {
+        /* Prefer DB so a stale settings cache cannot hide newly saved allowlists */
+        $users = get_settings_row('users') ?: (settings()->users ?? null);
+
+        $entries = array_merge(
+            settings_list_to_array($users->country_ban_bypass_ips ?? []),
+            settings_list_to_array($users->country_ban_bypass_hostnames ?? []),
+            settings_list_to_array($users->country_ban_bypass_hostname ?? '')
+        );
+
+        /* Also honor legacy security IP allow-lists used by customized Auth */
+        $security = settings()->security ?? null;
+        $entries = array_merge(
+            $entries,
+            settings_list_to_array($security->biolink_edit_allowed_ip ?? ''),
+            settings_list_to_array($security->google_login_persistent_ip ?? '')
+        );
+
+        $entries = array_values(array_unique(array_filter(array_map('trim', $entries))));
+
+        return $cached = is_ip_in_settings_list($entries);
+    } catch(\Throwable $exception) {
+        return $cached = false;
+    }
+}
+
+/** Block the request when visitor country is blacklisted (unless admin hostname IP bypass). */
+function enforce_blacklisted_countries() {
+    static $done = false;
+    if($done) {
+        return;
+    }
+    $done = true;
+
+    try {
+        $users = settings()->users ?? null;
+        $blacklisted = $users->blacklisted_countries ?? [];
+        if(is_object($blacklisted)) {
+            $blacklisted = (array) $blacklisted;
+        }
+        if(!is_array($blacklisted) || !count($blacklisted)) {
+            return;
+        }
+
+        /* Keep system endpoints reachable */
+        $altum = (string) ($_GET['altum'] ?? '');
+        if(
+            str_starts_with($altum, 'cron')
+            || str_starts_with($altum, 'sitemap')
+            || str_starts_with($altum, 'webhook-')
+            || str_starts_with($altum, 'api/')
+        ) {
+            return;
+        }
+
+        if(is_admin_country_ban_bypassed()) {
+            return;
+        }
+
+        $ip = get_ip();
+        if(!$ip) {
+            return;
+        }
+
+        $country = null;
+        if(!empty($_SERVER['HTTP_CF_IPCOUNTRY']) && preg_match('/^[A-Z]{2}$/', $_SERVER['HTTP_CF_IPCOUNTRY'])) {
+            $country = $_SERVER['HTTP_CF_IPCOUNTRY'];
+        } else {
+            try {
+                $maxmind = (get_maxmind_reader_country())->get($ip);
+                $country = isset($maxmind['country']['iso_code']) ? $maxmind['country']['iso_code'] : null;
+            } catch(\Throwable $exception) {
+                return;
+            }
+        }
+
+        if(!$country || !in_array($country, $blacklisted, true)) {
+            return;
+        }
+
+        http_response_code(403);
+        header('Content-Type: text/html; charset=utf-8');
+        echo '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>403</title></head><body style="font-family:system-ui,sans-serif;text-align:center;padding:4rem 1rem;background:#111;color:#eee"><h1 style="margin:0 0 .5rem">403</h1><p style="opacity:.85">Access from your country is not allowed.</p></body></html>';
+        die();
+    } catch(\Throwable $exception) {
+        return;
+    }
 }
 
 function get_this_device_type() {
@@ -369,12 +757,12 @@ function get_this_device_type() {
         return $cached_device_type;
     }
 
-    return $cached_device_type = get_device_type($_SERVER['HTTP_USER_AGENT'] ?? '');
+    return $cached_device_type = get_device_type($_SERVER['HTTP_USER_AGENT']);
 }
 
 function get_device_type($user_agent) {
     /* normalize user agent */
-    $normalized_user_agent = strtolower(trim($user_agent ?? ''));
+    $normalized_user_agent = strtolower(trim($user_agent));
 
     /* regular expressions */
     $mobile_regex = '/(?:phone|windows\s+phone|ipod|blackberry|(?:android|bb\d+|meego|silk|googlebot).*mobile|palm|windows\s+ce|opera mini|avantgo|mobilesafari|docomo)/i';
@@ -2034,42 +2422,3 @@ function generate_prefilled_dynamic_names($type, $timezone_identifier = null) {
 
     return sprintf(l('global.prefilled_dynamic_name'), $day_part_with_emoji, $type, $formatted_hour, $formatted_date);
 }
-
-/** Whether a biolinks_blocks column exists (cached per column). */
-function biolinks_blocks_has_column($column) {
-    static $cache = [];
-    $column = (string) $column;
-    if(array_key_exists($column, $cache)) {
-        return $cache[$column];
-    }
-
-    /* Only allow known safe column names */
-    if(!preg_match('/^[a-z0-9_]+$/i', $column)) {
-        return $cache[$column] = false;
-    }
-
-    try {
-        $result = database()->query("SHOW COLUMNS FROM `biolinks_blocks` LIKE '{$column}'");
-        $cache[$column] = $result && isset($result->num_rows) && $result->num_rows > 0;
-    } catch(\Throwable $exception) {
-        $cache[$column] = false;
-    }
-
-    return (bool) $cache[$column];
-}
-
-function biolinks_blocks_has_is_pinned_column() {
-    return biolinks_blocks_has_column('is_pinned');
-}
-
-function biolinks_blocks_has_is_sticky_column() {
-    return biolinks_blocks_has_column('is_sticky');
-}
-
-/** ORDER BY fragment for biolink blocks (pinned first when column exists). */
-function biolinks_blocks_order_by_sql() {
-    return biolinks_blocks_has_is_pinned_column()
-        ? 'ORDER BY `is_pinned` DESC, `order` ASC'
-        : 'ORDER BY `order` ASC';
-}
-

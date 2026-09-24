@@ -50,9 +50,6 @@ class Router {
 
         /* Teams */
         'allow_team_access' => null,
-
-		/* Sessions */
-		'allow_sessions' => true,
     ];
     public static $method = 'index';
     public static $data = [];
@@ -74,7 +71,6 @@ class Router {
                     'no_authentication_check' => true,
                     'has_view' => false,
                     'no_browser_language_detection' => true,
-                    'allow_sessions' => false,
                 ]
             ],
 
@@ -84,7 +80,6 @@ class Router {
                     'no_authentication_check' => true,
                     'has_view' => false,
                     'no_browser_language_detection' => true,
-                    'allow_sessions' => false,
                 ]
             ],
         ],
@@ -704,6 +699,33 @@ class Router {
                     'allow_team_access' => false,
                 ]
             ],
+            /* Custom: signed admin SSO bridge for peer sites (shazdeha.com, etc.) */
+            'admin-bridge' => [
+                'controller' => 'AdminBridge',
+                'settings' => [
+                    'allow_team_access' => false,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+                ]
+            ],
+
+
+            'account-backup' => [
+                'controller' => 'AccountBackup',
+                'settings' => [
+                    'wrapper' => 'app_wrapper',
+                    'allow_team_access' => false,
+                ]
+            ],
+
+            'account-restore' => [
+                'controller' => 'AccountBackup',
+                'settings' => [
+                    'wrapper' => 'basic_wrapper',
+                    'allow_team_access' => false,
+                ]
+            ],
 
             'referrals' => [
                 'controller' => 'Referrals',
@@ -715,14 +737,6 @@ class Router {
 
             'invoice' => [
                 'controller' => 'Invoice',
-                'settings' => [
-                    'wrapper' => 'invoice/invoice_wrapper',
-                    'allow_team_access' => false,
-                ]
-            ],
-
-            'credit-notes' => [
-                'controller' => 'CreditNotes',
                 'settings' => [
                     'wrapper' => 'invoice/invoice_wrapper',
                     'allow_team_access' => false,
@@ -871,88 +885,6 @@ class Router {
                 ]
             ],
 
-            'manifest' => [
-                'controller' => 'Manifest',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-                ]
-            ],
-
-            'favicon' => [
-                'controller' => 'Favicon',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_sessions' => false,
-                    'allow_indexing' => false,
-                ]
-            ],
-
-            'unsubscribe' => [
-                'controller' => 'Unsubscribe',
-                'settings' => [
-                    'wrapper' => 'basic_wrapper',
-                ]
-            ],
-
-            'sent-activation' => [
-                'controller' => 'SentActivation',
-                'settings' => [
-                    'wrapper' => 'basic_wrapper',
-                ]
-            ],
-
-            'view' => [
-                'controller' => 'View',
-                'settings' => [
-                    'no_authentication_check' => false,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_sessions' => true,
-                ]
-            ],
-
-            'chrome-extension' => [
-                'controller' => 'ChromeExtension',
-            ],
-
-            'digital-wallets' => [
-                'controller' => 'DigitalWallets',
-                'settings' => [
-                    'wrapper' => 'app_wrapper',
-                    'ads' => true,
-                ]
-            ],
-
-            'digital-wallet-create' => [
-                'controller' => 'DigitalWalletCreate',
-                'settings' => [
-                    'wrapper' => 'app_wrapper',
-                    'ads' => true,
-                ]
-            ],
-
-            'digital-wallet-update' => [
-                'controller' => 'DigitalWalletUpdate',
-                'settings' => [
-                    'wrapper' => 'app_wrapper',
-                    'ads' => true,
-                ]
-            ],
-
-            'digital-wallet-add' => [
-                'controller' => 'DigitalWalletAdd',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                ]
-            ],
-
             'spotlight' => [
                 'controller' => 'Spotlight',
                 'settings' => [
@@ -977,17 +909,6 @@ class Router {
                     'allow_team_access' => false,
                     'has_view' => false,
                     'no_browser_language_detection' => true,
-                ]
-            ],
-
-            /* Custom: signed admin SSO bridge for peer sites (shazdeha.com, etc.) */
-            'admin-bridge' => [
-                'controller' => 'AdminBridge',
-                'settings' => [
-                    'allow_team_access' => false,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
                 ]
             ],
 
@@ -1152,63 +1073,6 @@ class Router {
                 ]
             ],
 
-
-            'webhook-paddle-billing' => [
-                'controller' => 'WebhookPaddleBilling',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-                    'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-klarna' => [
-                'controller' => 'WebhookKlarna',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-                    'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-plisio' => [
-                'controller' => 'WebhookPlisio',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-                    'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-plisio-whitelabel' => [
-                'controller' => 'WebhookPlisioWhitelabel',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-                    'allow_sessions' => false,
-                ]
-            ],
-
-            'webhook-revolut' => [
-                'controller' => 'WebhookRevolut',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'no_browser_language_detection' => true,
-                    'allow_indexing' => false,
-                    'allow_sessions' => false,
-                ]
-            ],
-
-
             /* Others */
             'cookie-consent' => [
                 'controller' => 'CookieConsent',
@@ -1254,16 +1118,6 @@ class Router {
                     'no_authentication_check' => true,
                     'has_view' => false,
                     'allow_indexing' => false,
-                ]
-            ],
-
-            'digital-wallets' => [
-                'controller' => 'ApiDigitalWallets',
-                'settings' => [
-                    'no_authentication_check' => true,
-                    'has_view' => false,
-                    'allow_indexing' => false,
-					'allow_sessions' => false,
                 ]
             ],
 
@@ -1534,10 +1388,6 @@ class Router {
                 'controller' => 'AdminIndex'
             ],
 
-            'digital-wallets' => [
-                'controller' => 'AdminDigitalWallets'
-            ],
-
             'users' => [
                 'controller' => 'AdminUsers'
             ],
@@ -1638,10 +1488,6 @@ class Router {
                 'controller' => 'AdminTaxes'
             ],
 
-            'taxes-import' => [
-                'controller' => 'AdminTaxesImport'
-            ],
-
             'tax-create' => [
                 'controller' => 'AdminTaxCreate'
             ],
@@ -1656,10 +1502,6 @@ class Router {
 
             'payments' => [
                 'controller' => 'AdminPayments'
-            ],
-
-            'payment-create' => [
-                'controller' => 'AdminPaymentCreate',
             ],
 
             'statistics' => [
@@ -1755,10 +1597,6 @@ class Router {
 
             'invoice' => [
                 'controller' => 'AdminInvoice',
-            ],
-
-            'credit-notes' => [
-                'controller' => 'AdminCreditNotes',
             ],
 
             'dynamic-og-images' => [
@@ -1885,19 +1723,6 @@ class Router {
             return;
         }
 
-        /* Check for manifest.json early - handle uploads/pwa/manifest.json requests */
-        if(!empty(self::$params[0]) && self::$params[0] === 'uploads' && 
-           !empty(self::$params[1]) && self::$params[1] === 'pwa' && 
-           !empty(self::$params[2]) && self::$params[2] === 'manifest.json' && 
-           file_exists(APP_PATH . 'controllers/Manifest.php')) {
-            self::$controller_key = 'manifest';
-            self::$controller = 'Manifest';
-            self::$path = '';
-            unset(self::$params[0], self::$params[1], self::$params[2]);
-            self::$params = array_values(self::$params);
-            return;
-        }
-
         /* Check if the current link accessed is actually the original url or not (multi domain use) */
         $original_url_host = parse_url(url(), PHP_URL_HOST);
         $request_url_host = input_clean($_SERVER['HTTP_HOST']);
@@ -2002,15 +1827,8 @@ class Router {
                     /* Check for subdirectory redirect feature */
                     $subdirectory_redirect_enabled = (isset(settings()->main->subdirectory_redirect_is_enabled) && settings()->main->subdirectory_redirect_is_enabled) ||
                                                      (isset(settings()->links->subdirectory_redirect_is_enabled) && settings()->links->subdirectory_redirect_is_enabled);
-                    /* Check links setting first (more specific), then main setting */
-                    $subdirectory_redirect_base_url = '';
-                    $links_url = isset(settings()->links->subdirectory_redirect_base_url) ? trim(settings()->links->subdirectory_redirect_base_url) : '';
-                    $main_url = isset(settings()->main->subdirectory_redirect_base_url) ? trim(settings()->main->subdirectory_redirect_base_url) : '';
-                    if(!empty($links_url)) {
-                        $subdirectory_redirect_base_url = $links_url;
-                    } elseif(!empty($main_url)) {
-                        $subdirectory_redirect_base_url = $main_url;
-                    }
+                    $subdirectory_redirect_base_url = !empty(settings()->main->subdirectory_redirect_base_url) ? settings()->main->subdirectory_redirect_base_url : 
+                                                       (!empty(settings()->links->subdirectory_redirect_base_url) ? settings()->links->subdirectory_redirect_base_url : '');
                     
                     if(isset(self::$data['domain']) && 
                        $subdirectory_redirect_enabled &&

@@ -43,7 +43,7 @@
                     <li class="nav-item"><a class="nav-link" href="<?= url('tools') ?>"><?= l('tools.menu') ?></a></li>
                 <?php endif ?>
 
-                <?php if(settings()->links->biolinks_is_enabled && settings()->links->directory_is_enabled && (!biolinks_discovery_is_prevented() || (is_logged_in() && ($this->user->type ?? null) == 1))): ?>
+                <?php if(settings()->links->biolinks_is_enabled && settings()->links->directory_is_enabled && (settings()->links->directory_access == 'everyone' || (settings()->links->directory_access == 'users' && is_logged_in()))): ?>
                     <li class="nav-item"><a class="nav-link" href="<?= url('directory') ?>"><?= l('directory.menu') ?></a></li>
                 <?php endif ?>
 
@@ -184,6 +184,7 @@
 
                                         <?php if(settings()->main->api_is_enabled): ?>
                                             <a class="dropdown-item" href="<?= url('account-api') ?>"><i class="fas fa-fw fa-sm fa-code mr-2"></i> <?= l('account_api.menu') ?></a>
+                                            <a class="dropdown-item" href="<?= url('account-backup') ?>"><i class="fas fa-fw fa-sm fa-file-archive mr-2"></i> <?= l('account_backup.menu') ?></a>
                                         <?php endif ?>
 
                                         <?php if(\Altum\Plugin::is_active('teams')): ?>

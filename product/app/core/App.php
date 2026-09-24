@@ -76,10 +76,6 @@ class App {
             header("Strict-Transport-Security: max-age=31536000; preload");
         }
 
-        /* Referrer policy */
-        $referrer_policy = settings()->main->referrer_policy ?? 'strict-origin-when-cross-origin';
-        header('Referrer-Policy: ' . $referrer_policy);
-
         /* Check for Preflight requests for the tracking of submissions from biolink pages */
         if(in_array(\Altum\Router::$controller, ['Link'])) {
             header('Access-Control-Allow-Origin: *');
@@ -94,6 +90,15 @@ class App {
         /* Initiate the Language system with the default language */
         Language::set_default_by_name(settings()->main->default_language);
 
+        /* Site-wide country blacklist (admin hostname A-record IP bypasses) */
+        try {
+            if(function_exists('enforce_blacklisted_countries')) {
+                enforce_blacklisted_countries();
+            }
+        } catch(\Throwable $exception) {
+            /* Never take the whole site down for geo checks */
+        }
+
         /* Set the default theme style */
         ThemeStyle::set_default(settings()->main->default_theme_style);
 
@@ -105,7 +110,7 @@ class App {
         Date::$date = Date::get();
 
         /* Check if the team is set and do not allow access for certain routes */
-        if(!is_null(\Altum\Router::$controller_settings['allow_team_access']) && \Altum\Plugin::is_active('teams') && session_has('team_id')) {
+        if(isset($_SESSION['team_id']) && \Altum\Plugin::is_active('teams') && !is_null(\Altum\Router::$controller_settings['allow_team_access'])) {
             if(!\Altum\Router::$controller_settings['allow_team_access']) {
                 Alerts::add_info(l('global.info_message.team_limit'));
                 redirect();
@@ -157,27 +162,20 @@ class App {
                 cache()->deleteItemsByTag('user_id=' .  \Altum\Authentication::$user_id);
 
                 /* Make sure to redirect the person to the payment page and only let the person access the following pages */
-                if(!in_array(\Altum\Router::$controller_key, ['index', 'blog', 'affiliate', 'contact', 'page', 'pages', 'plan', 'pay', 'pay-billing', 'pay-thank-you', 'account', 'account-plan', 'account-payments', 'invoice', 'account-logs', 'account-preferences',  'account-delete', 'referrals', 'account-api', 'account-redeem-code', 'logout', 'register', 'teams-system', 'teams-member', 'teams-members']) && \Altum\Router::$path != 'admin') {
+                if(!in_array(\Altum\Router::$controller_key, ['index', 'blog', 'affiliate', 'contact', 'page', 'pages', 'plan', 'pay', 'pay-billing', 'pay-thank-you', 'account', 'account-plan', 'account-payments', 'invoice', 'account-logs', 'account-preferences',  'account-delete', 'account-backup', 'account-restore', 'referrals', 'account-api', 'account-redeem-code', 'logout', 'register', 'teams-system', 'teams-member', 'teams-members']) && \Altum\Router::$path != 'admin') {
                     redirect('plan/new');
                 }
             }
 
             /* Update last activity */
             /* Do not update if user is impersonated by an admin */
-            if(!$user->last_activity || (new \DateTime($user->last_activity))->modify('+15 minutes') < (new \DateTime()) && !session_has('admin_user_id')) {
+            if(!$user->last_activity || (new \DateTime($user->last_activity))->modify('+15 minutes') < (new \DateTime()) && !isset($_SESSION['admin_user_id'])) {
                 (new User())->update_last_activity(\Altum\Authentication::$user_id);
-            }
-
-            /* Keep alive session row fresh (also when admin-impersonating) */
-            try {
-                \Altum\Models\UsersSessions::touch_current((int) \Altum\Authentication::$user_id);
-            } catch(\Throwable $e) {
-                /* ignore */
             }
 
             if(!isset($_COOKIE['set_language'])) {
                 /* Update the language of the site for next page use if the current language (default) is different than the one the user has */
-                if($_COOKIE['set_language'] != $user->language) {
+                if(Language::$name != $user->language) {
                     /* Make sure the language of the user still exists & is active */
                     if(array_key_exists($user->language, Language::$active_languages)) {
                         //Language::set_by_name($user->language);
@@ -266,36 +264,6 @@ class App {
             redirect(\Altum\Router::$original_request . (\Altum\Router::$original_request_query ? '?' . \Altum\Router::$original_request_query : null));
         }
 
-        /* Auto-set Persian language if accessing from Google Login Persistent IP */
-        /* Skip this redirect if accessing a custom domain to avoid breaking custom domain routing */
-        if(!\Altum\Router::$language_code && !is_logged_in() && !isset(\Altum\Router::$data['domain'])) {
-            $google_persistent_ip = isset(settings()->security) && isset(settings()->security->google_login_persistent_ip) ? settings()->security->google_login_persistent_ip : '';
-            $current_ip = get_ip();
-            
-            if(!empty($google_persistent_ip) && $current_ip && $current_ip === $google_persistent_ip) {
-                /* Check if Persian language is available */
-                $persian_language_code = 'fa'; // Persian language code
-                $persian_language_name = 'persian'; // Persian language name
-                
-                /* Try to find Persian language in active languages */
-                $persian_found = false;
-                foreach(Language::$active_languages as $lang_name => $lang_code) {
-                    if($lang_code == $persian_language_code || $lang_name == $persian_language_name) {
-                        $persian_found = true;
-                        $persian_language_code = $lang_code;
-                        $persian_language_name = $lang_name;
-                        break;
-                    }
-                }
-                
-                /* If Persian is found, redirect to Persian version */
-                if($persian_found) {
-                    header('Location: ' . SITE_URL . $persian_language_code . '/' . \Altum\Router::$original_request . (\Altum\Router::$original_request_query ? '?' . \Altum\Router::$original_request_query : null));
-                    die();
-                }
-            }
-        }
-
         /* Redirect based on browser language if needed */
         $browser_language_code = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? mb_substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) : null;
         if(settings()->main->auto_language_detection_is_enabled && \Altum\Router::$controller_settings['no_browser_language_detection'] == false && !\Altum\Router::$language_code && !is_logged_in() && $browser_language_code && Language::$default_code != $browser_language_code && array_search($browser_language_code, Language::$active_languages)) {
@@ -321,41 +289,10 @@ class App {
         /* Check for authentication checks */
         if(!is_null(\Altum\Router::$controller_settings['authentication'])) {
             \Altum\Authentication::guard(\Altum\Router::$controller_settings['authentication']);
-            
-            /* Update user after authentication check */
-            $controller->user = \Altum\Authentication::$user;
         }
 
-        try {
-
-            /* Call the controller method */
-            call_user_func_array([ $controller, $method ], []);
-
-        } catch (\Altum\NotFoundException $exception) {
-
-            /* Proper 404 without redirect (v64) */
-            \Altum\Router::$controller_settings = [
-                'wrapper' => 'wrapper',
-                'no_authentication_check' => false,
-                'no_browser_language_detection' => false,
-                'allow_indexing' => true,
-                'has_view' => true,
-                'currency_switcher' => false,
-                'ads' => false,
-                'authentication' => null,
-                'allow_team_access' => null,
-                'allow_sessions' => true,
-            ];
-            \Altum\Router::$controller_key = 'not-found';
-            \Altum\Router::$controller = 'NotFound';
-            \Altum\Router::$path = '';
-            Title::set(l('not_found.title'));
-            require_once APP_PATH . 'controllers/NotFound.php';
-            $controller = new \Altum\Controllers\NotFound();
-            $controller->add_params(['params' => $params, 'user' => \Altum\Authentication::$user]);
-            $controller->index();
-
-        }
+        /* Call the controller method */
+        call_user_func_array([ $controller, $method ], []);
 
         /* Render and output everything */
         $controller->run();

@@ -150,6 +150,28 @@ class BiolinkBlockAjax extends Controller {
         die();
     }
 
+    private function is_enabled_toggle() {
+        /* Team checks */
+        if(\Altum\Teams::is_delegated() && !\Altum\Teams::has_access('update.biolinks_blocks')) {
+            Response::json(l('global.info_message.team_no_access'), 'error');
+        }
+
+        $_POST['biolink_block_id'] = (int) $_POST['biolink_block_id'];
+
+        /* Get the current status */
+        $biolink_block = db()->where('biolink_block_id', $_POST['biolink_block_id'])->where('user_id', $this->user->user_id)->getOne('biolinks_blocks', ['biolink_block_id', 'link_id', 'is_enabled']);
+
+        if($biolink_block) {
+            $new_is_enabled = (int) !$biolink_block->is_enabled;
+
+            db()->where('biolink_block_id', $biolink_block->biolink_block_id)->update('biolinks_blocks', ['is_enabled' => $new_is_enabled]);
+
+            /* Clear the cache */
+            cache()->deleteItem('biolink_blocks?link_id=' . $biolink_block->link_id);
+
+            Response::json('', 'success');
+        }
+    }
 
     private function is_pinned_toggle() {
         /* Team checks */
@@ -195,29 +217,6 @@ class BiolinkBlockAjax extends Controller {
             $new_is_sticky = (int) !((int) ($biolink_block->is_sticky ?? 0));
 
             db()->where('biolink_block_id', $biolink_block->biolink_block_id)->update('biolinks_blocks', ['is_sticky' => $new_is_sticky]);
-
-            /* Clear the cache */
-            cache()->deleteItem('biolink_blocks?link_id=' . $biolink_block->link_id);
-
-            Response::json('', 'success');
-        }
-    }
-
-    private function is_enabled_toggle() {
-        /* Team checks */
-        if(\Altum\Teams::is_delegated() && !\Altum\Teams::has_access('update.biolinks_blocks')) {
-            Response::json(l('global.info_message.team_no_access'), 'error');
-        }
-
-        $_POST['biolink_block_id'] = (int) $_POST['biolink_block_id'];
-
-        /* Get the current status */
-        $biolink_block = db()->where('biolink_block_id', $_POST['biolink_block_id'])->where('user_id', $this->user->user_id)->getOne('biolinks_blocks', ['biolink_block_id', 'link_id', 'is_enabled']);
-
-        if($biolink_block) {
-            $new_is_enabled = (int) !$biolink_block->is_enabled;
-
-            db()->where('biolink_block_id', $biolink_block->biolink_block_id)->update('biolinks_blocks', ['is_enabled' => $new_is_enabled]);
 
             /* Clear the cache */
             cache()->deleteItem('biolink_blocks?link_id=' . $biolink_block->link_id);
@@ -2303,7 +2302,7 @@ class BiolinkBlockAjax extends Controller {
 
     private function create_biolink_custom_html() {
         $_POST['link_id'] = (int) $_POST['link_id'];
-        $_POST['html'] = trim($_POST['html']);
+        $_POST['html'] = mb_substr(trim($_POST['html']), 0, $this->biolink_blocks['custom_html']['max_length']);
 
         if(!$link = db()->where('link_id', $_POST['link_id'])->where('user_id', $this->user->user_id)->getOne('links')) {
             Response::json(l('global.error_message.basic'), 'error');
@@ -2344,7 +2343,7 @@ class BiolinkBlockAjax extends Controller {
 
     private function update_biolink_custom_html() {
         $_POST['biolink_block_id'] = (int) $_POST['biolink_block_id'];
-        $_POST['html'] = trim($_POST['html']);
+        $_POST['html'] = mb_substr(trim($_POST['html']), 0, $this->biolink_blocks['custom_html']['max_length']);
 
         /* Display settings */
         $this->process_display_settings();
@@ -6516,10 +6515,8 @@ class BiolinkBlockAjax extends Controller {
                 Response::json(l('global.error_message.file_upload'), 'error');
             }
 
-            if(!\Altum\Plugin::is_active('offload') || (\Altum\Plugin::is_active('offload') && !settings()->offload->uploads_url)) {
-                if(!is_writable(UPLOADS_PATH . $upload_folder)) {
-                    Response::json(sprintf(l('global.error_message.directory_not_writable'), UPLOADS_PATH . $upload_folder), 'error');
-                }
+            if(!is_writable(UPLOADS_PATH . $upload_folder)) {
+                Response::json(sprintf(l('global.error_message.directory_not_writable'), UPLOADS_PATH . $upload_folder), 'error');
             }
 
             if(!in_array($file_extension, $allowed_extensions)) {

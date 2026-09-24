@@ -322,6 +322,10 @@ class LinkAjax extends Controller {
             'custom_js' => null,
             'share_is_enabled' => true,
             'scroll_buttons_is_enabled' => true,
+            'tools' => [
+                'enabled' => [],
+                'magnifier' => 'light',
+            ],
         ];
 
         /* Generate random url if not specified */
@@ -1509,9 +1513,6 @@ class LinkAjax extends Controller {
         $_POST['share_is_enabled'] = (int) isset($_POST['share_is_enabled']);
         $_POST['scroll_buttons_is_enabled'] = (int) isset($_POST['scroll_buttons_is_enabled']);
         $_POST['directory_is_enabled'] = (int) isset($_POST['directory_is_enabled']);
-        $_POST['name'] = input_clean($_POST['name'] ?? '', 128);
-        $_POST['description'] = input_clean($_POST['description'] ?? '', 512);
-        $_POST['tags'] = json_encode(parse_tags_list($_POST['tags'] ?? ''), JSON_UNESCAPED_UNICODE);
         $this->check_location_url($_POST['leap_link'], true);
 
         /* Make sure the font is ok */
@@ -1527,6 +1528,14 @@ class LinkAjax extends Controller {
         /* Link hover animation */
         $_POST['hover_animation'] = isset($_POST['hover_animation']) && in_array($_POST['hover_animation'], ['false', 'smooth', 'instant',]) ? input_clean($_POST['hover_animation']) : 'smooth';
 
+        /* Biolink tools: keep at most two enabled ids */
+        $biolink_tools = require APP_PATH . 'includes/biolink_tools.php';
+        $posted_tools = array_values(array_filter($_POST['tools'] ?? [], function($tool_id) use ($biolink_tools) {
+            return is_string($tool_id) && array_key_exists($tool_id, $biolink_tools);
+        }));
+        $posted_tools = array_slice(array_unique($posted_tools), 0, 2);
+        $tool_magnifier = isset($_POST['tool_magnifier']) && in_array($_POST['tool_magnifier'], ['light', 'advanced'], true) ? $_POST['tool_magnifier'] : 'light';
+
         /* Service worker */
         if(settings()->links->sixsixpusher_is_enabled) {
             $service_worker = \Altum\Uploads::process_upload($link->settings->service_worker, 'service_workers', 'service_worker', 'service_worker_remove', null, 'json_error', force_local: true);
@@ -1541,34 +1550,24 @@ class LinkAjax extends Controller {
         if(\Altum\Plugin::is_active('pwa') && settings()->pwa->is_enabled && $this->user->plan_settings->custom_pwa_is_enabled && $_POST['pwa_is_enabled']) {
             $pwa_file_name = $link->settings->pwa_file_name ?? 'biolinks-' . md5(time() . rand() . rand());
 
-            $start_url = $domain_id
-                ? $domains[$_POST['domain_id']]->scheme . $domains[$_POST['domain_id']]->host . '/' . ($_POST['is_main_link'] ? null : ltrim($_POST['url'], '/'))
-                : SITE_URL . ($_POST['is_main_link'] ? null : ltrim($_POST['url'], '/'));
+            $start_url = $domain_id ? $domains[$_POST['domain_id']]->scheme . $domains[$_POST['domain_id']]->host . '/' . ($_POST['is_main_link'] ? null : $_POST['url']) : SITE_URL . $_POST['url'];
             $scope_url = $start_url;
 
             /* Add UTM tracking params */
-            $start_url_query_separator = parse_url($start_url, PHP_URL_QUERY) ? '&' : '?';
-            $start_url = $start_url . $start_url_query_separator . http_build_query([
+            $start_url = $start_url . '?' . http_build_query([
                 'utm_source' => 'pwa',
                 'utm_medium' => 'web-app',
                 'utm_campaign' => 'install-or-pwa-launch',
             ]);
 
             /* Generate the manifest file */
-            /* Determine which icon to use: uploaded/new icon > existing biolink icon > site default icon */
-            /* Use non-empty value from uploaded file, or fall back to existing link icon, or site default */
-            $pwa_icon = !empty($image_uploaded_file['pwa_icon']) ? $image_uploaded_file['pwa_icon'] : (!empty($link->settings->pwa_icon) ? $link->settings->pwa_icon : null);
-            $app_icon_url = $pwa_icon ? \Altum\Uploads::get_full_url('app_icon') . $pwa_icon : (settings()->pwa->app_icon ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon : null);
-            $app_icon_maskable_url = $pwa_icon ? \Altum\Uploads::get_full_url('app_icon') . $pwa_icon : (settings()->pwa->app_icon_maskable ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable : null);
-            
-            $page_title = trim($_POST['name']) ?: ($_POST['seo_title'] ?: $_POST['url']);
             $manifest = pwa_generate_manifest([
-                'name' => $page_title . ' - ' . settings()->main->title,
-                'short_name' => $page_title,
-                'description' => $_POST['seo_meta_description'] ?: ($_POST['description'] ?: $page_title),
+                'name' => $_POST['seo_title'] ?: $_POST['url'] . ' - ' . settings()->main->title,
+                'short_name' => $_POST['url'],
+                'description' => $_POST['seo_meta_description'] ?: $_POST['url'],
                 'theme_color' => $_POST['pwa_theme_color'],
-                'app_icon_url' => $app_icon_url,
-                'app_icon_maskable_url' => $app_icon_maskable_url,
+                'app_icon_url' => $image_uploaded_file['pwa_icon'] ? \Altum\Uploads::get_full_url('app_icon') . $image_uploaded_file['pwa_icon'] : (settings()->pwa->app_icon ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon : null),
+                'app_icon_maskable_url' => $image_uploaded_file['pwa_icon'] ? \Altum\Uploads::get_full_url('app_icon') . $image_uploaded_file['pwa_icon'] : (settings()->pwa->app_icon_maskable ? \Altum\Uploads::get_full_url('app_icon') . settings()->pwa->app_icon_maskable : null),
                 'start_url' => $start_url,
                 'scope' => $scope_url,
                 'mobile_screenshots' => [],
@@ -1627,6 +1626,10 @@ class LinkAjax extends Controller {
             'custom_js' => $_POST['custom_js'],
             'share_is_enabled' => $_POST['share_is_enabled'],
             'scroll_buttons_is_enabled' => $_POST['scroll_buttons_is_enabled'],
+            'tools' => [
+                'enabled' => $posted_tools,
+                'magnifier' => $tool_magnifier,
+            ],
         ];
 
         /* Check if we need to override defaults for a new theme */
@@ -1636,6 +1639,10 @@ class LinkAjax extends Controller {
 
             /* Save settings for biolink page */
             $settings = array_merge($settings, (array) $biolink_theme->settings->biolink);
+            $settings['tools'] = [
+                'enabled' => $posted_tools,
+                'magnifier' => $tool_magnifier,
+            ];
 
             /* Save the additional settings */
             $additional = json_encode($biolink_theme->settings->additional ?? '');
@@ -1713,9 +1720,6 @@ class LinkAjax extends Controller {
             'biolink_theme_id' => $_POST['biolink_theme_id'],
             'pixels_ids' => $_POST['pixels_ids'],
             'url' => $url,
-            'name' => $_POST['name'] !== '' ? $_POST['name'] : null,
-            'description' => $_POST['description'] !== '' ? $_POST['description'] : null,
-            'tags' => $_POST['tags'],
             'settings' => $settings,
             'additional' => $additional,
             'directory_is_enabled' => $_POST['directory_is_enabled'],
@@ -2677,16 +2681,12 @@ class LinkAjax extends Controller {
                 'pixels_ids' => $link->pixels_ids,
                 'type' => $link->type,
                 'url' => $url,
-                'name' => $link->name ?? null,
-                'description' => $link->description ?? null,
-                'tags' => $link->tags ?? null,
                 'location_url' => $link->location_url,
                 'settings' => json_encode($link->settings),
                 'additional' => $link->additional ?? '',
                 'start_date' => $link->start_date,
                 'end_date' => $link->end_date,
                 'is_verified' => 0,
-                'is_banned' => 0,
                 'is_enabled' => $link->is_enabled,
                 'datetime' => get_date(),
             ]);

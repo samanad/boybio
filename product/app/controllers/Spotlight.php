@@ -172,7 +172,7 @@ class Spotlight extends Controller {
                 ];
             }
 
-            if(settings()->links->biolinks_is_enabled && settings()->links->directory_is_enabled && (!biolinks_discovery_is_prevented() || ($this->user->type ?? null) == 1)) {
+            if(settings()->links->biolinks_is_enabled && settings()->links->directory_is_enabled && (settings()->links->directory_access == 'everyone' || (settings()->links->directory_access == 'users' && is_logged_in()))) {
                 $available_pages[] = [
                     'name' => l('directory.title'),
                     'url' => 'directory'
@@ -389,6 +389,11 @@ class Spotlight extends Controller {
             $available_pages[] = [
                 'name' => l('account_logs.title'),
                 'url' => 'account-logs'
+            ];
+
+            $available_pages[] = [
+                'name' => l('account_backup.title'),
+                'url' => 'account-backup'
             ];
 
             $available_pages[] = [

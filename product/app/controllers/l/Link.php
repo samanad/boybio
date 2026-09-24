@@ -106,15 +106,6 @@ class Link extends Controller {
         $this->link->settings = json_decode($this->link->settings ?? '');
         $this->link->pixels_ids = json_decode($this->link->pixels_ids ?? '[]');
 
-        /* Private biolinks: never allow search engines / AI scrapers to index public link pages */
-        if(biolinks_discovery_is_prevented()) {
-            header('X-Robots-Tag: noindex, nofollow, noarchive', true);
-            if(!isset($this->link->settings->seo) || !is_object($this->link->settings->seo)) {
-                $this->link->settings->seo = (object) [];
-            }
-            $this->link->settings->seo->block = true;
-        }
-
         /* Determine the actual full url */
         if(in_array($this->type, ['link', 'file', 'vcard', 'event'])) {
             $this->link->full_url = $domain_id && !isset($_GET['link_id']) ? \Altum\Router::$data['domain']->scheme . \Altum\Router::$data['domain']->host . '/' . (\Altum\Router::$data['domain']->link_id == $this->link->link_id ? null : $this->link->url) : SITE_URL . $this->link->url;
@@ -125,6 +116,62 @@ class Link extends Controller {
         /* Static links need the / for proper asset pathing */
         if($this->link->type == 'static') {
             $this->link->full_url .= '/';
+        }
+
+        /* Lightweight per-biolink web app manifest for home-screen icons (non-Chrome / obscure browsers) */
+        if($this->link->type == 'biolink' && isset($_GET['homescreen_manifest'])) {
+            $pwa_settings = settings()->pwa ?? null;
+            $icon_url = null;
+            if(!empty($this->link->settings->pwa_icon)) {
+                $icon_url = \Altum\Uploads::get_full_url('app_icon') . $this->link->settings->pwa_icon;
+            } elseif(!empty($this->link->settings->favicon)) {
+                $icon_url = \Altum\Uploads::get_full_url('favicons') . $this->link->settings->favicon;
+            } elseif(!empty($this->link->settings->seo->image ?? null)) {
+                $icon_url = \Altum\Uploads::get_full_url('block_images') . $this->link->settings->seo->image;
+            } elseif(!empty($pwa_settings->app_icon)) {
+                $icon_url = \Altum\Uploads::get_full_url('app_icon') . $pwa_settings->app_icon;
+            } elseif(!empty(settings()->main->favicon)) {
+                $icon_url = settings()->main->favicon_full_url;
+            }
+
+            $app_name = trim((string) ($this->link->settings->seo->title ?? '')) ?: ($this->link->url ?? settings()->main->title);
+            $theme_color = !empty($this->link->settings->pwa_theme_color) && verify_hex_color($this->link->settings->pwa_theme_color)
+                ? $this->link->settings->pwa_theme_color
+                : (!empty($pwa_settings->theme_color) ? $pwa_settings->theme_color : '#000000');
+
+            $icons = [];
+            if($icon_url) {
+                $icons[] = [
+                    'src' => $icon_url,
+                    'sizes' => '192x192',
+                    'type' => 'image/png',
+                    'purpose' => 'any',
+                ];
+                $icons[] = [
+                    'src' => $icon_url,
+                    'sizes' => '512x512',
+                    'type' => 'image/png',
+                    'purpose' => 'any maskable',
+                ];
+            }
+
+            $manifest = [
+                'name' => $app_name,
+                'short_name' => mb_substr($app_name, 0, 12),
+                'description' => trim((string) ($this->link->settings->seo->meta_description ?? '')) ?: $app_name,
+                'start_url' => $this->link->full_url,
+                'scope' => $this->link->full_url,
+                'display' => 'standalone',
+                'orientation' => 'portrait',
+                'background_color' => $theme_color,
+                'theme_color' => $theme_color,
+                'icons' => $icons,
+            ];
+
+            header('Content-Type: application/manifest+json; charset=utf-8');
+            header('Cache-Control: public, max-age=3600');
+            echo json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            die();
         }
 
         /* Set the language */
@@ -204,11 +251,17 @@ class Link extends Controller {
         }
 
         /* Check if the user has access to the link */
-        $has_access = !$this->link->settings->password || ($this->link->settings->password && isset($_COOKIE['link_password_' . $this->link->link_id]) && $_COOKIE['link_password_' . $this->link->link_id] == $this->link->settings->password);
+        $password_cookie_name = 'link_password_' . $this->link->link_id;
+        $has_access = !$this->link->settings->password || ($this->link->settings->password && isset($_COOKIE[$password_cookie_name]) && $_COOKIE[$password_cookie_name] == $this->link->settings->password);
 
         /* Do not let the user have password protection if the plan doesnt allow it */
         if(!$this->user->plan_settings->password) {
             $has_access = true;
+        }
+
+        /* Keep unlock forever on this device (home-screen / PWA apps rarely save passwords) */
+        if($has_access && $this->link->settings->password && isset($_COOKIE[$password_cookie_name])) {
+            set_device_cookie($password_cookie_name, $this->link->settings->password);
         }
 
         /* Check if the password form is submitted */
@@ -218,27 +271,13 @@ class Link extends Controller {
                 Alerts::add_error(l('global.error_message.invalid_csrf_token'));
             }
 
-            $password_valid = false;
-            
-            /* Check individual password first */
-            if($this->link->settings->password && password_verify($_POST['password'], $this->link->settings->password)) {
-                $password_valid = true;
-            }
-            
-            /* Check mother password if individual password doesn't match */
-            if(!$password_valid && isset(settings()->security) && isset(settings()->security->biolink_mother_password) && !empty(settings()->security->biolink_mother_password)) {
-                if(password_verify($_POST['password'], settings()->security->biolink_mother_password)) {
-                    $password_valid = true;
-                }
-            }
-
-            if(!$password_valid) {
+            if(!password_verify($_POST['password'], $this->link->settings->password)) {
                 Alerts::add_field_error('password', l('link.password.error_message'));
             }
 
             if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
-                /* Set a cookie */
-                setcookie('link_password_' . $this->link->link_id, $this->link->settings->password, time()+60*60*24*30);
+                /* Persist unlock on this device (~10 years, refreshed on each visit) */
+                set_device_cookie($password_cookie_name, $this->link->settings->password);
 
                 header('Location: ' . $this->link->full_url);
 
@@ -247,11 +286,16 @@ class Link extends Controller {
         }
 
         /* Check if the user has access to the link */
-        $can_see_content = !$this->link->settings->sensitive_content || ($this->link->settings->sensitive_content && isset($_COOKIE['link_sensitive_content_' . $this->link->link_id]));
+        $sensitive_cookie_name = 'link_sensitive_content_' . $this->link->link_id;
+        $can_see_content = !$this->link->settings->sensitive_content || ($this->link->settings->sensitive_content && isset($_COOKIE[$sensitive_cookie_name]));
 
         /* Do not let the user have password protection if the plan doesnt allow it */
         if(!$this->user->plan_settings->sensitive_content) {
             $can_see_content = true;
+        }
+
+        if($can_see_content && $this->link->settings->sensitive_content && isset($_COOKIE[$sensitive_cookie_name])) {
+            set_device_cookie($sensitive_cookie_name, 'true');
         }
 
         /* Check if the password form is submitted */
@@ -262,8 +306,7 @@ class Link extends Controller {
             }
 
             if(!Alerts::has_field_errors() && !Alerts::has_errors()) {
-                /* Set a cookie */
-                setcookie('link_sensitive_content_' . $this->link->link_id, 'true', time()+60*60*24*30);
+                set_device_cookie($sensitive_cookie_name, 'true');
 
                 header('Location: ' . $this->link->full_url);
 
@@ -831,8 +874,8 @@ class Link extends Controller {
             $this->link->location_url = $parsed_url['scheme'] . '://' . $parsed_url['host'] . ($parsed_url['path'] ?? '');
         }
 
-        /* Check for targeting */
-        if($this->user->plan_settings->targeting_is_enabled && isset($this->link->settings->targeting_type)) {
+        /* Check for targeting (admin bypass IP skips geo targeting) */
+        if($this->user->plan_settings->targeting_is_enabled && isset($this->link->settings->targeting_type) && !is_admin_country_ban_bypassed()) {
             if($this->link->settings->targeting_type == 'continent_code') {
                 /* Detect the location */
                 try {

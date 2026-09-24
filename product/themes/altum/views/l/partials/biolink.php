@@ -32,14 +32,6 @@
                         </div>
                     <?php endif ?>
 
-                    <?php if(!empty($data->link->is_banned)): ?>
-                        <div id="link-banned-wrapper-top" class="col-12 my-<?= $data->link->settings->block_spacing ?? '2' ?> text-center">
-                            <div>
-                                <small class="link-banned" data-toggle="tooltip" title="<?= sprintf(l('link.biolink.banned_help'), settings()->main->title) ?>"><i class="fas fa-fw fa-ban fa-1x"></i> <?= l('link.biolink.banned') ?></small>
-                            </div>
-                        </div>
-                    <?php endif ?>
-
                     <?php if($data->biolink_blocks): ?>
                         <?php
                         /* Detect the location */
@@ -81,14 +73,15 @@
                                 continue;
                             }
 
-                            /* Check if there are any extra display rules */
-                            if($continent_code && count($row->settings->display_continents ?? []) && !in_array($continent_code, $row->settings->display_continents ?? [])) {
+                            /* Check if there are any extra display rules (admin bypass IP skips geo filters) */
+                            $skip_geo_display_rules = is_admin_country_ban_bypassed();
+                            if(!$skip_geo_display_rules && $continent_code && count($row->settings->display_continents ?? []) && !in_array($continent_code, $row->settings->display_continents ?? [])) {
                                 continue;
                             }
-                            if($country_code && count($row->settings->display_countries ?? []) && !in_array($country_code, $row->settings->display_countries ?? [])) {
+                            if(!$skip_geo_display_rules && $country_code && count($row->settings->display_countries ?? []) && !in_array($country_code, $row->settings->display_countries ?? [])) {
                                 continue;
                             }
-                            if($city_name && count($row->settings->display_cities ?? []) && !in_array($city_name, $row->settings->display_cities ?? [])) {
+                            if(!$skip_geo_display_rules && $city_name && count($row->settings->display_cities ?? []) && !in_array($city_name, $row->settings->display_cities ?? [])) {
                                 continue;
                             }
                             if($device_type && count($row->settings->display_devices ?? []) && !in_array($device_type, $row->settings->display_devices ?? [])) {
@@ -123,23 +116,10 @@
                     </div>
                 <?php endif ?>
 
-                <?php if(!empty($data->link->is_banned)): ?>
-                    <div id="link-banned-wrapper-bottom" class="my-<?= $data->link->settings->block_spacing ?? '2' ?>">
-                        <small class="link-banned" data-toggle="tooltip" title="<?= sprintf(l('link.biolink.banned_help'), settings()->main->title) ?>"><i class="fas fa-fw fa-ban fa-1x"></i> <?= l('link.biolink.banned') ?></small>
-                    </div>
-                <?php endif ?>
-
                 <div id="branding" class="link-footer-branding">
                     <?php if($data->link->settings->display_branding): ?>
                         <?php if(isset($data->link->settings->branding, $data->link->settings->branding->name, $data->link->settings->branding->url) && !empty($data->link->settings->branding->name)): ?>
-                            <?php
-                            $branding_url = !empty($data->link->settings->branding->url) ? $data->link->settings->branding->url : '#';
-                            /* If edit link feature is enabled, replace with edit page URL */
-                            if(isset(settings()->links->branding_edit_link_is_enabled) && settings()->links->branding_edit_link_is_enabled) {
-                                $branding_url = url('link/' . $data->link->link_id);
-                            }
-                            ?>
-                            <a href="<?= $branding_url ?>" style="<?= $data->link->design->text_style ?>"><?= $data->link->settings->branding->name ?></a>
+                            <a href="<?= !empty($data->link->settings->branding->url) ? $data->link->settings->branding->url : '#' ?>" style="<?= $data->link->design->text_style ?>"><?= $data->link->settings->branding->name ?></a>
                         <?php else: ?>
 
                             <?php
@@ -150,21 +130,14 @@
                                 '{{AFFILIATE_URL_TAG}}' => \Altum\Plugin::is_active('affiliate') && settings()->affiliate->is_enabled ? '?ref=' . $data->user->referral_key : null,
                             ];
 
-                            $branding_html = str_replace(
+                            settings()->links->branding = str_replace(
                                 array_keys($replacers),
                                 array_values($replacers),
                                 settings()->links->branding
                             );
-
-                            /* If edit link feature is enabled, replace all link hrefs with edit page URL */
-                            if(isset(settings()->links->branding_edit_link_is_enabled) && settings()->links->branding_edit_link_is_enabled) {
-                                $edit_url = url('link/' . $data->link->link_id);
-                                /* Replace href attributes in all <a> tags */
-                                $branding_html = preg_replace('/href=["\']([^"\']*)["\']/i', 'href="' . htmlspecialchars($edit_url, ENT_QUOTES, 'UTF-8') . '"', $branding_html);
-                            }
                             ?>
 
-                            <?= $branding_html ?>
+                            <?= settings()->links->branding ?>
                         <?php endif ?>
                     <?php endif ?>
                 </div>
@@ -173,6 +146,8 @@
         </div>
     </div>
 </div>
+
+<?php require THEME_PATH . 'views/l/partials/biolink_tools.php' ?>
 
 <?php if(settings()->links->biolinks_report_is_enabled): ?>
     <div id="info" class="link-info">
@@ -215,6 +190,66 @@
             document.documentElement.style.height = 'auto';
         }
     }
+
+    /* Sticky avatar: square for 1s at top → configured shape; shrink ~5x on scroll */
+    (() => {
+        const sticky_avatars = document.querySelectorAll('.biolink-block-sticky[data-biolink-block-type="avatar"]');
+        if(!sticky_avatars.length) return;
+
+        const SCROLL_COMPACT_AT = 24;
+
+        const apply_target_radius = block => {
+            const img = block.querySelector('[data-avatar]');
+            if(!img || img.dataset.radiusApplied === '1') return;
+
+            const target = block.getAttribute('data-avatar-target-radius') || 'round';
+            img.classList.remove('link-avatar-straight', 'link-avatar-round', 'link-avatar-rounded');
+            img.classList.add('link-avatar-' + target);
+            img.dataset.radiusApplied = '1';
+        };
+
+        sticky_avatars.forEach(block => {
+            const img = block.querySelector('[data-avatar]');
+            const size = parseInt(block.getAttribute('data-avatar-size') || '125', 10);
+            if(img && size > 0) {
+                img.style.setProperty('--avatar-size', size + 'px');
+            }
+
+            /* After 1s at top, morph square → round/rounded (if configured) */
+            const target = block.getAttribute('data-avatar-target-radius') || 'round';
+            if(target === 'round' || target === 'rounded') {
+                window.setTimeout(() => {
+                    if(window.scrollY <= SCROLL_COMPACT_AT) {
+                        apply_target_radius(block);
+                    }
+                }, 1000);
+            } else {
+                img && (img.dataset.radiusApplied = '1');
+            }
+        });
+
+        let ticking = false;
+        const on_scroll = () => {
+            const compact = window.scrollY > SCROLL_COMPACT_AT;
+            sticky_avatars.forEach(block => {
+                block.classList.toggle('biolink-avatar-compact', compact);
+                /* If user scrolls before the 1s intro finishes, still apply the round shape */
+                if(compact) {
+                    apply_target_radius(block);
+                }
+            });
+            ticking = false;
+        };
+
+        window.addEventListener('scroll', () => {
+            if(!ticking) {
+                window.requestAnimationFrame(on_scroll);
+                ticking = true;
+            }
+        }, {passive: true});
+
+        on_scroll();
+    })();
 </script>
 
 <?= $this->views['pixels'] ?? null ?>
