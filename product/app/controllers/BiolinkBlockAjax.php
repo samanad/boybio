@@ -73,6 +73,12 @@ class BiolinkBlockAjax extends Controller {
                         /* Status toggle */
                         case 'is_enabled_toggle': $this->is_enabled_toggle(); break;
 
+                        /* Pin toggle */
+                        case 'is_pinned_toggle': $this->is_pinned_toggle(); break;
+
+                        /* Sticky toggle */
+                        case 'is_sticky_toggle': $this->is_sticky_toggle(); break;
+
                         /* Duplicate link */
                         case 'duplicate': $this->duplicate(); break;
 
@@ -142,6 +148,59 @@ class BiolinkBlockAjax extends Controller {
             ob_end_clean();
         }
         die();
+    }
+
+
+    private function is_pinned_toggle() {
+        /* Team checks */
+        if(\Altum\Teams::is_delegated() && !\Altum\Teams::has_access('update.biolinks_blocks')) {
+            Response::json(l('global.info_message.team_no_access'), 'error');
+        }
+
+        if(!biolinks_blocks_has_is_pinned_column()) {
+            Response::json(l('global.error_message.basic'), 'error');
+        }
+
+        $_POST['biolink_block_id'] = (int) $_POST['biolink_block_id'];
+
+        $biolink_block = db()->where('biolink_block_id', $_POST['biolink_block_id'])->where('user_id', $this->user->user_id)->getOne('biolinks_blocks', ['biolink_block_id', 'link_id', 'is_pinned']);
+
+        if($biolink_block) {
+            $new_is_pinned = (int) !((int) ($biolink_block->is_pinned ?? 0));
+
+            db()->where('biolink_block_id', $biolink_block->biolink_block_id)->update('biolinks_blocks', ['is_pinned' => $new_is_pinned]);
+
+            /* Clear the cache */
+            cache()->deleteItem('biolink_blocks?link_id=' . $biolink_block->link_id);
+
+            Response::json('', 'success');
+        }
+    }
+
+    private function is_sticky_toggle() {
+        /* Team checks */
+        if(\Altum\Teams::is_delegated() && !\Altum\Teams::has_access('update.biolinks_blocks')) {
+            Response::json(l('global.info_message.team_no_access'), 'error');
+        }
+
+        if(!biolinks_blocks_has_is_sticky_column()) {
+            Response::json(l('global.error_message.basic'), 'error');
+        }
+
+        $_POST['biolink_block_id'] = (int) $_POST['biolink_block_id'];
+
+        $biolink_block = db()->where('biolink_block_id', $_POST['biolink_block_id'])->where('user_id', $this->user->user_id)->getOne('biolinks_blocks', ['biolink_block_id', 'link_id', 'is_sticky']);
+
+        if($biolink_block) {
+            $new_is_sticky = (int) !((int) ($biolink_block->is_sticky ?? 0));
+
+            db()->where('biolink_block_id', $biolink_block->biolink_block_id)->update('biolinks_blocks', ['is_sticky' => $new_is_sticky]);
+
+            /* Clear the cache */
+            cache()->deleteItem('biolink_blocks?link_id=' . $biolink_block->link_id);
+
+            Response::json('', 'success');
+        }
     }
 
     private function is_enabled_toggle() {
@@ -254,7 +313,7 @@ class BiolinkBlockAjax extends Controller {
             $settings = json_encode($biolink_block->settings ?? '');
 
             /* Database query */
-            db()->insert('biolinks_blocks', [
+            $insert_data = [
                 'user_id' => $this->user->user_id,
                 'link_id' => $biolink_block->link_id,
                 'type' => $biolink_block->type,
@@ -265,7 +324,14 @@ class BiolinkBlockAjax extends Controller {
                 'end_date' => $biolink_block->end_date,
                 'is_enabled' => $biolink_block->is_enabled,
                 'datetime' => get_date(),
-            ]);
+            ];
+            if(biolinks_blocks_has_is_pinned_column()) {
+                $insert_data['is_pinned'] = (int) ($biolink_block->is_pinned ?? 0);
+            }
+            if(biolinks_blocks_has_is_sticky_column()) {
+                $insert_data['is_sticky'] = (int) ($biolink_block->is_sticky ?? 0);
+            }
+            db()->insert('biolinks_blocks', $insert_data);
 
             /* Clear the cache */
             cache()->deleteItem('biolink_blocks?link_id=' . $biolink_block->link_id);

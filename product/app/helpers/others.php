@@ -2034,3 +2034,42 @@ function generate_prefilled_dynamic_names($type, $timezone_identifier = null) {
 
     return sprintf(l('global.prefilled_dynamic_name'), $day_part_with_emoji, $type, $formatted_hour, $formatted_date);
 }
+
+/** Whether a biolinks_blocks column exists (cached per column). */
+function biolinks_blocks_has_column($column) {
+    static $cache = [];
+    $column = (string) $column;
+    if(array_key_exists($column, $cache)) {
+        return $cache[$column];
+    }
+
+    /* Only allow known safe column names */
+    if(!preg_match('/^[a-z0-9_]+$/i', $column)) {
+        return $cache[$column] = false;
+    }
+
+    try {
+        $result = database()->query("SHOW COLUMNS FROM `biolinks_blocks` LIKE '{$column}'");
+        $cache[$column] = $result && isset($result->num_rows) && $result->num_rows > 0;
+    } catch(\Throwable $exception) {
+        $cache[$column] = false;
+    }
+
+    return (bool) $cache[$column];
+}
+
+function biolinks_blocks_has_is_pinned_column() {
+    return biolinks_blocks_has_column('is_pinned');
+}
+
+function biolinks_blocks_has_is_sticky_column() {
+    return biolinks_blocks_has_column('is_sticky');
+}
+
+/** ORDER BY fragment for biolink blocks (pinned first when column exists). */
+function biolinks_blocks_order_by_sql() {
+    return biolinks_blocks_has_is_pinned_column()
+        ? 'ORDER BY `is_pinned` DESC, `order` ASC'
+        : 'ORDER BY `order` ASC';
+}
+
