@@ -76,25 +76,16 @@ function get_main_logo_url(?string $theme = null): string {
 }
 
 /**
- * Inline data-URI for the site logo so the browser never needs a cross-origin CDN request.
- * (Some clients load View-Image fine but block/hide third-party <img> subresources.)
+ * Inline data-URI for an uploaded file so the browser never needs a cross-origin CDN request.
+ * (Some clients load View-Image fine but fail/hide third-party <img> subresources → "Image error".)
  */
-function get_main_logo_data_uri(?string $theme = null): string {
-    $theme = $theme ?: (class_exists('\Altum\ThemeStyle') ? \Altum\ThemeStyle::get() : 'light');
-    $theme = $theme === 'dark' ? 'dark' : 'light';
-    $other = $theme === 'dark' ? 'light' : 'dark';
-
-    $file = trim((string) (settings()->main->{'logo_' . $theme} ?? ''));
-    $key = 'logo_' . $theme;
-    if($file === '') {
-        $file = trim((string) (settings()->main->{'logo_' . $other} ?? ''));
-        $key = 'logo_' . $other;
-    }
-    if($file === '' || preg_match('/[\\\\\\/]/', $file)) {
+function get_uploads_file_data_uri(string $uploads_key, ?string $file): string {
+    $file = trim((string) $file);
+    if($file === '' || preg_match('/[\\\\\\/]/', $file) || !class_exists('\Altum\Uploads')) {
         return '';
     }
 
-    $cache_key = 'main_logo_data_uri_' . md5($key . '|' . $file);
+    $cache_key = 'uploads_data_uri_' . md5($uploads_key . '|' . $file);
     try {
         if(function_exists('cache')) {
             $item = cache()->getItem($cache_key);
@@ -112,7 +103,7 @@ function get_main_logo_data_uri(?string $theme = null): string {
     $body = null;
     $content_type = 'image/png';
 
-    $local_path = (defined('UPLOADS_PATH') ? UPLOADS_PATH : '') . \Altum\Uploads::get_path($key) . $file;
+    $local_path = (defined('UPLOADS_PATH') ? UPLOADS_PATH : '') . \Altum\Uploads::get_path($uploads_key) . $file;
     if($local_path && is_file($local_path)) {
         $body = @file_get_contents($local_path);
         $detected = @mime_content_type($local_path);
@@ -122,12 +113,12 @@ function get_main_logo_data_uri(?string $theme = null): string {
     }
 
     if(($body === null || $body === false || $body === '')) {
-        $remote_url = \Altum\Uploads::get_full_url($key) . $file;
+        $remote_url = \Altum\Uploads::get_full_url($uploads_key) . $file;
         $context = stream_context_create([
             'http' => [
                 'timeout' => 8,
                 'follow_location' => 1,
-                'user_agent' => 'CloubLogoEmbed/1.0',
+                'user_agent' => 'CloubUploadEmbed/1.0',
             ],
             'ssl' => [
                 'verify_peer' => true,
@@ -147,13 +138,13 @@ function get_main_logo_data_uri(?string $theme = null): string {
 
     /* cURL fallback when allow_url_fopen is off */
     if(($body === null || $body === false || $body === '') && function_exists('curl_init')) {
-        $remote_url = \Altum\Uploads::get_full_url($key) . $file;
+        $remote_url = \Altum\Uploads::get_full_url($uploads_key) . $file;
         $ch = curl_init($remote_url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_TIMEOUT => 8,
-            CURLOPT_USERAGENT => 'CloubLogoEmbed/1.0',
+            CURLOPT_USERAGENT => 'CloubUploadEmbed/1.0',
         ]);
         $body = curl_exec($ch);
         $ctype = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
@@ -175,6 +166,7 @@ function get_main_logo_data_uri(?string $theme = null): string {
             'gif' => 'image/gif',
             'webp' => 'image/webp',
             'avif' => 'image/avif',
+            'ico' => 'image/x-icon',
             default => 'image/png',
         };
     }
@@ -192,6 +184,24 @@ function get_main_logo_data_uri(?string $theme = null): string {
     }
 
     return $data_uri;
+}
+
+/**
+ * Inline data-URI for the site logo so the browser never needs a cross-origin CDN request.
+ */
+function get_main_logo_data_uri(?string $theme = null): string {
+    $theme = $theme ?: (class_exists('\Altum\ThemeStyle') ? \Altum\ThemeStyle::get() : 'light');
+    $theme = $theme === 'dark' ? 'dark' : 'light';
+    $other = $theme === 'dark' ? 'light' : 'dark';
+
+    $file = trim((string) (settings()->main->{'logo_' . $theme} ?? ''));
+    $key = 'logo_' . $theme;
+    if($file === '') {
+        $file = trim((string) (settings()->main->{'logo_' . $other} ?? ''));
+        $key = 'logo_' . $other;
+    }
+
+    return get_uploads_file_data_uri($key, $file);
 }
 
 function main_logo_is_available(?string $theme = null): bool {
@@ -306,7 +316,16 @@ function get_chart_data(array $main_array) {
 }
 
 function get_user_avatar($avatar, $email) {
-    return $avatar ? \Altum\Uploads::get_full_url('users') . $avatar : get_gravatar($email);
+    if($avatar) {
+        return \Altum\Uploads::get_full_url('users') . $avatar;
+    }
+
+    $default_avatar = trim((string) (settings()->main->default_avatar ?? ''));
+    if($default_avatar !== '') {
+        return \Altum\Uploads::get_full_url('default_avatar') . $default_avatar;
+    }
+
+    return get_gravatar($email);
 }
 
 function get_gravatar($email, $size = 80, $d = 'identicon', $rating = 'g') {

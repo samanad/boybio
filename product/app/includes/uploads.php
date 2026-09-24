@@ -38,6 +38,10 @@ return [
         'whitelisted_file_extensions' => ['jpg', 'jpeg', 'png', 'svg', 'gif', 'webp', 'avif'],
         'path' => 'main/',
     ],
+    'default_avatar' => [
+        'whitelisted_file_extensions' => ['jpg', 'jpeg', 'png', 'svg', 'gif', 'webp', 'avif'],
+        'path' => 'main/',
+    ],
     'custom_images' => [
         'whitelisted_file_extensions' => ['jpg', 'jpeg', 'png', 'svg', 'gif', 'webp', 'avif'],
         'path' => 'main/',

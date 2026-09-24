@@ -129,8 +129,8 @@ class AdminSettings extends Controller {
             }
 
             /* Uploads processing */
-            foreach(['logo_light', 'logo_dark', 'logo_email', 'favicon', 'opengraph'] as $image_key) {
-                settings()->main->{$image_key} = \Altum\Uploads::process_upload(settings()->main->{$image_key}, $image_key, $image_key, $image_key . '_remove', null);
+            foreach(['logo_light', 'logo_dark', 'logo_email', 'favicon', 'opengraph', 'default_avatar'] as $image_key) {
+                settings()->main->{$image_key} = \Altum\Uploads::process_upload(settings()->main->{$image_key} ?? null, $image_key, $image_key, $image_key . '_remove', null);
             }
 
             $_POST['force_https_is_enabled'] = (int) isset($_POST['force_https_is_enabled']);
@@ -211,6 +211,7 @@ class AdminSettings extends Controller {
                 'logo_email' => settings()->main->logo_email ?? '',
                 'opengraph' => settings()->main->opengraph ?? '',
                 'favicon' => settings()->main->favicon ?? '',
+                'default_avatar' => settings()->main->default_avatar ?? '',
                 'openai_api_key' => $_POST['openai_api_key'],
                 'openai_model' => $_POST['openai_model'],
                 'force_https_is_enabled' => $_POST['force_https_is_enabled'],

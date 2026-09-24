@@ -1,19 +1,34 @@
 <?php defined('ALTUMCODE') || die() ?>
 
+<?php
+$already_existing_image = $data->already_existing_image ?? null;
+$existing_view_url = '#';
+$existing_preview_src = null;
+if(!empty($already_existing_image)) {
+    $existing_view_url = \Altum\Uploads::get_full_url($data->uploads_file_key) . $already_existing_image;
+    $existing_preview_src = function_exists('get_uploads_file_data_uri')
+        ? get_uploads_file_data_uri($data->uploads_file_key, $already_existing_image)
+        : '';
+    if($existing_preview_src === '') {
+        $existing_preview_src = $existing_view_url;
+    }
+}
+?>
+
 <div class="row">
     <div class="col">
         <input id="<?= $data->file_key ?>" type="file" name="<?= $data->file_key ?>" accept="<?= \Altum\Uploads::get_whitelisted_file_extensions_accept($data->uploads_file_key) ?>" class="form-control-file altum-file-input" <?= $data->input_data ?? null ?> />
     </div>
 
-    <div id="<?= $data->file_key . '_preview' ?>" class="col-3 <?= !empty($data->already_existing_image) ? null : 'd-none' ?>">
+    <div id="<?= $data->file_key . '_preview' ?>" class="col-3 <?= !empty($already_existing_image) ? null : 'd-none' ?>">
         <div class="d-flex justify-content-center align-items-center">
-            <a href="<?= $data->already_existing_image ? \Altum\Uploads::get_full_url($data->uploads_file_key) . $data->already_existing_image : '#' ?>" target="_blank" data-toggle="tooltip" title="<?= l('global.view') ?>" data-tooltip-hide-on-click>
-                <img src="<?= $data->already_existing_image ? \Altum\Uploads::get_full_url($data->uploads_file_key) . $data->already_existing_image : null ?>" class="altum-file-input-preview rounded <?= !empty($data->already_existing_image) ? null : 'd-none' ?>" loading="lazy" onerror="image_on_error(this)" />
+            <a href="<?= $existing_view_url ?>" target="_blank" data-toggle="tooltip" title="<?= l('global.view') ?>" data-tooltip-hide-on-click>
+                <img src="<?= $existing_preview_src ?>" class="altum-file-input-preview rounded <?= !empty($already_existing_image) ? null : 'd-none' ?>" loading="lazy" referrerpolicy="no-referrer" onerror="image_on_error(this)" />
             </a>
         </div>
     </div>
 
-    <div id="<?= $data->file_key . '_remove_wrapper' ?>" class="col-12 <?= !empty($data->already_existing_image) ? null : 'd-none' ?>">
+    <div id="<?= $data->file_key . '_remove_wrapper' ?>" class="col-12 <?= !empty($already_existing_image) ? null : 'd-none' ?>">
         <div class="custom-control custom-checkbox my-2">
             <input id="<?= $data->file_key . '_remove' ?>" name="<?= $data->file_key . '_remove' ?>" type="checkbox" class="custom-control-input" <?= $data->input_data ?? null ?>>
             <label class="custom-control-label" for="<?= $data->file_key . '_remove' ?>">

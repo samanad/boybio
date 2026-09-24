@@ -31,37 +31,37 @@
     <div class="collapse" data-parent="#main" id="branding_container">
         <div class="form-group" data-file-image-input-wrapper data-file-input-wrapper-size-limit="<?= get_max_upload() ?>" data-file-input-wrapper-size-limit-error="<?= sprintf(l('global.error_message.file_size_limit'), get_max_upload()) ?>">
             <label for="logo_light"><i class="fas fa-fw fa-sm fa-sun text-muted mr-1"></i> <?= l('admin_settings.main.logo_light') ?></label>
-            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'logo_light', 'file_key' => 'logo_light', 'already_existing_image' => settings()->main->logo_light]) ?>
+            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'logo_light', 'file_key' => 'logo_light', 'already_existing_image' => settings()->main->logo_light ?? null]) ?>
             <small class="form-text text-muted"><?= sprintf(l('global.accessibility.whitelisted_file_extensions'), \Altum\Uploads::get_whitelisted_file_extensions_accept('logo_light')) . ' ' . sprintf(l('global.accessibility.file_size_limit'), get_max_upload()) ?></small>
         </div>
 
         <div class="form-group" data-file-image-input-wrapper data-file-input-wrapper-size-limit="<?= get_max_upload() ?>" data-file-input-wrapper-size-limit-error="<?= sprintf(l('global.error_message.file_size_limit'), get_max_upload()) ?>">
             <label for="logo_dark"><i class="fas fa-fw fa-sm fa-moon text-muted mr-1"></i> <?= l('admin_settings.main.logo_dark') ?></label>
-            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'logo_dark', 'file_key' => 'logo_dark', 'already_existing_image' => settings()->main->logo_dark]) ?>
+            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'logo_dark', 'file_key' => 'logo_dark', 'already_existing_image' => settings()->main->logo_dark ?? null]) ?>
             <small class="form-text text-muted"><?= sprintf(l('global.accessibility.whitelisted_file_extensions'), \Altum\Uploads::get_whitelisted_file_extensions_accept('logo_dark')) . ' ' . sprintf(l('global.accessibility.file_size_limit'), get_max_upload()) ?></small>
         </div>
 
         <div class="form-group" data-file-image-input-wrapper data-file-input-wrapper-size-limit="<?= get_max_upload() ?>" data-file-input-wrapper-size-limit-error="<?= sprintf(l('global.error_message.file_size_limit'), get_max_upload()) ?>">
             <label for="logo_email"><i class="fas fa-fw fa-sm fa-envelope text-muted mr-1"></i> <?= l('admin_settings.main.logo_email') ?></label>
-            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'logo_email', 'file_key' => 'logo_email', 'already_existing_image' => settings()->main->logo_email]) ?>
+            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'logo_email', 'file_key' => 'logo_email', 'already_existing_image' => settings()->main->logo_email ?? null]) ?>
             <small class="form-text text-muted"><?= sprintf(l('global.accessibility.whitelisted_file_extensions'), \Altum\Uploads::get_whitelisted_file_extensions_accept('logo_email')) . ' ' . sprintf(l('global.accessibility.file_size_limit'), get_max_upload()) ?></small>
         </div>
 
         <div class="form-group" data-file-image-input-wrapper data-file-input-wrapper-size-limit="<?= get_max_upload() ?>" data-file-input-wrapper-size-limit-error="<?= sprintf(l('global.error_message.file_size_limit'), get_max_upload()) ?>">
             <label for="favicon"><i class="fas fa-fw fa-sm fa-icons text-muted mr-1"></i> <?= l('admin_settings.main.favicon') ?></label>
-            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'favicon', 'file_key' => 'favicon', 'already_existing_image' => settings()->main->favicon, 'input_data' => 'data-crop data-aspect-ratio="1"']) ?>
+            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'favicon', 'file_key' => 'favicon', 'already_existing_image' => settings()->main->favicon ?? null, 'input_data' => 'data-crop data-aspect-ratio="1"']) ?>
             <small class="form-text text-muted"><?= sprintf(l('global.accessibility.whitelisted_file_extensions'), \Altum\Uploads::get_whitelisted_file_extensions_accept('favicon')) . ' ' . sprintf(l('global.accessibility.file_size_limit'), get_max_upload()) ?></small>
         </div>
 
         <div class="form-group" data-file-image-input-wrapper data-file-input-wrapper-size-limit="<?= get_max_upload() ?>" data-file-input-wrapper-size-limit-error="<?= sprintf(l('global.error_message.file_size_limit'), get_max_upload()) ?>">
             <label for="opengraph"><i class="fas fa-fw fa-sm fa-image text-muted mr-1"></i> <?= l('admin_settings.main.opengraph') ?></label>
-            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'opengraph', 'file_key' => 'opengraph', 'already_existing_image' => settings()->main->opengraph, 'input_data' => 'data-crop data-aspect-ratio="1.91"']) ?>
+            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'opengraph', 'file_key' => 'opengraph', 'already_existing_image' => settings()->main->opengraph ?? null, 'input_data' => 'data-crop data-aspect-ratio="1.91"']) ?>
             <small class="form-text text-muted"><?= sprintf(l('global.accessibility.whitelisted_file_extensions'), \Altum\Uploads::get_whitelisted_file_extensions_accept('opengraph')) . ' ' . sprintf(l('global.accessibility.file_size_limit'), get_max_upload()) ?></small>
         </div>
 
         <div class="form-group" data-file-image-input-wrapper data-file-input-wrapper-size-limit="<?= get_max_upload() ?>" data-file-input-wrapper-size-limit-error="<?= sprintf(l('global.error_message.file_size_limit'), get_max_upload()) ?>">
             <label for="default_avatar"><i class="fas fa-fw fa-sm fa-user-circle text-muted mr-1"></i> <?= l('admin_settings.main.default_avatar') ?></label>
-            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'default_avatar', 'file_key' => 'default_avatar', 'already_existing_image' => settings()->main->default_avatar, 'input_data' => 'data-crop data-aspect-ratio="1"']) ?>
+            <?= include_view(THEME_PATH . 'views/partials/file_image_input.php', ['uploads_file_key' => 'default_avatar', 'file_key' => 'default_avatar', 'already_existing_image' => settings()->main->default_avatar ?? null, 'input_data' => 'data-crop data-aspect-ratio="1"']) ?>
             <small class="form-text text-muted"><?= sprintf(l('global.accessibility.whitelisted_file_extensions'), \Altum\Uploads::get_whitelisted_file_extensions_accept('default_avatar')) . ' ' . sprintf(l('global.accessibility.file_size_limit'), get_max_upload()) ?></small>
             <small class="form-text text-muted"><?= l('admin_settings.main.default_avatar_help') ?></small>
         </div>

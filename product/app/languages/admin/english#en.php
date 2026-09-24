@@ -669,6 +669,8 @@ return [
     'admin_settings.main.logo_email' => 'Logo for sent emails',
     'admin_settings.main.favicon' => 'Favicon',
     'admin_settings.main.opengraph' => 'Opengraph image',
+    'admin_settings.main.default_avatar' => 'Default user avatar',
+    'admin_settings.main.default_avatar_help' => 'Used when a user has no uploaded avatar. When set, Gravatar is not used as the fallback.',
     'admin_settings.main.ai_scraping_is_allowed' => 'Allow AI scraping',
     'admin_settings.main.ai_scraping_is_allowed_help' => 'Allow AI to use your site scrapable content for their learning (OpenAI, Bing, Google).',
     'admin_settings.main.iframe_embedding' => 'Iframe embedding allowed domains',
