@@ -31,19 +31,46 @@ class AdminBridge extends Controller {
             self::deny_public();
         }
 
-        \Altum\Authentication::guard('admin');
-
         $return_url = isset($_GET['return_url']) ? trim($_GET['return_url']) : '';
         $state = isset($_GET['state']) ? trim($_GET['state']) : '';
 
-        if($return_url === '' || !self::is_allowed_return_url($return_url)) {
+        /*
+         * Persist return_url/state in session before login.
+         * Authentication::guard('admin') redirects to login?redirect=path?query — but
+         * process_and_get_redirect_params() rejects URLs with : . % so return_url is lost
+         * and the user lands on the dashboard (looks like "not logged in" on the peer).
+         */
+        if($return_url !== '' && self::is_allowed_return_url($return_url)) {
+            $_SESSION['admin_bridge_pending'] = [
+                'return_url' => $return_url,
+                'state' => $state,
+                'exp' => time() + 900,
+            ];
+        } elseif(
+            !empty($_SESSION['admin_bridge_pending']['return_url'])
+            && (int) ($_SESSION['admin_bridge_pending']['exp'] ?? 0) >= time()
+            && self::is_allowed_return_url($_SESSION['admin_bridge_pending']['return_url'])
+        ) {
+            $return_url = $_SESSION['admin_bridge_pending']['return_url'];
+            $state = (string) ($_SESSION['admin_bridge_pending']['state'] ?? '');
+        } else {
             self::deny_public();
         }
 
+        /* Path-only redirect so Altum's redirect sanitizer accepts it after login */
+        if(!\Altum\Authentication::check()) {
+            redirect('login?redirect=admin-bridge/authorize');
+        }
+
         $user = \Altum\Authentication::$user;
+        if(!$user || (int) ($user->status ?? 0) !== 1) {
+            \Altum\Authentication::logout();
+        }
         if(!$user || (int) ($user->type ?? 0) !== 1) {
             self::deny_public();
         }
+
+        unset($_SESSION['admin_bridge_pending']);
 
         $secret = self::get_secret();
         $aud = self::origin_from_url($return_url);
@@ -183,7 +210,7 @@ class AdminBridge extends Controller {
     private static function get_peers() {
         $raw = self::env_value('ADMIN_BRIDGE_PEERS');
         if(!is_string($raw) || trim($raw) === '') {
-            $raw = 'https://www.shazdeha.com,https://shazdeha.com';
+            $raw = 'https://www.shazdeha.com,https://shazdeha.com,https://www.boymodelworld.com,https://boymodelworld.com';
         }
         $peers = [];
         foreach(explode(',', $raw) as $part) {
