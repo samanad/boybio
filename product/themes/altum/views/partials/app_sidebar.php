@@ -1,5 +1,45 @@
 <?php defined('ALTUMCODE') || die() ?>
 
+<style id="app-sidebar-logo-fix">
+.app-sidebar-title{
+	display:flex!important;
+	align-items:center!important;
+	justify-content:center!important;
+	height:75px!important;
+	overflow:visible!important;
+}
+.app-sidebar-title a.app-sidebar-logo-link,
+.app-sidebar-title a[data-logo]{
+	display:flex!important;
+	align-items:center!important;
+	justify-content:center!important;
+	width:100%!important;
+	max-width:100%!important;
+	min-width:0!important;
+	overflow:visible!important;
+	white-space:normal!important;
+	text-overflow:clip!important;
+	padding:.4rem .6rem!important;
+	border-radius:8px!important;
+	background:#111827!important;
+}
+.app-sidebar-title img.navbar-logo,
+.app-sidebar-title a[data-logo] img{
+	display:block!important;
+	width:150px!important;
+	max-width:150px!important;
+	height:auto!important;
+	max-height:48px!important;
+	object-fit:contain!important;
+	opacity:1!important;
+	visibility:visible!important;
+	position:static!important;
+	filter:none!important;
+	clip:auto!important;
+	clip-path:none!important;
+}
+</style>
+
 <div class="app-sidebar">
     <div class="app-sidebar-title">
         <a
@@ -7,11 +47,12 @@
                 class="app-sidebar-logo-link d-flex align-items-center justify-content-center"
                 data-logo
             data-light-value="<?= !empty(settings()->main->logo_light) ? settings()->main->logo_light_full_url : settings()->main->title ?>"
-            data-light-class="<?= !empty(settings()->main->logo_light) ? 'img-fluid navbar-logo' : '' ?>"
+            data-light-class="<?= !empty(settings()->main->logo_light) ? 'navbar-logo' : '' ?>"
             data-light-tag="<?= !empty(settings()->main->logo_light) ? 'img' : 'span' ?>"
             data-dark-value="<?= !empty(settings()->main->logo_dark) ? settings()->main->logo_dark_full_url : settings()->main->title ?>"
-            data-dark-class="<?= !empty(settings()->main->logo_dark) ? 'img-fluid navbar-logo' : '' ?>"
+            data-dark-class="<?= !empty(settings()->main->logo_dark) ? 'navbar-logo' : '' ?>"
             data-dark-tag="<?= !empty(settings()->main->logo_dark) ? 'img' : 'span' ?>"
+            style="background:#111827;padding:.4rem .6rem;border-radius:8px;"
         >
             <?php if(!empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get()}) && !empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'})): ?>
                 <img
@@ -21,10 +62,10 @@
                     width="150"
                     height="48"
                     decoding="async"
-                    style="width:150px;max-width:150px;height:auto;max-height:48px;display:block;object-fit:contain;"
+                    style="width:150px!important;max-width:150px!important;height:auto!important;max-height:48px!important;display:block!important;object-fit:contain!important;opacity:1!important;visibility:visible!important;"
                 />
             <?php else: ?>
-                <span class="text-truncate"><?= settings()->main->title ?></span>
+                <span class="text-truncate" style="color:#fff;"><?= settings()->main->title ?></span>
             <?php endif ?>
         </a>
     </div>

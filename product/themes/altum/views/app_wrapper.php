@@ -56,7 +56,7 @@
 
     <link href="<?= ASSETS_FULL_URL . 'css/' . \Altum\ThemeStyle::get_file() . '?v=' . PRODUCT_CODE ?>" id="css_theme_style" rel="stylesheet" media="screen,print">
     <?php foreach(['custom.css', 'libraries/select2.css'] as $file): ?>
-        <link href="<?= ASSETS_FULL_URL . 'css/' . $file . '?v=' . PRODUCT_CODE ?>" rel="stylesheet" media="screen,print">
+        <link href="<?= ASSETS_FULL_URL . 'css/' . $file . '?v=' . PRODUCT_CODE . (is_file(ASSETS_PATH . 'css/' . $file) ? '.' . filemtime(ASSETS_PATH . 'css/' . $file) : '') ?>" rel="stylesheet" media="screen,print">
     <?php endforeach ?>
 
     <?= \Altum\Event::get_content('head') ?>

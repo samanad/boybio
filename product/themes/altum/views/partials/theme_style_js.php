@@ -42,12 +42,14 @@
                     let fallback_tag = element.getAttribute(`data-${other_theme}-tag`);
                     if(fallback_tag === 'img') {
                         new_brand_value = element.getAttribute(`data-${other_theme}-value`);
-                        new_brand_class = element.getAttribute(`data-${other_theme}-class`) || 'img-fluid navbar-logo';
+                        new_brand_class = element.getAttribute(`data-${other_theme}-class`) || 'navbar-logo';
                         new_brand_tag = 'img';
                     }
                 }
 
-                let new_brand_html = new_brand_tag == 'img' ? `<img src="${new_brand_value}" class="${new_brand_class}" alt="<?= l('global.accessibility.logo_alt') ?>" />` : `<${new_brand_tag} class="${new_brand_class}">${new_brand_value}</${new_brand_tag}>`;
+                let new_brand_html = new_brand_tag == 'img'
+                    ? `<img src="${new_brand_value}" class="${new_brand_class}" alt="<?= l('global.accessibility.logo_alt') ?>" width="150" height="48" style="width:150px!important;max-width:150px!important;height:auto!important;max-height:48px!important;display:block!important;object-fit:contain!important;opacity:1!important;visibility:visible!important;" />`
+                    : `<${new_brand_tag} class="${new_brand_class}">${new_brand_value}</${new_brand_tag}>`;
                 element.innerHTML = new_brand_html;
             });
 
