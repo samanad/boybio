@@ -561,6 +561,15 @@ class Router {
                 ]
             ],
 
+            'webauthn-ajax' => [
+                'controller' => 'WebauthnAjax',
+                'settings' => [
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+                ]
+            ],
+
             'register' => [
                 'controller' => 'Register',
                 'settings' => [
