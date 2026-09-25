@@ -113,7 +113,18 @@ function get_uploads_file_data_uri(string $uploads_key, ?string $file): string {
     }
 
     if(($body === null || $body === false || $body === '')) {
-        $remote_url = \Altum\Uploads::get_full_url($uploads_key) . $file;
+        $remote_base = (defined('UPLOADS_CDN_FULL_URL') && UPLOADS_CDN_FULL_URL) ? UPLOADS_CDN_FULL_URL : \Altum\Uploads::get_full_url($uploads_key);
+        /* get_full_url already includes the key path; CDN base may be uploads root only */
+        if(defined('UPLOADS_CDN_FULL_URL') && UPLOADS_CDN_FULL_URL && UPLOADS_CDN_FULL_URL !== \Altum\Uploads::get_full_url($uploads_key)) {
+            $remote_url = rtrim(UPLOADS_CDN_FULL_URL, '/') . '/' . ltrim(\Altum\Uploads::get_path($uploads_key) . $file, '/');
+        } else {
+            $remote_url = \Altum\Uploads::get_full_url($uploads_key) . $file;
+        }
+        /* Avoid fetching our own same-origin URL (would recurse into NotFound) */
+        $site_uploads = rtrim(SITE_URL, '/') . '/' . trim(UPLOADS_URL_PATH, '/') . '/';
+        if(str_starts_with($remote_url, $site_uploads)) {
+            return '';
+        }
         $context = stream_context_create([
             'http' => [
                 'timeout' => 8,
@@ -138,7 +149,17 @@ function get_uploads_file_data_uri(string $uploads_key, ?string $file): string {
 
     /* cURL fallback when allow_url_fopen is off */
     if(($body === null || $body === false || $body === '') && function_exists('curl_init')) {
-        $remote_url = \Altum\Uploads::get_full_url($uploads_key) . $file;
+        if(!isset($remote_url) || !$remote_url) {
+            if(defined('UPLOADS_CDN_FULL_URL') && UPLOADS_CDN_FULL_URL) {
+                $remote_url = rtrim(UPLOADS_CDN_FULL_URL, '/') . '/' . ltrim(\Altum\Uploads::get_path($uploads_key) . $file, '/');
+            } else {
+                $remote_url = \Altum\Uploads::get_full_url($uploads_key) . $file;
+            }
+        }
+        $site_uploads = rtrim(SITE_URL, '/') . '/' . trim(UPLOADS_URL_PATH, '/') . '/';
+        if(str_starts_with($remote_url, $site_uploads)) {
+            return '';
+        }
         $ch = curl_init($remote_url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,

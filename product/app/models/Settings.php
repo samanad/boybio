@@ -54,15 +54,18 @@ class Settings extends Model {
 
         /* Set the full url for assets */
         $assets_url = SITE_URL . ASSETS_URL_PATH;
+        /* Browser-facing uploads stay on this host (same-origin). Offload/CDN is the storage backend. */
         $uploads_url = SITE_URL . UPLOADS_URL_PATH;
+        $uploads_cdn_url = $uploads_url;
 
         if(\Altum\Plugin::is_active('offload')) {
             if(!empty($data->offload->assets_url)) {
                 $assets_url = $data->offload->assets_url;
             }
 
+            /* Real storage / CDN location used by the uploads proxy when the local file is missing */
             if(!empty($data->offload->uploads_url)) {
-                $uploads_url = $data->offload->uploads_url;
+                $uploads_cdn_url = $data->offload->uploads_url;
             }
 
             /* CDN */
@@ -71,12 +74,13 @@ class Settings extends Model {
             }
 
             if(!empty($data->offload->cdn_uploads_url)) {
-                $uploads_url = $data->offload->cdn_uploads_url . UPLOADS_URL_PATH;
+                $uploads_cdn_url = $data->offload->cdn_uploads_url . UPLOADS_URL_PATH;
             }
         }
 
         define('ASSETS_FULL_URL', $assets_url);
         define('UPLOADS_FULL_URL', $uploads_url);
+        define('UPLOADS_CDN_FULL_URL', $uploads_cdn_url);
 
         return $data;
     }
