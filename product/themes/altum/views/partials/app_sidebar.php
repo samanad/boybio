@@ -1,102 +1,10 @@
 <?php defined('ALTUMCODE') || die() ?>
 
-<style id="app-sidebar-logo-fix">
-.app-sidebar-title{
-	display:flex!important;
-	align-items:center!important;
-	justify-content:center!important;
-	height:118px!important;
-	overflow:visible!important;
-}
-.app-sidebar-title a.app-sidebar-logo-link,
-.app-sidebar-title a[data-logo]{
-	display:flex!important;
-	align-items:center!important;
-	justify-content:center!important;
-	position:relative!important;
-	/* night-sky ring ≈ 1.5mm (~6px) around the sun */
-	width:118px!important;
-	height:118px!important;
-	max-width:118px!important;
-	min-width:118px!important;
-	padding:6px!important;
-	box-sizing:border-box!important;
-	border-radius:50%!important;
-	overflow:visible!important;
-	white-space:normal!important;
-	text-overflow:clip!important;
-	/* night sky */
-	background:
-		radial-gradient(circle at 50% 50%,
-			transparent 0 52%,
-			#3a3f4b 53%,
-			#2c3038 72%,
-			#1e2229 100%)!important;
-	box-shadow:
-		inset 0 0 0 1px rgba(90,96,110,.45),
-		0 0 0 1px rgba(30,34,41,.35)!important;
-	animation:none!important;
-}
-.app-sidebar-title a.app-sidebar-logo-link::before,
-.app-sidebar-title a[data-logo]::before{
-	content:""!important;
-	position:absolute!important;
-	/* sun disc inside the night ring */
-	inset:6px!important;
-	border-radius:50%!important;
-	z-index:0!important;
-	pointer-events:none!important;
-	background:
-		radial-gradient(circle at 50% 42%,
-			rgba(255,255,255,.98) 0%,
-			rgba(255,252,245,.95) 28%,
-			rgba(250,243,230,.78) 52%,
-			rgba(245,235,216,.4) 72%,
-			rgba(245,235,216,.12) 88%,
-			rgba(245,235,216,0) 100%)!important;
-	box-shadow:
-		0 0 0 1px rgba(255,252,245,.85),
-		0 0 10px 3px rgba(255,250,240,.75),
-		0 0 22px 8px rgba(250,240,220,.45),
-		0 0 36px 14px rgba(245,235,216,.22)!important;
-	animation: cloub-logo-sun-pulse 4.5s ease-in-out infinite;
-}
-.app-sidebar-title img.navbar-logo,
-.app-sidebar-title a[data-logo] img{
-	position:relative!important;
-	z-index:1!important;
-	display:block!important;
-	/* 1.2× previous 58×40 */
-	width:70px!important;
-	max-width:70px!important;
-	height:auto!important;
-	max-height:48px!important;
-	object-fit:contain!important;
-	opacity:1!important;
-	visibility:visible!important;
-	filter:none!important;
-	clip:auto!important;
-	clip-path:none!important;
-}
-@keyframes cloub-logo-sun-pulse{
-	0%,100%{ box-shadow:
-		0 0 0 1px rgba(255,252,245,.85),
-		0 0 10px 3px rgba(255,250,240,.75),
-		0 0 22px 8px rgba(250,240,220,.45),
-		0 0 36px 14px rgba(245,235,216,.22); }
-	50%{ box-shadow:
-		0 0 0 1px rgba(255,255,255,.95),
-		0 0 14px 5px rgba(255,252,245,.9),
-		0 0 28px 11px rgba(250,242,225,.55),
-		0 0 44px 18px rgba(245,235,216,.3); }
-}
-</style>
-
 <div class="app-sidebar">
     <div class="app-sidebar-title">
         <a
                 href="<?= url() ?>"
-                class="app-sidebar-logo-link d-flex align-items-center justify-content-center"
+                class="app-sidebar-logo-link cloub-logo-sun d-flex align-items-center justify-content-center"
                 data-logo
             <?php
             $logo_light_embed = function_exists('get_main_logo_embed') ? get_main_logo_embed('light') : (settings()->main->logo_light_full_url ?? '');

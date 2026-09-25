@@ -14,7 +14,7 @@ $admin_logo_src = $admin_logo_theme === 'dark'
 <div class="p-3 mt-3 p-lg-0 mt-lg-0">
     <nav class="navbar navbar-expand-lg navbar-light rounded admin-navbar-top">
         <div
-            class="navbar-brand text-truncate"
+            class="navbar-brand text-truncate cloub-logo-sun cloub-logo-sun--sm"
             data-logo
             data-light-value="<?= $admin_logo_has_light ? $admin_logo_light : settings()->main->title ?>"
             data-light-class="<?= $admin_logo_has_light ? 'img-fluid admin-navbar-logo-top' : '' ?>"

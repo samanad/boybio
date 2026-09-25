@@ -91,9 +91,15 @@
             <div class="col-xs-12 col-md-10 col-lg-7 col-xl-6">
 
                 <div class="mb-5 text-center">
-                    <a href="<?= url() ?>" class="text-decoration-none text-dark">
-                        <?php if(!empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get()}) && !empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'})): ?>
-                            <img src="<?= settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?>" class="img-fluid navbar-logo" alt="<?= l('global.accessibility.logo_alt') ?>" />
+                    <a href="<?= url() ?>" class="text-decoration-none text-dark cloub-logo-sun d-inline-flex">
+                        <?php
+                        $basic_logo_src = function_exists('get_main_logo_embed') ? get_main_logo_embed(\Altum\ThemeStyle::get()) : '';
+                        if($basic_logo_src === '') {
+                            $basic_logo_src = settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?? '';
+                        }
+                        ?>
+                        <?php if($basic_logo_src !== ''): ?>
+                            <img src="<?= $basic_logo_src ?>" class="img-fluid navbar-logo" alt="<?= l('global.accessibility.logo_alt') ?>" />
                         <?php else: ?>
                             <span class="h3"><?= settings()->main->title ?></span>
                         <?php endif ?>

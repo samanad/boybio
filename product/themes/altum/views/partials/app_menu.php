@@ -1,25 +1,27 @@
 <?php defined('ALTUMCODE') || die() ?>
 
+<?php
+$logo_light_embed = function_exists('get_main_logo_embed') ? get_main_logo_embed('light') : (settings()->main->logo_light_full_url ?? '');
+$logo_dark_embed = function_exists('get_main_logo_embed') ? get_main_logo_embed('dark') : (settings()->main->logo_dark_full_url ?? '');
+$logo_theme = \Altum\ThemeStyle::get();
+$logo_src = $logo_theme === 'dark'
+    ? ($logo_dark_embed !== '' ? $logo_dark_embed : $logo_light_embed)
+    : ($logo_light_embed !== '' ? $logo_light_embed : $logo_dark_embed);
+?>
+
 <nav class="navbar navbar-expand-lg navbar-light bg-white border border-gray-100 mt-4 index-highly-rounded d-lg-none">
     <div class="container">
         <a
             href="<?= url() ?>"
-            class="navbar-brand d-flex"
+            class="navbar-brand d-flex cloub-logo-sun cloub-logo-sun--sm"
             data-logo
-            data-light-value="<?= !empty(settings()->main->logo_light) ? settings()->main->logo_light_full_url : settings()->main->title ?>"
-            data-light-class="<?= !empty(settings()->main->logo_light) ? 'img-fluid navbar-logo' : '' ?>"
-            data-light-tag="<?= !empty(settings()->main->logo_light) ? 'img' : 'span' ?>"
-            data-dark-value="<?= !empty(settings()->main->logo_dark) ? settings()->main->logo_dark_full_url : settings()->main->title ?>"
-            data-dark-class="<?= !empty(settings()->main->logo_dark) ? 'img-fluid navbar-logo' : '' ?>"
-            data-dark-tag="<?= !empty(settings()->main->logo_dark) ? 'img' : 'span' ?>"
+            data-light-value="<?= $logo_light_embed !== '' ? $logo_light_embed : settings()->main->title ?>"
+            data-light-class="<?= $logo_light_embed !== '' ? 'img-fluid navbar-logo' : '' ?>"
+            data-light-tag="<?= $logo_light_embed !== '' ? 'img' : 'span' ?>"
+            data-dark-value="<?= $logo_dark_embed !== '' ? $logo_dark_embed : settings()->main->title ?>"
+            data-dark-class="<?= $logo_dark_embed !== '' ? 'img-fluid navbar-logo' : '' ?>"
+            data-dark-tag="<?= $logo_dark_embed !== '' ? 'img' : 'span' ?>"
         >
-            <?php
-            $logo_theme = \Altum\ThemeStyle::get();
-            $logo_src = function_exists('get_main_logo_data_uri') ? get_main_logo_data_uri($logo_theme) : '';
-            if($logo_src === '') {
-                $logo_src = settings()->main->{'logo_' . $logo_theme . '_full_url'} ?? '';
-            }
-            ?>
             <?php if($logo_src !== ''): ?>
                 <img
                     src="<?= $logo_src ?>"
@@ -27,7 +29,6 @@
                     alt="<?= l('global.accessibility.logo_alt') ?>"
                     width="70"
                     height="48"
-                    style="width:70px!important;max-width:70px!important;height:auto!important;max-height:48px!important;display:block!important;object-fit:contain!important;padding:6px;border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(255,252,245,.98) 0 48%,#3a3f4b 55%,#1e2229 100%);box-shadow:0 0 14px 5px rgba(255,250,240,.75),0 0 28px 10px rgba(250,240,220,.35);"
                 />
             <?php else: ?>
                 <?= settings()->main->title ?>

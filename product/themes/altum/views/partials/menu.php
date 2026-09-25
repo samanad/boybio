@@ -3,18 +3,26 @@
 <nav id="navbar" class="navbar navbar-main navbar-expand-lg navbar-light mb-6 index-highly-rounded border border-gray-100">
     <div class="container">
         <a
-                class="navbar-brand d-flex"
+                class="navbar-brand d-flex cloub-logo-sun cloub-logo-sun--sm"
                 href="<?= url() ?>"
                 data-logo
-                data-light-value="<?= !empty(settings()->main->logo_light) ? settings()->main->logo_light_full_url : settings()->main->title ?>"
-                data-light-class="<?= !empty(settings()->main->logo_light) ? 'img-fluid navbar-logo' : '' ?>"
-                data-light-tag="<?= !empty(settings()->main->logo_light) ? 'img' : 'span' ?>"
-                data-dark-value="<?= !empty(settings()->main->logo_dark) ? settings()->main->logo_dark_full_url : settings()->main->title ?>"
-                data-dark-class="<?= !empty(settings()->main->logo_dark) ? 'img-fluid navbar-logo' : '' ?>"
-                data-dark-tag="<?= !empty(settings()->main->logo_dark) ? 'img' : 'span' ?>"
+                <?php
+                $menu_logo_light = function_exists('get_main_logo_embed') ? get_main_logo_embed('light') : (settings()->main->logo_light_full_url ?? '');
+                $menu_logo_dark = function_exists('get_main_logo_embed') ? get_main_logo_embed('dark') : (settings()->main->logo_dark_full_url ?? '');
+                $menu_logo_theme = \Altum\ThemeStyle::get();
+                $menu_logo_src = $menu_logo_theme === 'dark'
+                    ? ($menu_logo_dark !== '' ? $menu_logo_dark : $menu_logo_light)
+                    : ($menu_logo_light !== '' ? $menu_logo_light : $menu_logo_dark);
+                ?>
+                data-light-value="<?= $menu_logo_light !== '' ? $menu_logo_light : settings()->main->title ?>"
+                data-light-class="<?= $menu_logo_light !== '' ? 'img-fluid navbar-logo' : '' ?>"
+                data-light-tag="<?= $menu_logo_light !== '' ? 'img' : 'span' ?>"
+                data-dark-value="<?= $menu_logo_dark !== '' ? $menu_logo_dark : settings()->main->title ?>"
+                data-dark-class="<?= $menu_logo_dark !== '' ? 'img-fluid navbar-logo' : '' ?>"
+                data-dark-tag="<?= $menu_logo_dark !== '' ? 'img' : 'span' ?>"
         >
-            <?php if(!empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get()}) && !empty(settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'})): ?>
-                <img src="<?= settings()->main->{'logo_' . \Altum\ThemeStyle::get() . '_full_url'} ?>" class="img-fluid navbar-logo" alt="<?= l('global.accessibility.logo_alt') ?>" />
+            <?php if($menu_logo_src !== ''): ?>
+                <img src="<?= $menu_logo_src ?>" class="img-fluid navbar-logo" alt="<?= l('global.accessibility.logo_alt') ?>" />
             <?php else: ?>
                 <?= settings()->main->title ?>
             <?php endif ?>

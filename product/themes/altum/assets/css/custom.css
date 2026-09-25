@@ -108,25 +108,6 @@ body.app-sidebar-opened .app-sidebar {
 	color: var(--gray-900);
 	font-weight: 600;
 	border-radius: 50%;
-	background:
-		radial-gradient(circle at 50% 50%,
-			transparent 0 52%,
-			#3a3f4b 53%,
-			#2c3038 72%,
-			#1e2229 100%);
-	box-shadow:
-		inset 0 0 0 1px rgba(90,96,110,.45),
-		0 0 0 1px rgba(30,34,41,.35);
-}
-
-[data-theme-style="dark"] .app-sidebar-title a,
-[data-theme-style="dark"] .app-sidebar-title .app-sidebar-logo-link {
-	background:
-		radial-gradient(circle at 50% 50%,
-			transparent 0 52%,
-			#3a3f4b 53%,
-			#2c3038 72%,
-			#1e2229 100%);
 }
 
 .app-sidebar-title a:hover {
@@ -146,6 +127,131 @@ body.app-sidebar-opened .app-sidebar {
 	visibility: visible !important;
 	filter: none !important;
 }
+
+/* ——— Cloub brand sun (same effect on all pages) ——— */
+a.cloub-logo-sun,
+.cloub-logo-sun {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	position: relative !important;
+	width: 118px !important;
+	height: 118px !important;
+	max-width: 118px !important;
+	min-width: 118px !important;
+	padding: 6px !important;
+	box-sizing: border-box !important;
+	border-radius: 50% !important;
+	overflow: visible !important;
+	white-space: normal !important;
+	text-overflow: clip !important;
+	line-height: 0 !important;
+	background:
+		radial-gradient(circle at 50% 50%,
+			transparent 0 52%,
+			#3a3f4b 53%,
+			#2c3038 72%,
+			#1e2229 100%) !important;
+	box-shadow:
+		inset 0 0 0 1px rgba(90,96,110,.45),
+		0 0 0 1px rgba(30,34,41,.35) !important;
+}
+
+a.cloub-logo-sun::before,
+.cloub-logo-sun::before {
+	content: "" !important;
+	position: absolute !important;
+	inset: 6px !important;
+	border-radius: 50% !important;
+	z-index: 0 !important;
+	pointer-events: none !important;
+	background:
+		radial-gradient(circle at 50% 42%,
+			rgba(255,255,255,.98) 0%,
+			rgba(255,252,245,.95) 28%,
+			rgba(250,243,230,.78) 52%,
+			rgba(245,235,216,.4) 72%,
+			rgba(245,235,216,.12) 88%,
+			rgba(245,235,216,0) 100%) !important;
+	box-shadow:
+		0 0 0 1px rgba(255,252,245,.85),
+		0 0 10px 3px rgba(255,250,240,.75),
+		0 0 22px 8px rgba(250,240,220,.45),
+		0 0 36px 14px rgba(245,235,216,.22) !important;
+	animation: cloub-logo-sun-pulse 4.5s ease-in-out infinite;
+}
+
+a.cloub-logo-sun img,
+.cloub-logo-sun img,
+a.cloub-logo-sun .navbar-logo,
+.cloub-logo-sun .navbar-logo,
+a.cloub-logo-sun .admin-navbar-logo,
+.cloub-logo-sun .admin-navbar-logo,
+a.cloub-logo-sun .admin-navbar-logo-top,
+.cloub-logo-sun .admin-navbar-logo-top {
+	position: relative !important;
+	z-index: 1 !important;
+	display: block !important;
+	width: 70px !important;
+	max-width: 70px !important;
+	height: auto !important;
+	max-height: 48px !important;
+	object-fit: contain !important;
+	opacity: 1 !important;
+	visibility: visible !important;
+	filter: none !important;
+	margin: 0 !important;
+}
+
+/* Compact sun for horizontal navbars */
+a.cloub-logo-sun.cloub-logo-sun--sm,
+.cloub-logo-sun.cloub-logo-sun--sm {
+	width: 72px !important;
+	height: 72px !important;
+	max-width: 72px !important;
+	min-width: 72px !important;
+	padding: 4px !important;
+}
+
+a.cloub-logo-sun.cloub-logo-sun--sm::before,
+.cloub-logo-sun.cloub-logo-sun--sm::before {
+	inset: 4px !important;
+}
+
+a.cloub-logo-sun.cloub-logo-sun--sm img,
+.cloub-logo-sun.cloub-logo-sun--sm img {
+	width: 42px !important;
+	max-width: 42px !important;
+	max-height: 32px !important;
+}
+
+@keyframes cloub-logo-sun-pulse {
+	0%, 100% {
+		box-shadow:
+			0 0 0 1px rgba(255,252,245,.85),
+			0 0 10px 3px rgba(255,250,240,.75),
+			0 0 22px 8px rgba(250,240,220,.45),
+			0 0 36px 14px rgba(245,235,216,.22);
+	}
+	50% {
+		box-shadow:
+			0 0 0 1px rgba(255,255,255,.95),
+			0 0 14px 5px rgba(255,252,245,.9),
+			0 0 28px 11px rgba(250,242,225,.55),
+			0 0 44px 18px rgba(245,235,216,.3);
+	}
+}
+
+[data-theme-style="dark"] a.cloub-logo-sun,
+[data-theme-style="dark"] .cloub-logo-sun {
+	background:
+		radial-gradient(circle at 50% 50%,
+			transparent 0 52%,
+			#3a3f4b 53%,
+			#2c3038 72%,
+			#1e2229 100%) !important;
+}
+
 
 .app-sidebar-footer {
 	width: 100%;
