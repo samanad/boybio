@@ -71,7 +71,7 @@
         </div>
     <?php endif ?>
 
-    <?php if((isset(settings()->facebook->is_enabled) && settings()->facebook->is_enabled) || (isset(settings()->google->is_enabled) && settings()->google->is_enabled) || (isset(settings()->twitter->is_enabled) && settings()->twitter->is_enabled) || (isset(settings()->discord->is_enabled) && settings()->discord->is_enabled) || (isset(settings()->linkedin->is_enabled) && settings()->linkedin->is_enabled) || (isset(settings()->microsoft->is_enabled) && settings()->microsoft->is_enabled)): ?>
+    <?php if((isset(settings()->facebook->is_enabled) && settings()->facebook->is_enabled) || (isset(settings()->twitter->is_enabled) && settings()->twitter->is_enabled) || (isset(settings()->discord->is_enabled) && settings()->discord->is_enabled) || (isset(settings()->linkedin->is_enabled) && settings()->linkedin->is_enabled) || (isset(settings()->microsoft->is_enabled) && settings()->microsoft->is_enabled)): ?>
         <hr class="border-gray-100 my-3" />
 
         <div>
@@ -80,14 +80,6 @@
                     <a href="<?= url('login/facebook-initiate') ?>" class="btn btn-light btn-block">
                         <img src="<?= ASSETS_FULL_URL . 'images/facebook.svg' ?>" class="mr-1" />
                         <?= l('login.facebook') ?>
-                    </a>
-                </div>
-            <?php endif ?>
-            <?php if(isset(settings()->google->is_enabled) && settings()->google->is_enabled): ?>
-                <div class="mt-2">
-                    <a href="<?= url('login/google-initiate') ?>" class="btn btn-light btn-block">
-                        <img src="<?= ASSETS_FULL_URL . 'images/google.svg' ?>" class="mr-1" />
-                        <?= l('login.google') ?>
                     </a>
                 </div>
             <?php endif ?>
@@ -127,16 +119,22 @@
     <?php endif ?>
 </form>
 
-<?php if(settings()->users->register_is_enabled): ?>
-    <div class="mt-5 text-center text-muted">
-        <?= sprintf(l('login.register'), '<a href="' . url('register' . $data->redirect_append) . '" class="font-weight-bold">' . l('login.register_help') . '</a>') ?></a>
-    </div>
-<?php endif ?>
+<div class="d-flex align-items-stretch mt-4" style="gap: .5rem;">
+    <?php if(isset(settings()->google->is_enabled) && settings()->google->is_enabled): ?>
+        <a href="<?= url('login/google-initiate') ?>" class="btn btn-light flex-fill d-flex align-items-center justify-content-center">
+            <img src="<?= ASSETS_FULL_URL . 'images/google.svg' ?>" class="mr-1" alt="" />
+            <?= l('login.google') ?>
+        </a>
+    <?php endif ?>
 
-<div class="mt-4">
-    <button type="button" id="security_key_login" class="btn btn-light btn-block" <?= isset($_COOKIE['login_lockout']) ? 'disabled="disabled"' : null ?>>
-        <img src="<?= ASSETS_FULL_URL . 'images/boy-bio.svg' ?>" class="mr-1" alt="" />
-        <?= l('login.security_key') ?>
+    <?php if(settings()->users->register_is_enabled): ?>
+        <a href="<?= url('register' . $data->redirect_append) ?>" class="btn btn-light flex-fill d-flex align-items-center justify-content-center">
+            <?= l('login.register_help') ?>
+        </a>
+    <?php endif ?>
+
+    <button type="button" id="security_key_login" class="btn btn-light flex-fill d-flex align-items-center justify-content-center" title="<?= l('login.security_key') ?>" aria-label="<?= l('login.security_key') ?>" data-toggle="tooltip" <?= isset($_COOKIE['login_lockout']) ? 'disabled="disabled"' : null ?>>
+        <i class="fas fa-blog text-danger"></i>
     </button>
 </div>
 
