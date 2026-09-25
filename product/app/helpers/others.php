@@ -921,13 +921,17 @@ function enforce_blacklisted_countries() {
             return;
         }
 
-        /* Keep system endpoints reachable */
+        /* Keep system endpoints + static uploads reachable (images must load even when country is banned) */
         $altum = (string) ($_GET['altum'] ?? '');
+        $uploads_prefix = defined('UPLOADS_URL_PATH') ? trim(UPLOADS_URL_PATH, '/') : 'uploads';
         if(
             str_starts_with($altum, 'cron')
             || str_starts_with($altum, 'sitemap')
             || str_starts_with($altum, 'webhook-')
             || str_starts_with($altum, 'api/')
+            || str_starts_with($altum, 'site-logo')
+            || $altum === $uploads_prefix
+            || str_starts_with($altum, $uploads_prefix . '/')
         ) {
             return;
         }

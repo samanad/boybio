@@ -145,44 +145,55 @@ class NotFound extends Controller {
         $body = null;
         $content_type = null;
 
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 12,
-                'follow_location' => 1,
-                'user_agent' => 'CloubUploadsProxy/1.0',
-            ],
-            'ssl' => [
-                'verify_peer' => true,
-                'verify_peer_name' => true,
-            ],
-        ]);
-        $body = @file_get_contents($url, false, $context);
-        if(isset($http_response_header) && is_array($http_response_header)) {
-            foreach($http_response_header as $header_line) {
-                if(stripos($header_line, 'Content-Type:') === 0) {
-                    $content_type = trim(substr($header_line, strlen('Content-Type:')));
-                    break;
+        /* Try with SSL verify, then without — this host's CA bundle is often incomplete */
+        foreach([true, false] as $verify_ssl) {
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 12,
+                    'follow_location' => 1,
+                    'user_agent' => 'CloubUploadsProxy/1.0',
+                ],
+                'ssl' => [
+                    'verify_peer' => $verify_ssl,
+                    'verify_peer_name' => $verify_ssl,
+                ],
+            ]);
+            $body = @file_get_contents($url, false, $context);
+            if(isset($http_response_header) && is_array($http_response_header)) {
+                foreach($http_response_header as $header_line) {
+                    if(stripos($header_line, 'Content-Type:') === 0) {
+                        $content_type = trim(substr($header_line, strlen('Content-Type:')));
+                        break;
+                    }
                 }
             }
-        }
-
-        if(($body === null || $body === false || $body === '') && function_exists('curl_init')) {
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_TIMEOUT => 12,
-                CURLOPT_USERAGENT => 'CloubUploadsProxy/1.0',
-            ]);
-            $body = curl_exec($ch);
-            $ctype = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-            $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            if($code >= 400) {
-                $body = null;
+            if($body !== null && $body !== false && $body !== '') {
+                break;
             }
-            if(is_string($ctype) && $ctype !== '') {
-                $content_type = explode(';', $ctype)[0];
+
+            if(function_exists('curl_init')) {
+                $ch = curl_init($url);
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_TIMEOUT => 12,
+                    CURLOPT_USERAGENT => 'CloubUploadsProxy/1.0',
+                    CURLOPT_SSL_VERIFYPEER => $verify_ssl,
+                    CURLOPT_SSL_VERIFYHOST => $verify_ssl ? 2 : 0,
+                ]);
+                $body = curl_exec($ch);
+                $ctype = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+                $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                if($code >= 400) {
+                    $body = null;
+                }
+                if(is_string($ctype) && $ctype !== '') {
+                    $content_type = explode(';', $ctype)[0];
+                }
+                if($body !== null && $body !== false && $body !== '') {
+                    break;
+                }
             }
         }
 
