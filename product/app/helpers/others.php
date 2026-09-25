@@ -363,12 +363,12 @@ function get_user_avatar($avatar, $email) {
         return \Altum\Uploads::get_full_url('default_avatar') . $default_avatar;
     }
 
-    /* Local identicon — gravatar.com is often blocked for visitors */
-    return get_local_avatar_data_uri($email);
+    /* Gravatar via same-origin proxy — URL was correct but cross-origin <img> often failed to paint */
+    return get_gravatar_proxy_url($email);
 }
 
 /**
- * Deterministic SVG avatar (no third-party host). Used when Gravatar is unreachable.
+ * Deterministic SVG avatar fallback when Gravatar cannot be fetched.
  */
 function get_local_avatar_data_uri($email, $size = 80) {
     $hash = md5(mb_strtolower(trim((string) ($email ?? ''))));
@@ -394,8 +394,18 @@ function get_local_avatar_data_uri($email, $size = 80) {
 }
 
 function get_gravatar($email, $size = 80, $d = 'identicon', $rating = 'g') {
-    /* Do not call gravatar.com — blocked in many regions; keep signature for callers */
-    return get_local_avatar_data_uri($email, $size);
+    /* Prefer same-origin proxy so dashboard avatars paint; keep params for compatibility */
+    return get_gravatar_proxy_url($email, $size, $d, $rating);
+}
+
+/** Same-origin URL that streams the real Gravatar image. */
+function get_gravatar_proxy_url($email, $size = 80, $d = 'identicon', $rating = 'g'): string {
+    $hash = md5(mb_strtolower(trim((string) ($email ?? ''))));
+    $size = max(1, min(2048, (int) $size));
+    $d = preg_replace('/[^a-z0-9\-]/i', '', (string) $d) ?: 'identicon';
+    $rating = preg_replace('/[^a-z]/i', '', (string) $rating) ?: 'g';
+
+    return url('gravatar-proxy/' . $hash . '?s=' . $size . '&d=' . rawurlencode($d) . '&r=' . rawurlencode($rating));
 }
 
 /**
@@ -1042,6 +1052,7 @@ function enforce_blacklisted_countries() {
             || str_starts_with($altum, 'api/')
             || str_starts_with($altum, 'site-logo')
             || str_starts_with($altum, 'favicon-proxy')
+            || str_starts_with($altum, 'gravatar-proxy')
             || $altum === $uploads_prefix
             || str_starts_with($altum, $uploads_prefix . '/')
         ) {

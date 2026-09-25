@@ -905,6 +905,16 @@ class Router {
                 ]
             ],
 
+            'gravatar-proxy' => [
+                'controller' => 'GravatarProxy',
+                'settings' => [
+                    'no_authentication_check' => true,
+                    'has_view' => false,
+                    'no_browser_language_detection' => true,
+                    'allow_indexing' => false,
+                ]
+            ],
+
             'official' => [
                 'controller' => 'Official',
                 'settings' => [
