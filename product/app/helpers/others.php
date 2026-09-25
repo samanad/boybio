@@ -399,79 +399,73 @@ function get_gravatar($email, $size = 80, $d = 'identicon', $rating = 'g') {
 }
 
 /**
- * Extract a hostname from a URL that may be missing the scheme.
+ * Same-origin URL that proxies DuckDuckGo favicons (so dashboard <img> paints).
+ * Pass a bare slug (e.g. "sam") with $guess=true to try sam.com, sam.ir, …
  */
-function extract_url_host($url): string {
-    $url = trim((string) $url);
-    if($url === '') {
-        return '';
-    }
-    if(!preg_match('#^[a-z][a-z0-9+.-]*://#i', $url)) {
-        $url = 'https://' . $url;
-    }
-    $host = parse_url($url, PHP_URL_HOST);
-    if(!is_string($host) || $host === '') {
-        return '';
+function get_favicon_proxy_url(?string $domain_or_slug, bool $guess = false): string {
+    $domain_or_slug = mb_strtolower(trim((string) $domain_or_slug));
+    $domain_or_slug = preg_replace('/^www\./', '', $domain_or_slug);
+    if($domain_or_slug === '' || preg_match('/[^a-z0-9.\-]/', $domain_or_slug)) {
+        return get_local_favicon_data_uri('?');
     }
 
-    return preg_replace('/^www\./', '', mb_strtolower($host));
-}
-
-function is_our_shortlink_host($host): bool {
-    $host = preg_replace('/^www\./', '', mb_strtolower(trim((string) $host)));
-    if($host === '') {
-        return false;
+    $path = 'favicon-proxy/' . rawurlencode($domain_or_slug);
+    if($guess || !str_contains($domain_or_slug, '.')) {
+        $path .= '?guess=1';
     }
-    $site_host = parse_url(SITE_URL, PHP_URL_HOST);
-    $site_host = $site_host ? preg_replace('/^www\./', '', mb_strtolower($site_host)) : '';
-    $our_hosts = array_filter([$site_host, 'cloub.io', 'boy.bio', 'boybio.net', 'linkofbio.com', 'linkdooni.com']);
 
-    return in_array($host, $our_hosts, true);
+    return url($path);
 }
 
 /**
- * Favicon URL for dashboard / links list rows.
- * Prefer destination (location_url) host — never boy.bio from the short URL.
+ * Favicon for a dashboard/admin link row.
+ * 1) Uploaded biolink favicon
+ * 2) Destination host (short links)
+ * 3) Biolink slug → DuckDuckGo for slug.com / slug.ir (NOT boy.bio)
  */
-function get_link_list_favicon_url($row): string {
-    /* Uploaded biolink favicon */
-    if(!empty($row->settings->favicon)) {
-        $data_uri = function_exists('get_uploads_file_data_uri') ? get_uploads_file_data_uri('favicons', $row->settings->favicon) : '';
-        if($data_uri !== '') {
-            return $data_uri;
-        }
-        return \Altum\Uploads::get_full_url('favicons') . $row->settings->favicon;
+function get_link_favicon_url($row): string {
+    $settings = is_object($row->settings ?? null) ? $row->settings : (object) [];
+    if(!empty($settings->favicon)) {
+        return \Altum\Uploads::get_full_url('favicons') . $settings->favicon;
     }
 
-    /* Destination URL of short links (anything.com / anything.ir) — not boy.bio/slug */
-    $host = extract_url_host($row->location_url ?? '');
-    if($host !== '' && !is_our_shortlink_host($host)) {
+    if(!empty($row->location_url)) {
+        $host = parse_url($row->location_url, PHP_URL_HOST);
         return get_favicon_url_from_domain($host);
     }
 
-    /* External full_url only (rare); skip our short domains */
-    $full_host = extract_url_host($row->full_url ?? '');
-    if($full_host !== '' && !is_our_shortlink_host($full_host)) {
-        return get_favicon_url_from_domain($full_host);
+    $slug = trim((string) ($row->url ?? ''));
+    if($slug !== '' && preg_match('/^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$/i', $slug)) {
+        return get_favicon_proxy_url($slug, true);
     }
 
-    return get_local_favicon_data_uri($row->url ?? $host ?: '?');
+    $host = parse_url($row->full_url ?? '', PHP_URL_HOST);
+    return get_favicon_url_from_domain($host);
 }
 
 /**
- * Same-origin proxy to DuckDuckGo favicons so <img> paints on the dashboard.
+ * Favicon URL for an arbitrary domain — same-origin DDG proxy (not boy.bio for biolinks).
  */
 function get_favicon_url_from_domain($domain) {
-    $domain = extract_url_host($domain) ?: preg_replace('/^www\./', '', mb_strtolower(trim((string) $domain)));
-    $domain = preg_replace('/[^a-z0-9.-]/i', '', $domain);
-    if($domain === '' || !str_contains($domain, '.')) {
-        /* Allow single-label for letter fallback only */
-        if($domain === '') {
-            return get_local_favicon_data_uri('?');
-        }
+    $domain = mb_strtolower(trim((string) $domain));
+    $domain = preg_replace('/^www\./', '', $domain);
+    if($domain === '') {
+        return get_local_favicon_data_uri('?');
     }
 
-    return url('favicon-proxy/' . rawurlencode($domain));
+    /* Never use our biolink hosts as the DDG lookup target */
+    $site_host = parse_url(SITE_URL, PHP_URL_HOST);
+    $site_host = $site_host ? preg_replace('/^www\./', '', mb_strtolower($site_host)) : '';
+    $our_hosts = array_filter([$site_host, 'cloub.io', 'boy.bio', 'boybio.net', 'linkofbio.com', 'linkdooni.com']);
+    if(in_array($domain, $our_hosts, true)) {
+        $site_favicon = trim((string) (settings()->main->favicon ?? ''));
+        if($site_favicon !== '') {
+            return \Altum\Uploads::get_full_url('favicon') . $site_favicon;
+        }
+        return get_local_favicon_data_uri($domain);
+    }
+
+    return get_favicon_proxy_url($domain, !str_contains($domain, '.'));
 }
 
 function get_local_favicon_data_uri($domain) {
