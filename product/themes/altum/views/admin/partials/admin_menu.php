@@ -14,7 +14,7 @@ $admin_logo_src = $admin_logo_theme === 'dark'
 <div class="p-3 mt-3 p-lg-0 mt-lg-0">
     <nav class="navbar navbar-expand-lg navbar-light rounded admin-navbar-top">
         <div
-            class="navbar-brand text-truncate cloub-logo-sun cloub-logo-sun--sm"
+            class="navbar-brand cloub-logo-sun cloub-logo-sun--sm"
             data-logo
             data-light-value="<?= $admin_logo_has_light ? $admin_logo_light : settings()->main->title ?>"
             data-light-class="<?= $admin_logo_has_light ? 'img-fluid admin-navbar-logo-top' : '' ?>"
@@ -38,9 +38,9 @@ $admin_logo_src = $admin_logo_theme === 'dark'
             "
         >
             <?php if($admin_logo_src !== ''): ?>
-                <img src="<?= $admin_logo_src ?>" class="img-fluid admin-navbar-logo-top" alt="<?= l('global.accessibility.logo_alt') ?>" />
+                <img src="<?= $admin_logo_src ?>" class="img-fluid admin-navbar-logo-top" alt="<?= l('global.accessibility.logo_alt') ?>" width="42" height="32" />
             <?php else: ?>
-                <span><?= settings()->main->title ?></span>
+                <span style="position:relative;z-index:1;"><?= settings()->main->title ?></span>
             <?php endif ?>
         </div>
 

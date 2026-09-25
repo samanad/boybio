@@ -90,8 +90,8 @@
         <div class="d-flex flex-column align-items-center">
             <div class="col-xs-12 col-md-10 col-lg-7 col-xl-6">
 
-                <div class="mb-5 text-center">
-                    <a href="<?= url() ?>" class="text-decoration-none text-dark cloub-logo-sun d-inline-flex">
+                <div class="mb-5 text-center d-flex justify-content-center">
+                    <a href="<?= url() ?>" class="text-decoration-none cloub-logo-sun">
                         <?php
                         $basic_logo_src = function_exists('get_main_logo_embed') ? get_main_logo_embed(\Altum\ThemeStyle::get()) : '';
                         if($basic_logo_src === '') {
@@ -99,12 +99,37 @@
                         }
                         ?>
                         <?php if($basic_logo_src !== ''): ?>
-                            <img src="<?= $basic_logo_src ?>" class="img-fluid navbar-logo" alt="<?= l('global.accessibility.logo_alt') ?>" />
+                            <img src="<?= $basic_logo_src ?>" class="img-fluid navbar-logo" alt="<?= l('global.accessibility.logo_alt') ?>" width="70" height="48" />
                         <?php else: ?>
-                            <span class="h3"><?= settings()->main->title ?></span>
+                            <span class="h3" style="position:relative;z-index:1;"><?= settings()->main->title ?></span>
                         <?php endif ?>
                     </a>
                 </div>
+<style id="cloub-logo-sun-login">
+.cloub-logo-sun{
+	display:inline-flex!important;align-items:center!important;justify-content:center!important;
+	position:relative!important;width:118px!important;height:118px!important;max-width:118px!important;min-width:118px!important;
+	padding:6px!important;box-sizing:border-box!important;border-radius:50%!important;overflow:visible!important;
+	line-height:0!important;margin:0 auto!important;
+	background:radial-gradient(circle at 50% 50%,transparent 0 52%,#3a3f4b 53%,#2c3038 72%,#1e2229 100%)!important;
+	box-shadow:inset 0 0 0 1px rgba(90,96,110,.45),0 0 0 1px rgba(30,34,41,.35)!important;
+}
+.cloub-logo-sun::before{
+	content:""!important;position:absolute!important;inset:6px!important;border-radius:50%!important;z-index:0!important;pointer-events:none!important;
+	background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.98) 0%,rgba(255,252,245,.95) 28%,rgba(250,243,230,.78) 52%,rgba(245,235,216,.4) 72%,rgba(245,235,216,.12) 88%,rgba(245,235,216,0) 100%)!important;
+	box-shadow:0 0 0 1px rgba(255,252,245,.85),0 0 10px 3px rgba(255,250,240,.75),0 0 22px 8px rgba(250,240,220,.45),0 0 36px 14px rgba(245,235,216,.22)!important;
+	animation:cloub-logo-sun-pulse 4.5s ease-in-out infinite;
+}
+.cloub-logo-sun img{
+	position:relative!important;z-index:1!important;display:block!important;
+	width:70px!important;max-width:70px!important;height:auto!important;max-height:48px!important;
+	object-fit:contain!important;margin:0!important;
+}
+@keyframes cloub-logo-sun-pulse{
+	0%,100%{box-shadow:0 0 0 1px rgba(255,252,245,.85),0 0 10px 3px rgba(255,250,240,.75),0 0 22px 8px rgba(250,240,220,.45),0 0 36px 14px rgba(245,235,216,.22)}
+	50%{box-shadow:0 0 0 1px rgba(255,255,255,.95),0 0 14px 5px rgba(255,252,245,.9),0 0 28px 11px rgba(250,242,225,.55),0 0 44px 18px rgba(245,235,216,.3)}
+}
+</style>
 
                 <div class="card rounded-2x">
                     <div class="card-body p-5">

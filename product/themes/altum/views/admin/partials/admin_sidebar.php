@@ -14,13 +14,13 @@ $admin_logo_src = $admin_logo_theme === 'dark'
 <section class="admin-sidebar">
     <div class="admin-sidebar-title">
         <div
-                class="h3 m-0 text-decoration-none text-truncate cloub-logo-sun cloub-logo-sun--sm"
+                class="cloub-logo-sun"
                 data-logo
                 data-light-value="<?= $admin_logo_has_light ? $admin_logo_light : settings()->main->title ?>"
-                data-light-class="<?= $admin_logo_has_light ? 'img-fluid admin-navbar-logo' : 'admin-navbar-brand text-truncate' ?>"
+                data-light-class="<?= $admin_logo_has_light ? 'img-fluid admin-navbar-logo' : 'admin-navbar-brand' ?>"
                 data-light-tag="<?= $admin_logo_has_light ? 'img' : 'div' ?>"
                 data-dark-value="<?= $admin_logo_has_dark ? $admin_logo_dark : settings()->main->title ?>"
-                data-dark-class="<?= $admin_logo_has_dark ? 'img-fluid admin-navbar-logo' : 'admin-navbar-brand text-truncate' ?>"
+                data-dark-class="<?= $admin_logo_has_dark ? 'img-fluid admin-navbar-logo' : 'admin-navbar-brand' ?>"
                 data-dark-tag="<?= $admin_logo_has_dark ? 'img' : 'div' ?>"
 
                 id="sidebar_title"
@@ -38,12 +38,40 @@ $admin_logo_src = $admin_logo_theme === 'dark'
             "
         >
             <?php if($admin_logo_src !== ''): ?>
-                <img src="<?= $admin_logo_src ?>" class="img-fluid admin-navbar-logo" alt="<?= l('global.accessibility.logo_alt') ?>" />
+                <img src="<?= $admin_logo_src ?>" class="img-fluid admin-navbar-logo" alt="<?= l('global.accessibility.logo_alt') ?>" width="70" height="48" />
             <?php else: ?>
-                <div class="admin-navbar-brand text-truncate"><?= settings()->main->title ?></div>
+                <div class="admin-navbar-brand" style="position:relative;z-index:1;font-size:.85rem;color:#fff;"><?= settings()->main->title ?></div>
             <?php endif ?>
         </div>
     </div>
+<style id="cloub-logo-sun-admin">
+.admin-sidebar-title{
+	display:flex!important;align-items:center!important;justify-content:center!important;
+	min-height:130px!important;overflow:visible!important;padding:.5rem!important;
+}
+.admin-sidebar-title .cloub-logo-sun{
+	display:flex!important;align-items:center!important;justify-content:center!important;
+	position:relative!important;width:118px!important;height:118px!important;max-width:118px!important;min-width:118px!important;
+	padding:6px!important;box-sizing:border-box!important;border-radius:50%!important;overflow:visible!important;
+	line-height:0!important;margin:0 auto 1rem!important;white-space:normal!important;text-overflow:clip!important;
+	background:radial-gradient(circle at 50% 50%,transparent 0 52%,#3a3f4b 53%,#2c3038 72%,#1e2229 100%)!important;
+	box-shadow:inset 0 0 0 1px rgba(90,96,110,.45),0 0 0 1px rgba(30,34,41,.35)!important;
+}
+.admin-sidebar-title .cloub-logo-sun::before{
+	content:""!important;position:absolute!important;inset:6px!important;border-radius:50%!important;z-index:0!important;pointer-events:none!important;
+	background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.98) 0%,rgba(255,252,245,.95) 28%,rgba(250,243,230,.78) 52%,rgba(245,235,216,.4) 72%,rgba(245,235,216,.12) 88%,rgba(245,235,216,0) 100%)!important;
+	box-shadow:0 0 0 1px rgba(255,252,245,.85),0 0 10px 3px rgba(255,250,240,.75),0 0 22px 8px rgba(250,240,220,.45),0 0 36px 14px rgba(245,235,216,.22)!important;
+	animation:cloub-logo-sun-pulse 4.5s ease-in-out infinite;
+}
+.admin-sidebar-title .cloub-logo-sun img{
+	position:relative!important;z-index:1!important;display:block!important;margin:0!important;
+	width:70px!important;max-width:70px!important;height:auto!important;max-height:48px!important;object-fit:contain!important;
+}
+@keyframes cloub-logo-sun-pulse{
+	0%,100%{box-shadow:0 0 0 1px rgba(255,252,245,.85),0 0 10px 3px rgba(255,250,240,.75),0 0 22px 8px rgba(250,240,220,.45),0 0 36px 14px rgba(245,235,216,.22)}
+	50%{box-shadow:0 0 0 1px rgba(255,255,255,.95),0 0 14px 5px rgba(255,252,245,.9),0 0 28px 11px rgba(250,242,225,.55),0 0 44px 18px rgba(245,235,216,.3)}
+}
+</style>
 
     <div class="admin-sidebar-links-wrapper">
         <ul class="admin-sidebar-links">
