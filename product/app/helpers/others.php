@@ -399,32 +399,79 @@ function get_gravatar($email, $size = 80, $d = 'identicon', $rating = 'g') {
 }
 
 /**
- * Favicon for link lists. Prefer uploaded site favicon for our hosts;
- * otherwise a local letter SVG (DuckDuckGo external-content is often blocked).
+ * Extract a hostname from a URL that may be missing the scheme.
  */
-function get_favicon_url_from_domain($domain) {
-    $domain = mb_strtolower(trim((string) $domain));
-    $domain = preg_replace('/^www\./', '', $domain);
-    if($domain === '') {
-        return get_local_favicon_data_uri('?');
+function extract_url_host($url): string {
+    $url = trim((string) $url);
+    if($url === '') {
+        return '';
+    }
+    if(!preg_match('#^[a-z][a-z0-9+.-]*://#i', $url)) {
+        $url = 'https://' . $url;
+    }
+    $host = parse_url($url, PHP_URL_HOST);
+    if(!is_string($host) || $host === '') {
+        return '';
     }
 
-    /* Our own hosts → site favicon from uploads when available */
+    return preg_replace('/^www\./', '', mb_strtolower($host));
+}
+
+function is_our_shortlink_host($host): bool {
+    $host = preg_replace('/^www\./', '', mb_strtolower(trim((string) $host)));
+    if($host === '') {
+        return false;
+    }
     $site_host = parse_url(SITE_URL, PHP_URL_HOST);
     $site_host = $site_host ? preg_replace('/^www\./', '', mb_strtolower($site_host)) : '';
-    $our_hosts = array_filter([$site_host, 'cloub.io', 'boy.bio', 'boybio.net', 'linkofbio.com']);
-    if(in_array($domain, $our_hosts, true)) {
-        $site_favicon = trim((string) (settings()->main->favicon ?? ''));
-        if($site_favicon !== '') {
-            $data_uri = function_exists('get_uploads_file_data_uri') ? get_uploads_file_data_uri('favicon', $site_favicon) : '';
-            if($data_uri !== '') {
-                return $data_uri;
-            }
-            return \Altum\Uploads::get_full_url('favicon') . $site_favicon;
+    $our_hosts = array_filter([$site_host, 'cloub.io', 'boy.bio', 'boybio.net', 'linkofbio.com', 'linkdooni.com']);
+
+    return in_array($host, $our_hosts, true);
+}
+
+/**
+ * Favicon URL for dashboard / links list rows.
+ * Prefer destination (location_url) host — never boy.bio from the short URL.
+ */
+function get_link_list_favicon_url($row): string {
+    /* Uploaded biolink favicon */
+    if(!empty($row->settings->favicon)) {
+        $data_uri = function_exists('get_uploads_file_data_uri') ? get_uploads_file_data_uri('favicons', $row->settings->favicon) : '';
+        if($data_uri !== '') {
+            return $data_uri;
+        }
+        return \Altum\Uploads::get_full_url('favicons') . $row->settings->favicon;
+    }
+
+    /* Destination URL of short links (anything.com / anything.ir) — not boy.bio/slug */
+    $host = extract_url_host($row->location_url ?? '');
+    if($host !== '' && !is_our_shortlink_host($host)) {
+        return get_favicon_url_from_domain($host);
+    }
+
+    /* External full_url only (rare); skip our short domains */
+    $full_host = extract_url_host($row->full_url ?? '');
+    if($full_host !== '' && !is_our_shortlink_host($full_host)) {
+        return get_favicon_url_from_domain($full_host);
+    }
+
+    return get_local_favicon_data_uri($row->url ?? $host ?: '?');
+}
+
+/**
+ * Same-origin proxy to DuckDuckGo favicons so <img> paints on the dashboard.
+ */
+function get_favicon_url_from_domain($domain) {
+    $domain = extract_url_host($domain) ?: preg_replace('/^www\./', '', mb_strtolower(trim((string) $domain)));
+    $domain = preg_replace('/[^a-z0-9.-]/i', '', $domain);
+    if($domain === '' || !str_contains($domain, '.')) {
+        /* Allow single-label for letter fallback only */
+        if($domain === '') {
+            return get_local_favicon_data_uri('?');
         }
     }
 
-    return get_local_favicon_data_uri($domain);
+    return url('favicon-proxy/' . rawurlencode($domain));
 }
 
 function get_local_favicon_data_uri($domain) {
@@ -1000,6 +1047,7 @@ function enforce_blacklisted_countries() {
             || str_starts_with($altum, 'webhook-')
             || str_starts_with($altum, 'api/')
             || str_starts_with($altum, 'site-logo')
+            || str_starts_with($altum, 'favicon-proxy')
             || $altum === $uploads_prefix
             || str_starts_with($altum, $uploads_prefix . '/')
         ) {

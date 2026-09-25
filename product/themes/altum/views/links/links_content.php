@@ -352,10 +352,10 @@
                                         <span class="d-inline-block text-truncate small">
 
                                         <?php if(!empty($row->location_url)): ?>
-                                            <img referrerpolicy="no-referrer" src="<?= get_favicon_url_from_domain(parse_url($row->location_url, PHP_URL_HOST)) ?>" class="img-fluid icon-favicon-small mr-1" loading="lazy" />
+                                            <img referrerpolicy="no-referrer" src="<?= get_link_list_favicon_url($row) ?>" class="img-fluid icon-favicon-small mr-1" loading="lazy" />
                                             <a href="<?= $row->location_url ?>" class="text-muted" title="<?= remove_url_protocol_from_url($row->location_url) ?>" target="_blank" rel="noreferrer"><?= string_truncate(remove_url_protocol_from_url($row->location_url), 32) ?></a>
                                         <?php else: ?>
-                                            <img src="<?= isset($row->settings->favicon) && $row->settings->favicon ? \Altum\Uploads::get_full_url('favicons') . $row->settings->favicon : get_favicon_url_from_domain(parse_url($row->full_url, PHP_URL_HOST)) ?>" class="img-fluid icon-favicon-small mr-1" loading="lazy" />
+                                            <img src="<?= get_link_list_favicon_url($row) ?>" class="img-fluid icon-favicon-small mr-1" loading="lazy" referrerpolicy="no-referrer" />
                                             <a href="<?= $row->full_url ?>" class="text-muted" title="<?= remove_url_protocol_from_url($row->full_url) ?>" target="_blank" rel="noreferrer"><?= string_truncate(remove_url_protocol_from_url($row->full_url), 32) ?></a>
                                         <?php endif ?>
 
