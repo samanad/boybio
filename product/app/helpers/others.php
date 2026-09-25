@@ -363,19 +363,89 @@ function get_user_avatar($avatar, $email) {
         return \Altum\Uploads::get_full_url('default_avatar') . $default_avatar;
     }
 
-    return get_gravatar($email);
+    /* Local identicon — gravatar.com is often blocked for visitors */
+    return get_local_avatar_data_uri($email);
+}
+
+/**
+ * Deterministic SVG avatar (no third-party host). Used when Gravatar is unreachable.
+ */
+function get_local_avatar_data_uri($email, $size = 80) {
+    $hash = md5(mb_strtolower(trim((string) ($email ?? ''))));
+    $hue = hexdec(substr($hash, 0, 2)) / 255 * 360;
+    $bg = sprintf('hsl(%.0f,55%%,42%%)', $hue);
+    $letter = mb_strtoupper(mb_substr(trim((string) ($email ?? 'U')) ?: 'U', 0, 1));
+    if(!preg_match('/^[A-Z0-9]$/i', $letter)) {
+        $letter = 'U';
+    }
+    $size = max(16, (int) $size);
+    $svg = sprintf(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="%1$d" height="%1$d" viewBox="0 0 %1$d %1$d">'
+        . '<rect width="100%%" height="100%%" fill="%2$s"/>'
+        . '<text x="50%%" y="50%%" fill="#fff" font-family="Arial,sans-serif" font-size="%3$d" font-weight="700" text-anchor="middle" dominant-baseline="central">%4$s</text>'
+        . '</svg>',
+        $size,
+        $bg,
+        (int) round($size * 0.45),
+        htmlspecialchars($letter, ENT_QUOTES | ENT_XML1, 'UTF-8')
+    );
+
+    return 'data:image/svg+xml;base64,' . base64_encode($svg);
 }
 
 function get_gravatar($email, $size = 80, $d = 'identicon', $rating = 'g') {
-    $url = 'https://www.gravatar.com/avatar/';
-    $url .= md5(mb_strtolower(trim($email ?? '')));
-    $url .= "?s=$size&d=$d&r=$rating";
-
-    return $url;
+    /* Do not call gravatar.com — blocked in many regions; keep signature for callers */
+    return get_local_avatar_data_uri($email, $size);
 }
 
+/**
+ * Favicon for link lists. Prefer uploaded site favicon for our hosts;
+ * otherwise a local letter SVG (DuckDuckGo external-content is often blocked).
+ */
 function get_favicon_url_from_domain($domain) {
-    return sprintf('https://external-content.duckduckgo.com/ip3/%s.ico', $domain);
+    $domain = mb_strtolower(trim((string) $domain));
+    $domain = preg_replace('/^www\./', '', $domain);
+    if($domain === '') {
+        return get_local_favicon_data_uri('?');
+    }
+
+    /* Our own hosts → site favicon from uploads when available */
+    $site_host = parse_url(SITE_URL, PHP_URL_HOST);
+    $site_host = $site_host ? preg_replace('/^www\./', '', mb_strtolower($site_host)) : '';
+    $our_hosts = array_filter([$site_host, 'cloub.io', 'boy.bio', 'boybio.net', 'linkofbio.com']);
+    if(in_array($domain, $our_hosts, true)) {
+        $site_favicon = trim((string) (settings()->main->favicon ?? ''));
+        if($site_favicon !== '') {
+            $data_uri = function_exists('get_uploads_file_data_uri') ? get_uploads_file_data_uri('favicon', $site_favicon) : '';
+            if($data_uri !== '') {
+                return $data_uri;
+            }
+            return \Altum\Uploads::get_full_url('favicon') . $site_favicon;
+        }
+    }
+
+    return get_local_favicon_data_uri($domain);
+}
+
+function get_local_favicon_data_uri($domain) {
+    $domain = preg_replace('/^www\./', '', mb_strtolower(trim((string) $domain)));
+    $label = $domain !== '' ? mb_strtoupper(mb_substr($domain, 0, 1)) : '?';
+    if(!preg_match('/^[A-Z0-9]$/i', $label)) {
+        $label = mb_strtoupper(mb_substr(preg_replace('/[^a-z0-9]/i', '', $domain) ?: 'L', 0, 1));
+    }
+    $hash = md5($domain);
+    $hue = hexdec(substr($hash, 0, 2)) / 255 * 360;
+    $bg = sprintf('hsl(%.0f,50%%,40%%)', $hue);
+    $svg = sprintf(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">'
+        . '<rect width="32" height="32" rx="6" fill="%s"/>'
+        . '<text x="50%%" y="50%%" fill="#fff" font-family="Arial,sans-serif" font-size="16" font-weight="700" text-anchor="middle" dominant-baseline="central">%s</text>'
+        . '</svg>',
+        $bg,
+        htmlspecialchars($label, ENT_QUOTES | ENT_XML1, 'UTF-8')
+    );
+
+    return 'data:image/svg+xml;base64,' . base64_encode($svg);
 }
 
 /* Helper to output proper and nice numbers */
