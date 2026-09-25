@@ -199,10 +199,12 @@
                                             <a class="dropdown-item" href="<?= url('teams-system') ?>"><i class="fas fa-fw fa-sm fa-user-shield mr-2"></i> <?= l('teams_system.menu') ?></a>
                                         <?php endif ?>
 
-                                        <?php if(settings()->sso->is_enabled && settings()->sso->display_menu_items && count((array) settings()->sso->websites)): ?>
+                                        <?php
+                                        $sso_settings = settings()->sso ?? null;
+                                        if($sso_settings && !empty($sso_settings->is_enabled) && !empty($sso_settings->display_menu_items) && isset($sso_settings->websites) && count((array) $sso_settings->websites)): ?>
                                             <div class="dropdown-divider"></div>
 
-                                            <?php foreach(settings()->sso->websites as $website): ?>
+                                            <?php foreach($sso_settings->websites as $website): ?>
                                                 <a class="dropdown-item" href="<?= url('sso/switch?to=' . $website->id) ?>"><i class="<?= $website->icon ?> fa-fw fa-sm mr-2"></i> <?= sprintf(l('sso.menu'), $website->name) ?></a>
                                             <?php endforeach ?>
                                         <?php endif ?>
