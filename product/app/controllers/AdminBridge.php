@@ -210,7 +210,7 @@ class AdminBridge extends Controller {
     private static function get_peers() {
         $raw = self::env_value('ADMIN_BRIDGE_PEERS');
         if(!is_string($raw) || trim($raw) === '') {
-            $raw = 'https://www.shazdeha.com,https://shazdeha.com,https://www.boymodelworld.com,https://boymodelworld.com,https://kala.ad,https://www.kala.ad';
+            $raw = 'https://www.shazdeha.com,https://shazdeha.com,https://www.boymodelworld.com,https://boymodelworld.com,https://kala.ad,https://www.kala.ad,https://ghobooz.com,https://www.ghobooz.com,https://ghabzha.com,https://www.ghabzha.com';
         }
         $peers = [];
         foreach(explode(',', $raw) as $part) {
@@ -219,7 +219,7 @@ class AdminBridge extends Controller {
                 $peers[$origin] = true;
             }
         }
-        foreach (['https://kala.ad', 'https://www.kala.ad'] as $always) {
+        foreach (['https://kala.ad', 'https://www.kala.ad', 'https://ghobooz.com', 'https://www.ghobooz.com', 'https://ghabzha.com', 'https://www.ghabzha.com'] as $always) {
             $peers[$always] = true;
         }
         return array_keys($peers);
